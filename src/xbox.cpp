@@ -2,6 +2,7 @@
 #include "xbox.h"
 #include "timer.h"
 
+#define ENABLE_GDB_SERVER     0 // FIXME: Allow enable from cmdline
 #define DUMP_SECTION_CONTENTS 0
 
 // Statically generate a lookup table to quickly find the member function
@@ -107,6 +108,13 @@ int Xbox::Initialize()
 
     // Allow CPU to update memory map based on device allocation, etc
     m_cpu->MemMap(m_mem);
+
+    // GDB Server
+#if ENABLE_GDB_SERVER
+    log_debug("Starting GDB Server\n");
+    m_gdb = new GdbServer(m_cpu, "127.0.0.1", 9269);
+    m_gdb->Initialize();
+#endif
 
     return 0;
 }
@@ -251,8 +259,15 @@ int Xbox::Run()
 {
     Timer t;
     int result;
+    struct CpuExitInfo *exit_info;
 
     m_should_run = true;
+
+#if ENABLE_GDB_SERVER
+    // Allow debugging before running so client can setup breakpoints, etc
+    m_gdb->WaitForConnection();
+    m_gdb->Debug(3);
+#endif
 
     while (m_should_run) {
         SDL_PumpEvents();
@@ -260,11 +275,29 @@ int Xbox::Run()
         t.Start();
         result = m_sched->Run();
         t.Stop();
+        log_debug("CPU Executed for %lld ms\n", t.GetMillisecondsElapsed());
         if (result != 0) {
+            log_error("Error occured\n");
             break;
         }
 
-        log_debug("CPU Executed for %lld ms\n", t.GetMillisecondsElapsed());
+        exit_info = m_cpu->GetExitInfo();
+        if (exit_info->reason == EXIT_INTERRUPT) {
+#if ENABLE_GDB_SERVER
+            if (exit_info->intr_vector == 3 || exit_info->intr_vector == 1) {
+                result = m_gdb->Debug(exit_info->intr_vector);
+                if (result != 0) {
+                    log_error("Debugger returned error %d\n", result);
+                    break;
+                }
+#else
+            if (0) {
+#endif
+            } else {
+                log_error("Unhandled exception %d\n", exit_info->intr_vector);
+                break;
+            }
+        }
 
         HandleKernelEntry(); // Did we stop to enter a Kernel function?
 
@@ -275,6 +308,9 @@ int Xbox::Run()
     }
 
     m_video->Cleanup();
+#if ENABLE_GDB_SERVER
+    m_gdb->Shutdown();
+#endif
 
     return result;
 }

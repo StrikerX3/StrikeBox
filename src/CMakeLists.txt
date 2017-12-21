@@ -1,5 +1,6 @@
 set(DIR_SOURCES ${DIR_SOURCES}
     ${CMAKE_CURRENT_SOURCE_DIR}/cpu.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/gdbserver.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/dev.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/log.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp
@@ -16,7 +17,6 @@ set(DIR_SOURCES ${DIR_SOURCES}
     ${CMAKE_CURRENT_SOURCE_DIR}/cpu_uc.cpp
     )
 endif (USE_CPU_UNICORN)
-
 
 add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/kernel")
 add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/video")

@@ -50,6 +50,20 @@ public:
 };
 
 /*!
+ * Exit Info
+ */
+enum CpuExitReason {
+    EXIT_NORMAL,    // Exit due to time slice expiration or HLT
+    EXIT_ERROR,     // Exit due to non-specific error
+    EXIT_INTERRUPT, // Exit due to interrupt
+};
+
+struct CpuExitInfo {
+    enum CpuExitReason reason;
+    int                intr_vector;
+};
+
+/*!
  * CPU base class
  *
  * Defines a basic interface for the CPU that will be subclassed by actual
@@ -67,6 +81,7 @@ public:
     virtual int Run(uint64_t time_limit_us) = 0;
     virtual int SaveContext(CpuContext *context);
     virtual int RestoreContext(CpuContext *context);
+    virtual struct CpuExitInfo *GetExitInfo() = 0;
     void PrintRegisters();
 };
 

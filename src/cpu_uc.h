@@ -12,7 +12,10 @@
  */
 class UnicornCpu : public Cpu {
 protected:
-    uc_engine *m_uc;
+    uc_engine           *m_uc;
+    struct CpuExitInfo   m_exit_info;
+
+    static void xb_uc_intr_hook(uc_engine *uc, uint32_t intno, void *user_data);
 
 public:
     UnicornCpu();
@@ -24,6 +27,7 @@ public:
     int RegWrite(enum CpuReg reg, uint32_t value);
     int Run(uint64_t time_limit_us);
     int MemMap(MemoryRegion *mem);
+    struct CpuExitInfo *GetExitInfo();
 };
 
 #endif

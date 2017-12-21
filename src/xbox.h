@@ -10,6 +10,7 @@
 
 #include "cpu.h"
 #include "dev.h"
+#include "gdbserver.h"
 #include "log.h"
 #include "mem.h"
 #include "sched.h"
@@ -36,6 +37,7 @@ protected:
     Scheduler    *m_sched;
     MemoryRegion *m_mem;
     Cpu          *m_cpu;
+    GdbServer    *m_gdb;
     Xbe          *m_xbe;
     char         *m_ram;
     Video        *m_video;

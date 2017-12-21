@@ -76,11 +76,28 @@ static bool xb_uc_err_hook(
 }
 
 /*!
+ * Unicorn Interrupt Handler
+ */
+void UnicornCpu::xb_uc_intr_hook(
+    uc_engine *uc,
+    uint32_t   intno,
+    void      *user_data
+    )
+{
+    UnicornCpu *inst = (UnicornCpu *)user_data;
+    inst->m_exit_info.reason = EXIT_INTERRUPT;
+    inst->m_exit_info.intr_vector = intno;
+    uc_emu_stop(uc);
+}
+
+/*!
  * Initialize the CPU
  */
 int UnicornCpu::Initialize()
 {
     uc_err err;
+    uc_hook hook_err;
+    uc_hook hook_intr;
     
     // Initialize emulator in X86-32bit mode
     err = uc_open(UC_ARCH_X86, UC_MODE_32, &m_uc);
@@ -90,10 +107,17 @@ int UnicornCpu::Initialize()
         return -1;
     }
 
-    uc_hook hook;
-    err = uc_hook_add(m_uc, &hook, // FIXME: We leak these hooks! They should be cleaned up.
+    err = uc_hook_add(m_uc, &hook_err, // FIXME: We leak these hooks! They should be cleaned up.
                       UC_HOOK_MEM_UNMAPPED, (void*)xb_uc_err_hook,
                       NULL, 0, 0xffffffff);
+    if (err != UC_ERR_OK) {
+        log_error("uc_hook_add failed (%u)\n", err);
+        return -1;
+    }
+
+    err = uc_hook_add(m_uc, &hook_intr, // FIXME: We leak these hooks! They should be cleaned up.
+                      UC_HOOK_INTR, (void*)&UnicornCpu::xb_uc_intr_hook,
+                      this, 0, 0xffffffff);
     if (err != UC_ERR_OK) {
         log_error("uc_hook_add failed (%u)\n", err);
         return -1;
@@ -150,14 +174,25 @@ int UnicornCpu::Run(uint64_t time_limit_us)
     RegRead(REG_EIP, &eip);
 
     // Begin CPU emulation
+    m_exit_info.reason = EXIT_NORMAL;
     err = uc_emu_start(m_uc, eip, 0, time_limit_us, 0);
-    if (err) {
+    // If an interrupt occured, exit reason will have been updated
+    if (err != UC_ERR_OK) {
+        m_exit_info.reason = EXIT_ERROR;
         log_error("Failed on uc_emu_start() with error returned %u: %s\n",
         err, uc_strerror(err));
         return -1;
     }
 
     return 0;
+}
+
+/*!
+ * Get info about why the VM exited
+ */
+struct CpuExitInfo *UnicornCpu::GetExitInfo()
+{
+    return &m_exit_info;
 }
 
 /*!
