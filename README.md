@@ -20,11 +20,11 @@ the Kernel functions, and renders the framebuffer. No networking, no audio, no
 
 How to Build
 ------------
-You'll need CMake, SDL, and Unicorn. This should work anywhere with a bit of
-work.
+You'll need CMake, SDL, GLEW, and Unicorn. This should work anywhere with a
+bit of work.
 
 ```
-$ brew install cmake sdl2 unicorn
+$ brew install cmake sdl2 glew unicorn
 $ mkdir build; cd build
 $ cmake .. && make
 $ ./openxbox executable.xbe
@@ -51,3 +51,10 @@ Design Concept
   - Xbox game code will interface with parts of the hardware directly (for instance, graphics and networking)
   - We can trap on MMIO accesses directly from virtualized game code, handle the event, then return
  
+Debugging Guest Code
+--------------------
+The XBE that is running can be debugged using the GDB debugger. Once enabled,
+the emulator will open a TCP socket upon startup and wait for the GDB debugger
+to connect. Once connected, you can examine the CPU state, set breakpoints, 
+single-step instructions, etc. A sample .gdbinit file is provided with useful
+GDB default settings to be loaded when you start GDB in this directory.
