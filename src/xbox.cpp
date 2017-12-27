@@ -2,7 +2,7 @@
 #include "xbox.h"
 #include "timer.h"
 
-#define ENABLE_GDB_SERVER     0 // FIXME: Allow enable from cmdline
+#define ENABLE_GDB_SERVER     1 // FIXME: Allow enable from cmdline
 #define DUMP_SECTION_CONTENTS 0
 
 // Statically generate a lookup table to quickly find the member function
@@ -266,7 +266,7 @@ int Xbox::Run()
 #if ENABLE_GDB_SERVER
     // Allow debugging before running so client can setup breakpoints, etc
     m_gdb->WaitForConnection();
-    m_gdb->Debug(3);
+    m_gdb->Debug(1);
 #endif
 
     while (m_should_run) {
@@ -297,9 +297,9 @@ int Xbox::Run()
                 log_error("Unhandled exception %d\n", exit_info->intr_vector);
                 break;
             }
+        } else {
+            HandleKernelEntry(); // Did we stop to enter a Kernel function?
         }
-
-        HandleKernelEntry(); // Did we stop to enter a Kernel function?
 
         t.Start();
         m_video->Update();

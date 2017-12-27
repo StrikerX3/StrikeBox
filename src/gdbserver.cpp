@@ -190,6 +190,15 @@ int GdbServer::Debug(int signal)
     m_cpu->RegRead(REG_FS,      &m_dbg_state.registers[DBG_CPU_I386_REG_FS]);
     m_cpu->RegRead(REG_GS,      &m_dbg_state.registers[DBG_CPU_I386_REG_GS]);
 
+    // If interrupt was caused by a soft breakpoint (int3 = CCh), EIP will point
+    // to the instruction *after* the int3 instruction, which is probably in
+    // the middle of the instruction that we are breaking on. In this case, roll
+    // EIP back by 1. GDB client will replace the soft breakpoint with correct
+    // instruction byte before continuing execution.
+    if (signal == 3) {
+        m_dbg_state.registers[DBG_CPU_I386_REG_PC] -= 1;
+    }
+
     // Begin debugging episode
     result = dbg_main();
     if (result != 0) {
