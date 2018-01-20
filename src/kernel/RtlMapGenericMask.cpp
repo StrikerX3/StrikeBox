@@ -12,8 +12,8 @@
 int Xbox::RtlMapGenericMask()
 {
 	K_ENTER_STDCALL();
-	K_INIT_ARG(PACCESS_MASK,     AccessMask);
-	K_INIT_ARG(PGENERIC_MAPPING, GenericMapping);
+	K_INIT_ARG(XboxTypes::PACCESS_MASK,     AccessMask);
+	K_INIT_ARG(XboxTypes::PGENERIC_MAPPING, GenericMapping);
 
 	K_EXIT();
 	return ERROR_NOT_IMPLEMENTED;

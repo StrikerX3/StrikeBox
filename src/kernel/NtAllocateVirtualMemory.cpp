@@ -15,12 +15,12 @@
 int Xbox::NtAllocateVirtualMemory()
 {
 	K_ENTER_STDCALL();
-	K_INIT_ARG(PPVOID,    BaseAddress);
-	K_INIT_ARG(ULONG_PTR, ZeroBits);
-	K_INIT_ARG(PSIZE_T,   RegionSize);
-	K_INIT_ARG(ULONG,     AllocationType);
-	K_INIT_ARG(ULONG,     Protect);
-	NTSTATUS rval;
+	K_INIT_ARG(XboxTypes::PPVOID,    BaseAddress);
+	K_INIT_ARG(XboxTypes::ULONG_PTR, ZeroBits);
+	K_INIT_ARG(XboxTypes::PSIZE_T,   RegionSize);
+	K_INIT_ARG(XboxTypes::ULONG,     AllocationType);
+	K_INIT_ARG(XboxTypes::ULONG,     Protect);
+	XboxTypes::NTSTATUS rval;
 
 	K_EXIT_WITH_VALUE(rval);
 	return ERROR_NOT_IMPLEMENTED;

@@ -13,9 +13,9 @@
 int Xbox::READ_PORT_BUFFER_ULONG()
 {
 	K_ENTER_STDCALL();
-	K_INIT_ARG(PULONG, Port);
-	K_INIT_ARG(PULONG, Buffer);
-	K_INIT_ARG(PULONG, Count);
+	K_INIT_ARG(XboxTypes::PULONG, Port);
+	K_INIT_ARG(XboxTypes::PULONG, Buffer);
+	K_INIT_ARG(XboxTypes::PULONG, Count);
 
 	K_EXIT();
 	return ERROR_NOT_IMPLEMENTED;

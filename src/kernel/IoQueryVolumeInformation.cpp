@@ -15,12 +15,12 @@
 int Xbox::IoQueryVolumeInformation()
 {
 	K_ENTER_STDCALL();
-	K_INIT_ARG(PFILE_OBJECT,         FileObject);
-	K_INIT_ARG(FS_INFORMATION_CLASS, FsInformationClass);
-	K_INIT_ARG(ULONG,                Length);
-	K_INIT_ARG(PVOID,                FsInformation);
-	K_INIT_ARG(PULONG,               ReturnedLength);
-	NTSTATUS rval;
+	K_INIT_ARG(XboxTypes::PFILE_OBJECT,         FileObject);
+	K_INIT_ARG(XboxTypes::FS_INFORMATION_CLASS, FsInformationClass);
+	K_INIT_ARG(XboxTypes::ULONG,                Length);
+	K_INIT_ARG(XboxTypes::PVOID,                FsInformation);
+	K_INIT_ARG(XboxTypes::PULONG,               ReturnedLength);
+	XboxTypes::NTSTATUS rval;
 
 	K_EXIT_WITH_VALUE(rval);
 	return ERROR_NOT_IMPLEMENTED;

@@ -12,9 +12,9 @@
 int Xbox::MmDbgWriteCheck()
 {
 	K_ENTER_STDCALL();
-	K_INIT_ARG(PVOID,         VirtualAddress);
-	K_INIT_ARG(PHARDWARE_PTE, Opaque);
-	PVOID rval;
+	K_INIT_ARG(XboxTypes::PVOID,         VirtualAddress);
+	K_INIT_ARG(XboxTypes::PHARDWARE_PTE, Opaque);
+	XboxTypes::PVOID rval;
 
 	K_EXIT_WITH_VALUE(rval);
 	return ERROR_NOT_IMPLEMENTED;

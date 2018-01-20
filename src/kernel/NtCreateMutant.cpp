@@ -13,10 +13,10 @@
 int Xbox::NtCreateMutant()
 {
 	K_ENTER_STDCALL();
-	K_INIT_ARG(PHANDLE,            MutantHandle);
-	K_INIT_ARG(POBJECT_ATTRIBUTES, ObjectAttributes);
-	K_INIT_ARG(BOOLEAN,            InitialOwner);
-	NTSTATUS rval;
+	K_INIT_ARG(XboxTypes::PHANDLE,            MutantHandle);
+	K_INIT_ARG(XboxTypes::POBJECT_ATTRIBUTES, ObjectAttributes);
+	K_INIT_ARG(XboxTypes::BOOLEAN,            InitialOwner);
+	XboxTypes::NTSTATUS rval;
 
 	K_EXIT_WITH_VALUE(rval);
 	return ERROR_NOT_IMPLEMENTED;

@@ -11,7 +11,7 @@
 int Xbox::RtlEnterCriticalSection()
 {
 	K_ENTER_STDCALL();
-	K_INIT_ARG(PRTL_CRITICAL_SECTION, CriticalSection);
+	K_INIT_ARG(XboxTypes::PRTL_CRITICAL_SECTION, CriticalSection);
 
 	K_EXIT();
 	return ERROR_NOT_IMPLEMENTED;

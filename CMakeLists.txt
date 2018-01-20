@@ -1,6 +1,25 @@
 cmake_minimum_required (VERSION 2.6)
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake")
+
 project (openxbox)
+
+if(WIN32)
+	set(SDL2_PATH "${CMAKE_SOURCE_DIR}/extern/SDL2-2.0.7")
+	if(NOT "${CMAKE_GENERATOR}" MATCHES "(Win64|IA64)")
+		set(GLEW_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/extern/glew-2.1.0/win32/include")
+		set(GLEW_LIBRARY_RELEASE "${CMAKE_SOURCE_DIR}/extern/glew-2.1.0/win32/lib/glew32.lib")
+
+		set(LIBUNICORN_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/extern/unicorn-1.0.1/win32/include")
+		set(LIBUNICORN_LIBRARY_DIR "${CMAKE_SOURCE_DIR}/extern/unicorn-1.0.1/win32")
+	else()
+		set(GLEW_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/extern/glew-2.1.0/win64/include")
+		set(GLEW_LIBRARY_RELEASE "${CMAKE_SOURCE_DIR}/extern/glew-2.1.0/win64/lib/glew32.lib")
+
+		set(LIBUNICORN_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/extern/unicorn-1.0.1/win64/include")
+		set(LIBUNICORN_LIBRARY_DIR "${CMAKE_SOURCE_DIR}/extern/unicorn-1.0.1/win64")
+	endif()
+endif()
+
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake")
 
 option(USE_CPU_UNICORN "Use Unicorn CPU emulator" ON)
 
@@ -9,7 +28,9 @@ set(SOURCES, "")
 add_subdirectory("${CMAKE_SOURCE_DIR}/src")
 
 # Main Executable
-add_definitions("-Wall -Werror -O0 -g")
+if(NOT WIN32)
+	add_definitions("-Wall -Werror -O0 -g")
+endif()
 add_executable(openxbox ${SOURCES})
 target_include_directories(openxbox PUBLIC ${CMAKE_SOURCE_DIR}/src)
 

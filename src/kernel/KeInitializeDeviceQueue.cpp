@@ -11,7 +11,7 @@
 int Xbox::KeInitializeDeviceQueue()
 {
 	K_ENTER_STDCALL();
-	K_INIT_ARG(PKDEVICE_QUEUE, DeviceQueue);
+	K_INIT_ARG(XboxTypes::PKDEVICE_QUEUE, DeviceQueue);
 
 	K_EXIT();
 	return ERROR_NOT_IMPLEMENTED;

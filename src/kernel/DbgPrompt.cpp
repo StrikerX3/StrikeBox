@@ -13,10 +13,10 @@
 int Xbox::DbgPrompt()
 {
 	K_ENTER_STDCALL();
-	K_INIT_ARG(PCH,   Prompt);
-	K_INIT_ARG(PCH,   Response);
-	K_INIT_ARG(ULONG, MaximumResponseLength);
-	ULONG rval;
+	K_INIT_ARG(XboxTypes::PCH,   Prompt);
+	K_INIT_ARG(XboxTypes::PCH,   Response);
+	K_INIT_ARG(XboxTypes::ULONG, MaximumResponseLength);
+	XboxTypes::ULONG rval;
 
 	K_EXIT_WITH_VALUE(rval);
 	return ERROR_NOT_IMPLEMENTED;

@@ -18,6 +18,11 @@
 
 #include "gdbserver.h"
 
+#ifdef _WIN32
+	int inet_aton(const char *cp, struct in_addr *inp) { return InetPton(AF_INET, cp, inp); }
+	int close(SOCKET socket) { return closesocket(socket); }
+#endif
+
 #define DEBUG 0
 
 #if DEBUG
@@ -67,7 +72,7 @@ int GdbServer::Initialize()
 
     /* Allow re-using a local address */
     val = 1;
-    status = setsockopt(m_sockfd, SOL_SOCKET, SO_REUSEADDR, &val, sizeof(val));
+    status = setsockopt(m_sockfd, SOL_SOCKET, SO_REUSEADDR, (const char *)&val, sizeof(val));
     if (status) {
         fprintf(stderr, "Error: %s\n", strerror(errno));
         close(m_sockfd);
@@ -76,7 +81,7 @@ int GdbServer::Initialize()
 
     /* No delays */
     val = 1;
-    status = setsockopt(m_sockfd, IPPROTO_TCP, TCP_NODELAY, &val, sizeof(val));
+    status = setsockopt(m_sockfd, IPPROTO_TCP, TCP_NODELAY, (const char *)&val, sizeof(val));
     if (status) {
         fprintf(stderr, "Error: %s\n", strerror(errno));
         close(m_sockfd);
@@ -145,7 +150,7 @@ int GdbServer::WaitForConnection()
     m_peer_sockfd = status;
 
     val = 1;
-    status = setsockopt(m_peer_sockfd, IPPROTO_TCP, TCP_NODELAY, &val, sizeof(val));
+    status = setsockopt(m_peer_sockfd, IPPROTO_TCP, TCP_NODELAY, (const char *)&val, sizeof(val));
     if (status) {
         fprintf(stderr, "Error: %s\n", strerror(errno));
         close(m_peer_sockfd);

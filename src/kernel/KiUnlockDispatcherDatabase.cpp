@@ -11,7 +11,7 @@
 int Xbox::KiUnlockDispatcherDatabase()
 {
 	K_ENTER_FASTCALL();
-	K_INIT_ARG(KIRQL, OldIrql);
+	K_INIT_ARG(XboxTypes::KIRQL, OldIrql);
 
 	K_EXIT();
 	return ERROR_NOT_IMPLEMENTED;

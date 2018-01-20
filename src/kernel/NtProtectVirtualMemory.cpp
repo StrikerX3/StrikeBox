@@ -14,11 +14,11 @@
 int Xbox::NtProtectVirtualMemory()
 {
 	K_ENTER_STDCALL();
-	K_INIT_ARG(PPVOID,  BaseAddress);
-	K_INIT_ARG(PSIZE_T, RegionSize);
-	K_INIT_ARG(ULONG,   NewProtect);
-	K_INIT_ARG(PULONG,  OldProtect);
-	NTSTATUS rval;
+	K_INIT_ARG(XboxTypes::PPVOID,  BaseAddress);
+	K_INIT_ARG(XboxTypes::PSIZE_T, RegionSize);
+	K_INIT_ARG(XboxTypes::ULONG,   NewProtect);
+	K_INIT_ARG(XboxTypes::PULONG,  OldProtect);
+	XboxTypes::NTSTATUS rval;
 
 	K_EXIT_WITH_VALUE(rval);
 	return ERROR_NOT_IMPLEMENTED;

@@ -14,11 +14,11 @@
 int Xbox::NtCreateEvent()
 {
 	K_ENTER_STDCALL();
-	K_INIT_ARG(PHANDLE,            EventHandle);
-	K_INIT_ARG(POBJECT_ATTRIBUTES, ObjectAttributes);
-	K_INIT_ARG(EVENT_TYPE,         EventType);
-	K_INIT_ARG(BOOLEAN,            InitialState);
-	NTSTATUS rval;
+	K_INIT_ARG(XboxTypes::PHANDLE,            EventHandle);
+	K_INIT_ARG(XboxTypes::POBJECT_ATTRIBUTES, ObjectAttributes);
+	K_INIT_ARG(XboxTypes::EVENT_TYPE,         EventType);
+	K_INIT_ARG(XboxTypes::BOOLEAN,            InitialState);
+	XboxTypes::NTSTATUS rval;
 
 	K_EXIT_WITH_VALUE(rval);
 	return ERROR_NOT_IMPLEMENTED;

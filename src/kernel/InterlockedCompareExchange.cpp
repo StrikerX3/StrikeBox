@@ -13,10 +13,10 @@
 int Xbox::InterlockedCompareExchange()
 {
 	K_ENTER_FASTCALL();
-	K_INIT_ARG(PLONG, Destination);
-	K_INIT_ARG(LONG,  ExChange);
-	K_INIT_ARG(LONG,  Comparand);
-	LONG rval;
+	K_INIT_ARG(XboxTypes::PLONG, Destination);
+	K_INIT_ARG(XboxTypes::LONG,  ExChange);
+	K_INIT_ARG(XboxTypes::LONG,  Comparand);
+	XboxTypes::LONG rval;
 
 	K_EXIT_WITH_VALUE(rval);
 	return ERROR_NOT_IMPLEMENTED;

@@ -12,9 +12,9 @@
 int Xbox::IoCreateSymbolicLink()
 {
 	K_ENTER_STDCALL();
-	K_INIT_ARG(POBJECT_STRING, SymbolicLinkName);
-	K_INIT_ARG(POBJECT_STRING, DeviceName);
-	NTSTATUS rval;
+	K_INIT_ARG(XboxTypes::POBJECT_STRING, SymbolicLinkName);
+	K_INIT_ARG(XboxTypes::POBJECT_STRING, DeviceName);
+	XboxTypes::NTSTATUS rval;
 
 	K_EXIT_WITH_VALUE(rval);
 	return ERROR_NOT_IMPLEMENTED;

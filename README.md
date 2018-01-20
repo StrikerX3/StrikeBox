@@ -30,10 +30,29 @@ $ cmake .. && make
 $ ./openxbox executable.xbe
 ```
 
+On Windows, you'll need [CMake](https://cmake.org/download/). This method has
+been confirmed to work with [Visual Studio Community 2017](https://www.visualstudio.com/downloads/).
+All necessary dependencies are included in the extern folder.
+```
+> mkdir build
+> cd build
+> cmake -G "Visual Studio 15 2017 Win64" ..
+```
+Then open the .sln file created in the build folder and build the openxbox
+project. Remember to set it as the startup project before running.
+
+TODO: for now, you need to copy the following required DLLs to the output
+folder in order to run/debug the application:
+- extern/glew-2.1.0/win64/bin/glew32.dll
+- extern/SDL2-2.0.7/lib/x64/SDL2.dll
+- extern/unicorn-1.0.1/win64/unicorn.dll
+- extern/unicorn-1.0.1/win64/libgcc_s_seh-1.dll
+- extern/unicorn-1.0.1/win64/libwinpthread-1.dll
+
 Design Concept
 --------------
 - High-Level Emulation (HLE) for Kernel API
-  - When game trys to call into kernel, trap and emulate it with our own code
+  - When game tries to call into kernel, trap and emulate it with our own code
   - Sidesteps need for firmware images (BIOS/MCPX) and keys
   - Faster/easier to integrate into system (access filesystem directly)
   - Eliminate need for most legacy PC emulation

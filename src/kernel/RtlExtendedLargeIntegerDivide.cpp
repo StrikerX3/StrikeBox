@@ -13,10 +13,10 @@
 int Xbox::RtlExtendedLargeIntegerDivide()
 {
 	K_ENTER_STDCALL();
-	K_INIT_ARG(LARGE_INTEGER, Dividend);
-	K_INIT_ARG(ULONG,         Divisor);
-	K_INIT_ARG(PULONG,        Remainder);
-	LARGE_INTEGER rval;
+	K_INIT_ARG(XboxTypes::LARGE_INTEGER, Dividend);
+	K_INIT_ARG(XboxTypes::ULONG,         Divisor);
+	K_INIT_ARG(XboxTypes::PULONG,        Remainder);
+	XboxTypes::LARGE_INTEGER rval;
 
 	K_EXIT_WITH_VALUE(rval);
 	return ERROR_NOT_IMPLEMENTED;

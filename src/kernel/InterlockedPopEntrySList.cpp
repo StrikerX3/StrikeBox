@@ -11,8 +11,8 @@
 int Xbox::InterlockedPopEntrySList()
 {
 	K_ENTER_FASTCALL();
-	K_INIT_ARG(PSLIST_HEADER, ListHead);
-	PSINGLE_LIST_ENTRY rval;
+	K_INIT_ARG(XboxTypes::PSLIST_HEADER, ListHead);
+	XboxTypes::PSINGLE_LIST_ENTRY rval;
 
 	K_EXIT_WITH_VALUE(rval);
 	return ERROR_NOT_IMPLEMENTED;

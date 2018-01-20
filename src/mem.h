@@ -68,6 +68,7 @@ public:
     void                       *m_handler_user;
 
     MemoryRegion(enum MemoryRegionType type, uint32_t start, size_t size, void *data);
+	~MemoryRegion();
     uint32_t GetAbsoluteAddress(uint32_t offset);
     void SetParent(MemoryRegion *parent);
     void SetEventHandler(MemoryRegionEventHandler handler, void *user_data);

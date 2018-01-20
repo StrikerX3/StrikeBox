@@ -10,7 +10,7 @@
 int Xbox::MmDbgQueryAvailablePages()
 {
 	K_ENTER_STDCALL();
-	PFN_COUNT rval;
+	XboxTypes::PFN_COUNT rval;
 
 	K_EXIT_WITH_VALUE(rval);
 	return ERROR_NOT_IMPLEMENTED;

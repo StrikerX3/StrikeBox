@@ -13,10 +13,10 @@
 int Xbox::RtlMultiByteToUnicodeSize()
 {
 	K_ENTER_STDCALL();
-	K_INIT_ARG(PULONG, BytesInUnicodeString);
-	K_INIT_ARG(PCHAR,  MultiByteString);
-	K_INIT_ARG(ULONG,  BytesInMultiByteString);
-	NTSTATUS rval;
+	K_INIT_ARG(XboxTypes::PULONG, BytesInUnicodeString);
+	K_INIT_ARG(XboxTypes::PCHAR,  MultiByteString);
+	K_INIT_ARG(XboxTypes::ULONG,  BytesInMultiByteString);
+	XboxTypes::NTSTATUS rval;
 
 	K_EXIT_WITH_VALUE(rval);
 	return ERROR_NOT_IMPLEMENTED;

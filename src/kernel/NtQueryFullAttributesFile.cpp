@@ -12,9 +12,9 @@
 int Xbox::NtQueryFullAttributesFile()
 {
 	K_ENTER_STDCALL();
-	K_INIT_ARG(POBJECT_ATTRIBUTES,             ObjectAttributes);
-	K_INIT_ARG(PFILE_NETWORK_OPEN_INFORMATION, FileInformation);
-	NTSTATUS rval;
+	K_INIT_ARG(XboxTypes::POBJECT_ATTRIBUTES,             ObjectAttributes);
+	K_INIT_ARG(XboxTypes::PFILE_NETWORK_OPEN_INFORMATION, FileInformation);
+	XboxTypes::NTSTATUS rval;
 
 	K_EXIT_WITH_VALUE(rval);
 	return ERROR_NOT_IMPLEMENTED;

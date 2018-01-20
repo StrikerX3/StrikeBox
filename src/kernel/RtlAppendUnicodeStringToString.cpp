@@ -12,9 +12,9 @@
 int Xbox::RtlAppendUnicodeStringToString()
 {
 	K_ENTER_STDCALL();
-	K_INIT_ARG(PUNICODE_STRING, Destination);
-	K_INIT_ARG(PUNICODE_STRING, Source);
-	NTSTATUS rval;
+	K_INIT_ARG(XboxTypes::PUNICODE_STRING, Destination);
+	K_INIT_ARG(XboxTypes::PUNICODE_STRING, Source);
+	XboxTypes::NTSTATUS rval;
 
 	K_EXIT_WITH_VALUE(rval);
 	return ERROR_NOT_IMPLEMENTED;

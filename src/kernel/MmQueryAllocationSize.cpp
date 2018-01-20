@@ -11,8 +11,8 @@
 int Xbox::MmQueryAllocationSize()
 {
 	K_ENTER_STDCALL();
-	K_INIT_ARG(PVOID, BaseAddress);
-	SIZE_T rval;
+	K_INIT_ARG(XboxTypes::PVOID, BaseAddress);
+	XboxTypes::SIZE_T rval;
 
 	K_EXIT_WITH_VALUE(rval);
 	return ERROR_NOT_IMPLEMENTED;

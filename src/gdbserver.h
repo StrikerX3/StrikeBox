@@ -19,11 +19,17 @@
 #define GDBSERVER_H
 
 #include <sys/types.h>
-#include <unistd.h>
-#include <arpa/inet.h>
-#include <netinet/in.h>
-#include <netinet/tcp.h>
-#include <sys/socket.h>
+#ifdef _WIN32
+#  include <WinSock2.h>
+#  include <Ws2tcpip.h>
+#  pragma comment (lib, "ws2_32.lib")
+#else
+#  include <unistd.h>
+#  include <arpa/inet.h>
+#  include <netinet/in.h>
+#  include <netinet/tcp.h>
+#  include <sys/socket.h>
+#endif
 #include <assert.h>
 #include <errno.h>
 #include <stdio.h>
@@ -31,6 +37,17 @@
 #include <stdint.h>
 #include <string.h>
 #include "cpu.h"
+
+#ifdef _WIN32
+	typedef int socklen_t;
+	typedef int ssize_t;
+
+	#define SOCKET_T SOCKET
+	inline int inet_aton(const char *cp, struct in_addr *inp);
+	inline int close(SOCKET socket);
+#else
+	#define SOCKET_T int
+#endif
 
 typedef uint32_t address;
 typedef uint32_t reg;
@@ -71,7 +88,7 @@ protected:
     struct sockaddr_in  m_bind_addr;
     struct sockaddr_in  m_peer_addr;
     socklen_t           m_peer_addr_len;
-    int                 m_sockfd, m_peer_sockfd;
+    SOCKET_T            m_sockfd, m_peer_sockfd;
     struct dbg_state    m_dbg_state;
 
     int dbg_sys_getc(void);

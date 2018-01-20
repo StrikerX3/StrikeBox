@@ -10,7 +10,7 @@
 int Xbox::AvGetSavedDataAddress()
 {
 	K_ENTER_STDCALL();
-	PVOID rval;
+	XboxTypes::PVOID rval;
 
 	K_EXIT_WITH_VALUE(rval);
 	return ERROR_NOT_IMPLEMENTED;

@@ -12,8 +12,8 @@
 int Xbox::HalEnableSystemInterrupt()
 {
 	K_ENTER_STDCALL();
-	K_INIT_ARG(ULONG,           BusInterruptLevel);
-	K_INIT_ARG(KINTERRUPT_MODE, InterruptMode);
+	K_INIT_ARG(XboxTypes::ULONG,           BusInterruptLevel);
+	K_INIT_ARG(XboxTypes::KINTERRUPT_MODE, InterruptMode);
 
 	K_EXIT();
 	return ERROR_NOT_IMPLEMENTED;

@@ -16,13 +16,13 @@
 int Xbox::AvSetDisplayMode()
 {
 	K_ENTER_STDCALL();
-	K_INIT_ARG(PVOID, RegisterBase);
-	K_INIT_ARG(ULONG, Step);
-	K_INIT_ARG(ULONG, DisplayMode);
-	K_INIT_ARG(ULONG, SourceColorFormat);
-	K_INIT_ARG(ULONG, Pitch);
-	K_INIT_ARG(ULONG, FrameBuffer);
-	ULONG rval;
+	K_INIT_ARG(XboxTypes::PVOID, RegisterBase);
+	K_INIT_ARG(XboxTypes::ULONG, Step);
+	K_INIT_ARG(XboxTypes::ULONG, DisplayMode);
+	K_INIT_ARG(XboxTypes::ULONG, SourceColorFormat);
+	K_INIT_ARG(XboxTypes::ULONG, Pitch);
+	K_INIT_ARG(XboxTypes::ULONG, FrameBuffer);
+	XboxTypes::ULONG rval;
 
 	log_debug("%s(%08x, %x, %x, %x, %x, %x)\n",
 		__func__,

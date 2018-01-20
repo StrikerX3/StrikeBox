@@ -11,8 +11,8 @@
 int Xbox::RtlUshortByteSwap()
 {
 	K_ENTER_FASTCALL();
-	K_INIT_ARG(USHORT, Source);
-	USHORT rval;
+	K_INIT_ARG(XboxTypes::USHORT, Source);
+	XboxTypes::USHORT rval;
 
 	K_EXIT_WITH_VALUE(rval);
 	return ERROR_NOT_IMPLEMENTED;

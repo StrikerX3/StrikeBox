@@ -11,8 +11,8 @@
 int Xbox::KfRaiseIrql()
 {
 	K_ENTER_FASTCALL();
-	K_INIT_ARG(KIRQL, NewIrql);
-	KIRQL rval;
+	K_INIT_ARG(XboxTypes::KIRQL, NewIrql);
+	XboxTypes::KIRQL rval;
 
 	K_EXIT_WITH_VALUE(rval);
 	return ERROR_NOT_IMPLEMENTED;

@@ -19,7 +19,15 @@
 /* MSVC-compatibility for structure-packing */
 #pragma ms_struct on
 
+#ifdef _WIN32
+#  define ATTRIBUTE_PACKED
+#  undef VOID
+#else
+#  define ATTRIBUTE_PACKED __attribute__((packed))
+#endif
+
 #if defined(__cplusplus)
+namespace XboxTypes {
 extern "C"
 {
 #endif
@@ -1684,6 +1692,9 @@ typedef struct _XBOX_REFURB_INFO
 
 DEF_POINTER_TYPE(XBOX_REFURB_INFO, PXBOX_REFURB_INFO);
 
+#ifdef _WIN32
+#  pragma pack(push, 1)
+#endif
 typedef struct _FLOATING_SAVE_AREA
 {
     WORD ControlWord;
@@ -1700,7 +1711,10 @@ typedef struct _FLOATING_SAVE_AREA
     BYTE XmmRegisterArea[128];
     BYTE Reserved4[224];
     DWORD Cr0NpxState;
-} __attribute__((packed)) FLOATING_SAVE_AREA;
+} ATTRIBUTE_PACKED FLOATING_SAVE_AREA;
+#ifdef _WIN32
+#  pragma pack(pop)
+#endif
 
 DEF_POINTER_TYPE(FLOATING_SAVE_AREA, PFLOATING_SAVE_AREA);
 
@@ -2322,7 +2336,8 @@ typedef VOID (* NTAPI PKSYSTEM_ROUTINE) (
 #define MEM_4MB_PAGES 0x80000000
 
 #if defined(__cplusplus)
-}
+} // extern
+} // namespace
 #endif
 
 #pragma ms_struct reset

@@ -12,8 +12,8 @@
 int Xbox::RtlUpperString()
 {
 	K_ENTER_STDCALL();
-	K_INIT_ARG(PSTRING, DestinationString);
-	K_INIT_ARG(PSTRING, SourceString);
+	K_INIT_ARG(XboxTypes::PSTRING, DestinationString);
+	K_INIT_ARG(XboxTypes::PSTRING, SourceString);
 
 	K_EXIT();
 	return ERROR_NOT_IMPLEMENTED;

@@ -13,10 +13,10 @@
 int Xbox::RtlCompareMemoryUlong()
 {
 	K_ENTER_STDCALL();
-	K_INIT_ARG(PVOID,  Source);
-	K_INIT_ARG(SIZE_T, Length);
-	K_INIT_ARG(ULONG,  Pattern);
-	SIZE_T rval;
+	K_INIT_ARG(XboxTypes::PVOID,  Source);
+	K_INIT_ARG(XboxTypes::SIZE_T, Length);
+	K_INIT_ARG(XboxTypes::ULONG,  Pattern);
+	XboxTypes::SIZE_T rval;
 
 	K_EXIT_WITH_VALUE(rval);
 	return ERROR_NOT_IMPLEMENTED;

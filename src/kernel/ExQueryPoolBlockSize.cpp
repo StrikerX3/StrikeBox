@@ -11,8 +11,8 @@
 int Xbox::ExQueryPoolBlockSize()
 {
 	K_ENTER_STDCALL();
-	K_INIT_ARG(PVOID, PoolBlock);
-	ULONG rval;
+	K_INIT_ARG(XboxTypes::PVOID, PoolBlock);
+	XboxTypes::ULONG rval;
 
 	K_EXIT_WITH_VALUE(rval);
 	return ERROR_NOT_IMPLEMENTED;

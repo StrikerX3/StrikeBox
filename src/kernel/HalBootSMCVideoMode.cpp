@@ -10,7 +10,7 @@
 int Xbox::HalBootSMCVideoMode()
 {
 	K_ENTER_STDCALL();
-	DWORD rval;
+	XboxTypes::DWORD rval;
 
 	K_EXIT_WITH_VALUE(rval);
 	return ERROR_NOT_IMPLEMENTED;

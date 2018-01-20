@@ -14,11 +14,11 @@
 int Xbox::KeInsertQueueApc()
 {
 	K_ENTER_STDCALL();
-	K_INIT_ARG(PRKAPC,    Apc);
-	K_INIT_ARG(PVOID,     SystemArgument1);
-	K_INIT_ARG(PVOID,     SystemArgument2);
-	K_INIT_ARG(KPRIORITY, Increment);
-	BOOLEAN rval;
+	K_INIT_ARG(XboxTypes::PRKAPC,    Apc);
+	K_INIT_ARG(XboxTypes::PVOID,     SystemArgument1);
+	K_INIT_ARG(XboxTypes::PVOID,     SystemArgument2);
+	K_INIT_ARG(XboxTypes::KPRIORITY, Increment);
+	XboxTypes::BOOLEAN rval;
 
 	K_EXIT_WITH_VALUE(rval);
 	return ERROR_NOT_IMPLEMENTED;

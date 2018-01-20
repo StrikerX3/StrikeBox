@@ -11,7 +11,7 @@
 int Xbox::ExFreePool()
 {
 	K_ENTER_STDCALL();
-	K_INIT_ARG(PVOID, P);
+	K_INIT_ARG(XboxTypes::PVOID, P);
 
 	K_EXIT();
 	return ERROR_NOT_IMPLEMENTED;

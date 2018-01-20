@@ -1,4 +1,5 @@
 #include "mem.h"
+#include "alloc.h"
 
 /*!
  * Constructor
@@ -12,6 +13,14 @@ MemoryRegion::MemoryRegion(enum MemoryRegionType type, uint32_t start, size_t si
     m_data = data;
     m_handler = NULL;
     m_handler_user = NULL;
+}
+
+/*!
+ * Destructor
+ */
+MemoryRegion::~MemoryRegion()
+{
+	vfree(m_data);
 }
 
 /*!

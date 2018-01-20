@@ -12,8 +12,8 @@
 int Xbox::MmDbgReleaseAddress()
 {
 	K_ENTER_STDCALL();
-	K_INIT_ARG(PVOID,         VirtualAddress);
-	K_INIT_ARG(PHARDWARE_PTE, Opaque);
+	K_INIT_ARG(XboxTypes::PVOID,         VirtualAddress);
+	K_INIT_ARG(XboxTypes::PHARDWARE_PTE, Opaque);
 
 	K_EXIT();
 	return ERROR_NOT_IMPLEMENTED;

@@ -14,11 +14,11 @@
 int Xbox::RtlIntegerToChar()
 {
 	K_ENTER_STDCALL();
-	K_INIT_ARG(ULONG, Value);
-	K_INIT_ARG(ULONG, Base);
-	K_INIT_ARG(LONG,  OutputLength);
-	K_INIT_ARG(PSZ,   String);
-	NTSTATUS rval;
+	K_INIT_ARG(XboxTypes::ULONG, Value);
+	K_INIT_ARG(XboxTypes::ULONG, Base);
+	K_INIT_ARG(XboxTypes::LONG,  OutputLength);
+	K_INIT_ARG(XboxTypes::PSZ,   String);
+	XboxTypes::NTSTATUS rval;
 
 	K_EXIT_WITH_VALUE(rval);
 	return ERROR_NOT_IMPLEMENTED;

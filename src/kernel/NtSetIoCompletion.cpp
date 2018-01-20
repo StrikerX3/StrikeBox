@@ -15,12 +15,12 @@
 int Xbox::NtSetIoCompletion()
 {
 	K_ENTER_STDCALL();
-	K_INIT_ARG(HANDLE,    IoCompletionHandle);
-	K_INIT_ARG(PVOID,     KeyContext);
-	K_INIT_ARG(PVOID,     ApcContext);
-	K_INIT_ARG(NTSTATUS,  IoStatus);
-	K_INIT_ARG(ULONG_PTR, IoStatusInformation);
-	NTSTATUS rval;
+	K_INIT_ARG(XboxTypes::HANDLE,    IoCompletionHandle);
+	K_INIT_ARG(XboxTypes::PVOID,     KeyContext);
+	K_INIT_ARG(XboxTypes::PVOID,     ApcContext);
+	K_INIT_ARG(XboxTypes::NTSTATUS,  IoStatus);
+	K_INIT_ARG(XboxTypes::ULONG_PTR, IoStatusInformation);
+	XboxTypes::NTSTATUS rval;
 
 	K_EXIT_WITH_VALUE(rval);
 	return ERROR_NOT_IMPLEMENTED;

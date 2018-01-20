@@ -11,8 +11,8 @@
 int Xbox::DbgPrint()
 {
 	K_ENTER_CDECL();
-	K_INIT_ARG(PCH, Format);
-	ULONG rval;
+	K_INIT_ARG(XboxTypes::PCH, Format);
+	XboxTypes::ULONG rval;
 
 	K_EXIT_WITH_VALUE(rval);
 	return ERROR_NOT_IMPLEMENTED;

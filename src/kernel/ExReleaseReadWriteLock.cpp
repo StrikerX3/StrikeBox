@@ -11,7 +11,7 @@
 int Xbox::ExReleaseReadWriteLock()
 {
 	K_ENTER_STDCALL();
-	K_INIT_ARG(PERWLOCK, ReadWriteLock);
+	K_INIT_ARG(XboxTypes::PERWLOCK, ReadWriteLock);
 
 	K_EXIT();
 	return ERROR_NOT_IMPLEMENTED;

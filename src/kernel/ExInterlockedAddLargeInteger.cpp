@@ -12,9 +12,9 @@
 int Xbox::ExInterlockedAddLargeInteger()
 {
 	K_ENTER_STDCALL();
-	K_INIT_ARG(PLARGE_INTEGER, Addend);
-	K_INIT_ARG(LARGE_INTEGER,  Increment);
-	LARGE_INTEGER rval;
+	K_INIT_ARG(XboxTypes::PLARGE_INTEGER, Addend);
+	K_INIT_ARG(XboxTypes::LARGE_INTEGER,  Increment);
+	XboxTypes::LARGE_INTEGER rval;
 
 	K_EXIT_WITH_VALUE(rval);
 	return ERROR_NOT_IMPLEMENTED;

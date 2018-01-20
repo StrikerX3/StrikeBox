@@ -12,9 +12,9 @@
 int Xbox::NtQueryEvent()
 {
 	K_ENTER_STDCALL();
-	K_INIT_ARG(HANDLE,                   EventHandle);
-	K_INIT_ARG(PEVENT_BASIC_INFORMATION, EventInformation);
-	NTSTATUS rval;
+	K_INIT_ARG(XboxTypes::HANDLE,                   EventHandle);
+	K_INIT_ARG(XboxTypes::PEVENT_BASIC_INFORMATION, EventInformation);
+	XboxTypes::NTSTATUS rval;
 
 	K_EXIT_WITH_VALUE(rval);
 	return ERROR_NOT_IMPLEMENTED;

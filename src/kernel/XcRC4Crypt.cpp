@@ -13,9 +13,9 @@
 int Xbox::XcRC4Crypt()
 {
 	K_ENTER_STDCALL();
-	K_INIT_ARG(PUCHAR, pbKeyStruct);
-	K_INIT_ARG(ULONG,  dwInputLength);
-	K_INIT_ARG(PUCHAR, pbInput);
+	K_INIT_ARG(XboxTypes::PUCHAR, pbKeyStruct);
+	K_INIT_ARG(XboxTypes::ULONG,  dwInputLength);
+	K_INIT_ARG(XboxTypes::PUCHAR, pbInput);
 
 	K_EXIT();
 	return ERROR_NOT_IMPLEMENTED;

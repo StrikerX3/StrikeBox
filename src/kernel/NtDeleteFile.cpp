@@ -11,8 +11,8 @@
 int Xbox::NtDeleteFile()
 {
 	K_ENTER_STDCALL();
-	K_INIT_ARG(POBJECT_ATTRIBUTES, ObjectAttributes);
-	BOOLEAN rval;
+	K_INIT_ARG(XboxTypes::POBJECT_ATTRIBUTES, ObjectAttributes);
+	XboxTypes::BOOLEAN rval;
 
 	K_EXIT_WITH_VALUE(rval);
 	return ERROR_NOT_IMPLEMENTED;

@@ -13,9 +13,9 @@
 int Xbox::XcKeyTable()
 {
 	K_ENTER_STDCALL();
-	K_INIT_ARG(ULONG,  dwCipher);
-	K_INIT_ARG(PUCHAR, pbKeyTable);
-	K_INIT_ARG(PUCHAR, pbKey);
+	K_INIT_ARG(XboxTypes::ULONG,  dwCipher);
+	K_INIT_ARG(XboxTypes::PUCHAR, pbKeyTable);
+	K_INIT_ARG(XboxTypes::PUCHAR, pbKey);
 
 	K_EXIT();
 	return ERROR_NOT_IMPLEMENTED;

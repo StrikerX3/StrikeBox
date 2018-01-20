@@ -13,10 +13,10 @@
 int Xbox::RtlCompareUnicodeString()
 {
 	K_ENTER_STDCALL();
-	K_INIT_ARG(PUNICODE_STRING, String1);
-	K_INIT_ARG(PUNICODE_STRING, String2);
-	K_INIT_ARG(BOOLEAN,         CaseInSensitive);
-	LONG rval;
+	K_INIT_ARG(XboxTypes::PUNICODE_STRING, String1);
+	K_INIT_ARG(XboxTypes::PUNICODE_STRING, String2);
+	K_INIT_ARG(XboxTypes::BOOLEAN,         CaseInSensitive);
+	XboxTypes::LONG rval;
 
 	K_EXIT_WITH_VALUE(rval);
 	return ERROR_NOT_IMPLEMENTED;

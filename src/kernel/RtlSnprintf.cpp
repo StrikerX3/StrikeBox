@@ -13,9 +13,9 @@
 int Xbox::RtlSnprintf()
 {
 	K_ENTER_CDECL();
-	K_INIT_ARG(PCHAR,  pszDest);
-	K_INIT_ARG(SIZE_T, cbDest);
-	K_INIT_ARG(LPCSTR, pszFormat);
+	K_INIT_ARG(XboxTypes::PCHAR,  pszDest);
+	K_INIT_ARG(XboxTypes::SIZE_T, cbDest);
+	K_INIT_ARG(XboxTypes::LPCSTR, pszFormat);
 
 	K_EXIT();
 	return ERROR_NOT_IMPLEMENTED;

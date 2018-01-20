@@ -14,10 +14,10 @@
 int Xbox::RtlUnwind()
 {
 	K_ENTER_STDCALL();
-	K_INIT_ARG(PVOID,             TargetFrame);
-	K_INIT_ARG(PVOID,             TargetIp);
-	K_INIT_ARG(PEXCEPTION_RECORD, ExceptionRecord);
-	K_INIT_ARG(PVOID,             ReturnValue);
+	K_INIT_ARG(XboxTypes::PVOID,             TargetFrame);
+	K_INIT_ARG(XboxTypes::PVOID,             TargetIp);
+	K_INIT_ARG(XboxTypes::PEXCEPTION_RECORD, ExceptionRecord);
+	K_INIT_ARG(XboxTypes::PVOID,             ReturnValue);
 
 	K_EXIT();
 	return ERROR_NOT_IMPLEMENTED;

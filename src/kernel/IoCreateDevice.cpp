@@ -16,13 +16,13 @@
 int Xbox::IoCreateDevice()
 {
 	K_ENTER_STDCALL();
-	K_INIT_ARG(PDRIVER_OBJECT,  DriverObject);
-	K_INIT_ARG(ULONG,           DeviceExtensionSize);
-	K_INIT_ARG(POBJECT_STRING,  DeviceName);
-	K_INIT_ARG(DEVICE_TYPE,     DeviceType);
-	K_INIT_ARG(BOOLEAN,         Exclusive);
-	K_INIT_ARG(PPDEVICE_OBJECT, DeviceObject);
-	NTSTATUS rval;
+	K_INIT_ARG(XboxTypes::PDRIVER_OBJECT,  DriverObject);
+	K_INIT_ARG(XboxTypes::ULONG,           DeviceExtensionSize);
+	K_INIT_ARG(XboxTypes::POBJECT_STRING,  DeviceName);
+	K_INIT_ARG(XboxTypes::DEVICE_TYPE,     DeviceType);
+	K_INIT_ARG(XboxTypes::BOOLEAN,         Exclusive);
+	K_INIT_ARG(XboxTypes::PPDEVICE_OBJECT, DeviceObject);
+	XboxTypes::NTSTATUS rval;
 
 	K_EXIT_WITH_VALUE(rval);
 	return ERROR_NOT_IMPLEMENTED;

@@ -13,10 +13,10 @@
 int Xbox::RtlEqualString()
 {
 	K_ENTER_STDCALL();
-	K_INIT_ARG(PSTRING, String1);
-	K_INIT_ARG(PSTRING, String2);
-	K_INIT_ARG(BOOLEAN, CaseInSensitive);
-	BOOLEAN rval;
+	K_INIT_ARG(XboxTypes::PSTRING, String1);
+	K_INIT_ARG(XboxTypes::PSTRING, String2);
+	K_INIT_ARG(XboxTypes::BOOLEAN, CaseInSensitive);
+	XboxTypes::BOOLEAN rval;
 
 	K_EXIT_WITH_VALUE(rval);
 	return ERROR_NOT_IMPLEMENTED;

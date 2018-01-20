@@ -12,9 +12,9 @@
 int Xbox::NtCancelTimer()
 {
 	K_ENTER_STDCALL();
-	K_INIT_ARG(HANDLE,   TimerHandle);
-	K_INIT_ARG(PBOOLEAN, CurrentState);
-	NTSTATUS rval;
+	K_INIT_ARG(XboxTypes::HANDLE,   TimerHandle);
+	K_INIT_ARG(XboxTypes::PBOOLEAN, CurrentState);
+	XboxTypes::NTSTATUS rval;
 
 	K_EXIT_WITH_VALUE(rval);
 	return ERROR_NOT_IMPLEMENTED;

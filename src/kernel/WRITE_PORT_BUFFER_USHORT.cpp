@@ -13,9 +13,9 @@
 int Xbox::WRITE_PORT_BUFFER_USHORT()
 {
 	K_ENTER_STDCALL();
-	K_INIT_ARG(PUSHORT, Port);
-	K_INIT_ARG(PUSHORT, Buffer);
-	K_INIT_ARG(ULONG,   Count);
+	K_INIT_ARG(XboxTypes::PUSHORT, Port);
+	K_INIT_ARG(XboxTypes::PUSHORT, Buffer);
+	K_INIT_ARG(XboxTypes::ULONG,   Count);
 
 	K_EXIT();
 	return ERROR_NOT_IMPLEMENTED;

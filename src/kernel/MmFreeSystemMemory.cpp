@@ -12,9 +12,9 @@
 int Xbox::MmFreeSystemMemory()
 {
 	K_ENTER_STDCALL();
-	K_INIT_ARG(PVOID,  BaseAddress);
-	K_INIT_ARG(SIZE_T, NumberOfBytes);
-	ULONG rval;
+	K_INIT_ARG(XboxTypes::PVOID,  BaseAddress);
+	K_INIT_ARG(XboxTypes::SIZE_T, NumberOfBytes);
+	XboxTypes::ULONG rval;
 
 	K_EXIT_WITH_VALUE(rval);
 	return ERROR_NOT_IMPLEMENTED;

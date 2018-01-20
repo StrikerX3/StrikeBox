@@ -12,9 +12,9 @@
 int Xbox::RtlTimeFieldsToTime()
 {
 	K_ENTER_STDCALL();
-	K_INIT_ARG(PTIME_FIELDS,   TimeFields);
-	K_INIT_ARG(PLARGE_INTEGER, Time);
-	BOOLEAN rval;
+	K_INIT_ARG(XboxTypes::PTIME_FIELDS,   TimeFields);
+	K_INIT_ARG(XboxTypes::PLARGE_INTEGER, Time);
+	XboxTypes::BOOLEAN rval;
 
 	K_EXIT_WITH_VALUE(rval);
 	return ERROR_NOT_IMPLEMENTED;

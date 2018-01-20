@@ -12,9 +12,9 @@
 int Xbox::XcCryptService()
 {
 	K_ENTER_STDCALL();
-	K_INIT_ARG(ULONG, dwOp);
-	K_INIT_ARG(PVOID, pArgs);
-	ULONG rval;
+	K_INIT_ARG(XboxTypes::ULONG, dwOp);
+	K_INIT_ARG(XboxTypes::PVOID, pArgs);
+	XboxTypes::ULONG rval;
 
 	K_EXIT_WITH_VALUE(rval);
 	return ERROR_NOT_IMPLEMENTED;

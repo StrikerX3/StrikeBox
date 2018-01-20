@@ -12,8 +12,8 @@
 int Xbox::HalRegisterShutdownNotification()
 {
 	K_ENTER_STDCALL();
-	K_INIT_ARG(PHAL_SHUTDOWN_REGISTRATION, ShutdownRegistration);
-	K_INIT_ARG(BOOLEAN,                    Register);
+	K_INIT_ARG(XboxTypes::PHAL_SHUTDOWN_REGISTRATION, ShutdownRegistration);
+	K_INIT_ARG(XboxTypes::BOOLEAN,                    Register);
 
 	K_EXIT();
 	return ERROR_NOT_IMPLEMENTED;

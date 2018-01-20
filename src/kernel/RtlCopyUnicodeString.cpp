@@ -12,8 +12,8 @@
 int Xbox::RtlCopyUnicodeString()
 {
 	K_ENTER_STDCALL();
-	K_INIT_ARG(PUNICODE_STRING, DestinationString);
-	K_INIT_ARG(PUNICODE_STRING, SourceString);
+	K_INIT_ARG(XboxTypes::PUNICODE_STRING, DestinationString);
+	K_INIT_ARG(XboxTypes::PUNICODE_STRING, SourceString);
 
 	K_EXIT();
 	return ERROR_NOT_IMPLEMENTED;

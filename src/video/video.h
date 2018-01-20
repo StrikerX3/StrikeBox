@@ -4,7 +4,7 @@
 #include <dev.h>
 #include <mem.h>
 
-#include <SDL2/SDL.h>
+#include <SDL.h>
 #include <GL/glew.h>
 
 #include <sched.h>

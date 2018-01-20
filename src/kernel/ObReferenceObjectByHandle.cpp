@@ -13,10 +13,10 @@
 int Xbox::ObReferenceObjectByHandle()
 {
 	K_ENTER_STDCALL();
-	K_INIT_ARG(HANDLE,       Handle);
-	K_INIT_ARG(POBJECT_TYPE, ObjectType);
-	K_INIT_ARG(PPVOID,       ReturnedObject);
-	BOOLEAN rval;
+	K_INIT_ARG(XboxTypes::HANDLE,       Handle);
+	K_INIT_ARG(XboxTypes::POBJECT_TYPE, ObjectType);
+	K_INIT_ARG(XboxTypes::PPVOID,       ReturnedObject);
+	XboxTypes::BOOLEAN rval;
 
 	K_EXIT_WITH_VALUE(rval);
 	return ERROR_NOT_IMPLEMENTED;

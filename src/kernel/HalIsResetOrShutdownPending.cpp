@@ -10,7 +10,7 @@
 int Xbox::HalIsResetOrShutdownPending()
 {
 	K_ENTER_STDCALL();
-	BOOLEAN rval;
+	XboxTypes::BOOLEAN rval;
 
 	K_EXIT_WITH_VALUE(rval);
 	return ERROR_NOT_IMPLEMENTED;

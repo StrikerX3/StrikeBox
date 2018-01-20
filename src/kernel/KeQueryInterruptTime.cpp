@@ -10,7 +10,7 @@
 int Xbox::KeQueryInterruptTime()
 {
 	K_ENTER_STDCALL();
-	ULONGLONG rval;
+	XboxTypes::ULONGLONG rval;
 
 	K_EXIT_WITH_VALUE(rval);
 	return ERROR_NOT_IMPLEMENTED;

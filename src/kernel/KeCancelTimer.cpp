@@ -11,8 +11,8 @@
 int Xbox::KeCancelTimer()
 {
 	K_ENTER_STDCALL();
-	K_INIT_ARG(PKTIMER, Timer);
-	BOOLEAN rval;
+	K_INIT_ARG(XboxTypes::PKTIMER, Timer);
+	XboxTypes::BOOLEAN rval;
 
 	K_EXIT_WITH_VALUE(rval);
 	return ERROR_NOT_IMPLEMENTED;

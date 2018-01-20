@@ -12,9 +12,9 @@
 int Xbox::RtlExtendedIntegerMultiply()
 {
 	K_ENTER_STDCALL();
-	K_INIT_ARG(LARGE_INTEGER, Multiplicand);
-	K_INIT_ARG(LONG,          Multiplier);
-	LARGE_INTEGER rval;
+	K_INIT_ARG(XboxTypes::LARGE_INTEGER, Multiplicand);
+	K_INIT_ARG(XboxTypes::LONG,          Multiplier);
+	XboxTypes::LARGE_INTEGER rval;
 
 	K_EXIT_WITH_VALUE(rval);
 	return ERROR_NOT_IMPLEMENTED;

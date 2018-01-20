@@ -15,12 +15,12 @@
 int Xbox::PsCreateSystemThread()
 {
 	K_ENTER_STDCALL();
-	K_INIT_ARG(PHANDLE,         ThreadHandle);
-	K_INIT_ARG(PHANDLE,         ThreadId);
-	K_INIT_ARG(PKSTART_ROUTINE, StartRoutine);
-	K_INIT_ARG(PVOID,           StartContext);
-	K_INIT_ARG(BOOLEAN,         DebuggerThread);
-	NTSTATUS rval;
+	K_INIT_ARG(XboxTypes::PHANDLE,         ThreadHandle);
+	K_INIT_ARG(XboxTypes::PHANDLE,         ThreadId);
+	K_INIT_ARG(XboxTypes::PKSTART_ROUTINE, StartRoutine);
+	K_INIT_ARG(XboxTypes::PVOID,           StartContext);
+	K_INIT_ARG(XboxTypes::BOOLEAN,         DebuggerThread);
+	XboxTypes::NTSTATUS rval;
 
 	K_EXIT_WITH_VALUE(rval);
 	return ERROR_NOT_IMPLEMENTED;

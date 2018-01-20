@@ -216,11 +216,10 @@ static void xb_uc_hook(
         return;
     }
 
-    MemoryRegionEvent event = {
-        .addr = address,
-        .size = size,
-        .value = value,
-    };
+	MemoryRegionEvent event;
+	event.addr = address;
+	event.size = size;
+	event.value = value;
     
     switch (type) {
     case UC_MEM_READ:  event.type = MEM_EVENT_READ; break;

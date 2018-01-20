@@ -13,10 +13,10 @@
 int Xbox::KeRemoveQueue()
 {
 	K_ENTER_STDCALL();
-	K_INIT_ARG(PRKQUEUE,        Queue);
-	K_INIT_ARG(KPROCESSOR_MODE, WaitMode);
-	K_INIT_ARG(PLARGE_INTEGER,  Timeout);
-	PLIST_ENTRY rval;
+	K_INIT_ARG(XboxTypes::PRKQUEUE,        Queue);
+	K_INIT_ARG(XboxTypes::KPROCESSOR_MODE, WaitMode);
+	K_INIT_ARG(XboxTypes::PLARGE_INTEGER,  Timeout);
+	XboxTypes::PLIST_ENTRY rval;
 
 	K_EXIT_WITH_VALUE(rval);
 	return ERROR_NOT_IMPLEMENTED;

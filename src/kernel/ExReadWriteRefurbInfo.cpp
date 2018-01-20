@@ -13,10 +13,10 @@
 int Xbox::ExReadWriteRefurbInfo()
 {
 	K_ENTER_STDCALL();
-	K_INIT_ARG(PXBOX_REFURB_INFO, RefurbInfo);
-	K_INIT_ARG(ULONG,             ValueLength);
-	K_INIT_ARG(BOOLEAN,           DoWrite);
-	NTSTATUS rval;
+	K_INIT_ARG(XboxTypes::PXBOX_REFURB_INFO, RefurbInfo);
+	K_INIT_ARG(XboxTypes::ULONG,             ValueLength);
+	K_INIT_ARG(XboxTypes::BOOLEAN,           DoWrite);
+	XboxTypes::NTSTATUS rval;
 
 	K_EXIT_WITH_VALUE(rval);
 	return ERROR_NOT_IMPLEMENTED;

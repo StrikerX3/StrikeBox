@@ -13,10 +13,10 @@
 int Xbox::RtlCompareMemory()
 {
 	K_ENTER_STDCALL();
-	K_INIT_ARG(PVOID,  Source1);
-	K_INIT_ARG(PVOID,  Source2);
-	K_INIT_ARG(SIZE_T, Length);
-	SIZE_T rval;
+	K_INIT_ARG(XboxTypes::PVOID,  Source1);
+	K_INIT_ARG(XboxTypes::PVOID,  Source2);
+	K_INIT_ARG(XboxTypes::SIZE_T, Length);
+	XboxTypes::SIZE_T rval;
 
 	K_EXIT_WITH_VALUE(rval);
 	return ERROR_NOT_IMPLEMENTED;

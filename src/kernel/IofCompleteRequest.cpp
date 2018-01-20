@@ -11,7 +11,7 @@
 int Xbox::IofCompleteRequest()
 {
 	K_ENTER_FASTCALL();
-	K_INIT_ARG(PDEVICE_OBJECT, DeviceObject);
+	K_INIT_ARG(XboxTypes::PDEVICE_OBJECT, DeviceObject);
 
 	K_EXIT();
 	return ERROR_NOT_IMPLEMENTED;

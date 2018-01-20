@@ -11,8 +11,8 @@
 int Xbox::KeRemoveDeviceQueue()
 {
 	K_ENTER_STDCALL();
-	K_INIT_ARG(PKDEVICE_QUEUE, DeviceQueue);
-	PKDEVICE_QUEUE_ENTRY rval;
+	K_INIT_ARG(XboxTypes::PKDEVICE_QUEUE, DeviceQueue);
+	XboxTypes::PKDEVICE_QUEUE_ENTRY rval;
 
 	K_EXIT_WITH_VALUE(rval);
 	return ERROR_NOT_IMPLEMENTED;

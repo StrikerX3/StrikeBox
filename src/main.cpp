@@ -6,6 +6,24 @@
 // Debugging stuff
 #define DUMP_XBE_INFO 0
 
+#ifdef _WIN32
+#undef main
+
+char *basename(char *path)
+{
+	char name[MAX_PATH];
+	char ext[MAX_PATH];
+	if (_splitpath_s(path, NULL, 0, NULL, 0, name, MAX_PATH, ext, MAX_PATH)) {
+		return NULL;
+	}
+	int len = strlen(name) + strlen(ext) + 1;
+	char *out = (char *)malloc(len);
+	strcpy(out, name);
+	strcat(out, ext);
+	return out;
+}
+#endif
+
 /*!
  * Program entry point
  */

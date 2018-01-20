@@ -11,8 +11,8 @@
 int Xbox::KeResetEvent()
 {
 	K_ENTER_STDCALL();
-	K_INIT_ARG(PRKEVENT, Event);
-	LONG rval;
+	K_INIT_ARG(XboxTypes::PRKEVENT, Event);
+	XboxTypes::LONG rval;
 
 	K_EXIT_WITH_VALUE(rval);
 	return ERROR_NOT_IMPLEMENTED;

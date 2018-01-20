@@ -2,7 +2,9 @@
 #define XBOX_H
 
 #include <assert.h>
-#include <libgen.h>
+#ifndef _WIN32
+	#include <libgen.h>
+#endif
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>

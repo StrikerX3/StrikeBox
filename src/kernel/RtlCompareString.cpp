@@ -13,10 +13,10 @@
 int Xbox::RtlCompareString()
 {
 	K_ENTER_STDCALL();
-	K_INIT_ARG(PSTRING, String1);
-	K_INIT_ARG(PSTRING, String2);
-	K_INIT_ARG(BOOLEAN, CaseInSensitive);
-	LONG rval;
+	K_INIT_ARG(XboxTypes::PSTRING, String1);
+	K_INIT_ARG(XboxTypes::PSTRING, String2);
+	K_INIT_ARG(XboxTypes::BOOLEAN, CaseInSensitive);
+	XboxTypes::LONG rval;
 
 	K_EXIT_WITH_VALUE(rval);
 	return ERROR_NOT_IMPLEMENTED;

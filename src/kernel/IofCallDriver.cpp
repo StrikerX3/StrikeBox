@@ -12,9 +12,9 @@
 int Xbox::IofCallDriver()
 {
 	K_ENTER_FASTCALL();
-	K_INIT_ARG(PDEVICE_OBJECT, DeviceObject);
-	K_INIT_ARG(PIRP,           Irp);
-	NTSTATUS rval;
+	K_INIT_ARG(XboxTypes::PDEVICE_OBJECT, DeviceObject);
+	K_INIT_ARG(XboxTypes::PIRP,           Irp);
+	XboxTypes::NTSTATUS rval;
 
 	K_EXIT_WITH_VALUE(rval);
 	return ERROR_NOT_IMPLEMENTED;

@@ -1,6 +1,12 @@
 #ifndef IMPORTS_H
 #define IMPORTS_H
 
+#ifdef _WIN32
+#  undef RtlFillMemory
+#  undef RtlMoveMemory
+#  undef RtlZeroMemory
+#endif
+
 #define KERNEL_IMPORTS \
 	KERNEL_IMPORT_NULL(0) \
 	KERNEL_IMPORT_FUNC(1, AvGetSavedDataAddress) \

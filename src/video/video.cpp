@@ -6,6 +6,7 @@
 #include <log.h>
 #include "video.h"
 #include <util.h>
+#include "alloc.h"
 
 #define PCRTC_START 0x00600800
 

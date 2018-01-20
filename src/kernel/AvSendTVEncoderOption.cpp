@@ -14,10 +14,10 @@
 int Xbox::AvSendTVEncoderOption()
 {
 	K_ENTER_STDCALL();
-	K_INIT_ARG(PVOID,  RegisterBase);
-	K_INIT_ARG(ULONG,  Option);
-	K_INIT_ARG(ULONG,  Param);
-	K_INIT_ARG(PULONG, Result);
+	K_INIT_ARG(XboxTypes::PVOID,  RegisterBase);
+	K_INIT_ARG(XboxTypes::ULONG,  Option);
+	K_INIT_ARG(XboxTypes::ULONG,  Param);
+	K_INIT_ARG(XboxTypes::PULONG, Result);
 
 	log_debug("%s(%08x, %x, %x, %08x)\n",
 		__func__,
@@ -35,8 +35,8 @@ int Xbox::AvSendTVEncoderOption()
 	if (Option == VIDEO_ENC_GET_SETTINGS) {
 		// 640,480,60,VIDEO_REGION_NTSCM,AV_PACK_STANDARD}, //640x480 NTSCM 60Hz
 		log_debug("-- VIDEO_ENC_GET_SETTINGS\n");
-		DWORD value = 0x00400101;
-		m_cpu->MemWrite(Result, sizeof(DWORD), &value);
+		XboxTypes::DWORD value = 0x00400101;
+		m_cpu->MemWrite(Result, sizeof(XboxTypes::DWORD), &value);
 	} else {
 		// Do nothing
 	}

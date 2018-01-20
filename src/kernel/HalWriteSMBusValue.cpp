@@ -14,11 +14,11 @@
 int Xbox::HalWriteSMBusValue()
 {
 	K_ENTER_STDCALL();
-	K_INIT_ARG(UCHAR,   SlaveAddress);
-	K_INIT_ARG(UCHAR,   CommandCode);
-	K_INIT_ARG(BOOLEAN, WriteWordValue);
-	K_INIT_ARG(ULONG,   DataValue);
-	NTSTATUS rval;
+	K_INIT_ARG(XboxTypes::UCHAR,   SlaveAddress);
+	K_INIT_ARG(XboxTypes::UCHAR,   CommandCode);
+	K_INIT_ARG(XboxTypes::BOOLEAN, WriteWordValue);
+	K_INIT_ARG(XboxTypes::ULONG,   DataValue);
+	XboxTypes::NTSTATUS rval;
 
 	K_EXIT_WITH_VALUE(rval);
 	return ERROR_NOT_IMPLEMENTED;

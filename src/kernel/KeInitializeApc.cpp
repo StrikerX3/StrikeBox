@@ -17,13 +17,13 @@
 int Xbox::KeInitializeApc()
 {
 	K_ENTER_STDCALL();
-	K_INIT_ARG(PRKAPC,            Apc);
-	K_INIT_ARG(PRKTHREAD,         Thread);
-	K_INIT_ARG(PKKERNEL_ROUTINE,  KernelRoutine);
-	K_INIT_ARG(PKRUNDOWN_ROUTINE, RundownRoutine);
-	K_INIT_ARG(PKNORMAL_ROUTINE,  NormalRoutine);
-	K_INIT_ARG(KPROCESSOR_MODE,   ProcessorMode);
-	K_INIT_ARG(PVOID,             NormalContext);
+	K_INIT_ARG(XboxTypes::PRKAPC,            Apc);
+	K_INIT_ARG(XboxTypes::PRKTHREAD,         Thread);
+	K_INIT_ARG(XboxTypes::PKKERNEL_ROUTINE,  KernelRoutine);
+	K_INIT_ARG(XboxTypes::PKRUNDOWN_ROUTINE, RundownRoutine);
+	K_INIT_ARG(XboxTypes::PKNORMAL_ROUTINE,  NormalRoutine);
+	K_INIT_ARG(XboxTypes::KPROCESSOR_MODE,   ProcessorMode);
+	K_INIT_ARG(XboxTypes::PVOID,             NormalContext);
 
 	K_EXIT();
 	return ERROR_NOT_IMPLEMENTED;

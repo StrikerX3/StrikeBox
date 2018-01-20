@@ -15,12 +15,12 @@
 int Xbox::NtSignalAndWaitForSingleObjectEx()
 {
 	K_ENTER_STDCALL();
-	K_INIT_ARG(HANDLE,          SignalHandle);
-	K_INIT_ARG(HANDLE,          WaitHandle);
-	K_INIT_ARG(KPROCESSOR_MODE, WaitMode);
-	K_INIT_ARG(BOOLEAN,         Alertable);
-	K_INIT_ARG(PLARGE_INTEGER,  Timeout);
-	NTSTATUS rval;
+	K_INIT_ARG(XboxTypes::HANDLE,          SignalHandle);
+	K_INIT_ARG(XboxTypes::HANDLE,          WaitHandle);
+	K_INIT_ARG(XboxTypes::KPROCESSOR_MODE, WaitMode);
+	K_INIT_ARG(XboxTypes::BOOLEAN,         Alertable);
+	K_INIT_ARG(XboxTypes::PLARGE_INTEGER,  Timeout);
+	XboxTypes::NTSTATUS rval;
 
 	K_EXIT_WITH_VALUE(rval);
 	return ERROR_NOT_IMPLEMENTED;

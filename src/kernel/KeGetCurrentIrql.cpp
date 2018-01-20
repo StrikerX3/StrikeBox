@@ -10,7 +10,7 @@
 int Xbox::KeGetCurrentIrql()
 {
 	K_ENTER_STDCALL();
-	KIRQL rval;
+	XboxTypes::KIRQL rval;
 
 	K_EXIT_WITH_VALUE(rval);
 	return ERROR_NOT_IMPLEMENTED;

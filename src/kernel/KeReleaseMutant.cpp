@@ -14,11 +14,11 @@
 int Xbox::KeReleaseMutant()
 {
 	K_ENTER_STDCALL();
-	K_INIT_ARG(PRKMUTANT, Mutant);
-	K_INIT_ARG(KPRIORITY, Increment);
-	K_INIT_ARG(BOOLEAN,   Abandoned);
-	K_INIT_ARG(BOOLEAN,   Wait);
-	LONG rval;
+	K_INIT_ARG(XboxTypes::PRKMUTANT, Mutant);
+	K_INIT_ARG(XboxTypes::KPRIORITY, Increment);
+	K_INIT_ARG(XboxTypes::BOOLEAN,   Abandoned);
+	K_INIT_ARG(XboxTypes::BOOLEAN,   Wait);
+	XboxTypes::LONG rval;
 
 	K_EXIT_WITH_VALUE(rval);
 	return ERROR_NOT_IMPLEMENTED;

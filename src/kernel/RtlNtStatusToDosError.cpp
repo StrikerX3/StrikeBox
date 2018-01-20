@@ -11,8 +11,8 @@
 int Xbox::RtlNtStatusToDosError()
 {
 	K_ENTER_STDCALL();
-	K_INIT_ARG(NTSTATUS, Status);
-	ULONG rval;
+	K_INIT_ARG(XboxTypes::NTSTATUS, Status);
+	XboxTypes::ULONG rval;
 
 	K_EXIT_WITH_VALUE(rval);
 	return ERROR_NOT_IMPLEMENTED;

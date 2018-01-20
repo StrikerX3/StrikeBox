@@ -11,8 +11,8 @@
 int Xbox::KeAlertResumeThread()
 {
 	K_ENTER_STDCALL();
-	K_INIT_ARG(PKTHREAD, Thread);
-	ULONG rval;
+	K_INIT_ARG(XboxTypes::PKTHREAD, Thread);
+	XboxTypes::ULONG rval;
 
 	K_EXIT_WITH_VALUE(rval);
 	return ERROR_NOT_IMPLEMENTED;

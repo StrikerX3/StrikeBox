@@ -12,9 +12,9 @@
 int Xbox::NtQueryIoCompletion()
 {
 	K_ENTER_STDCALL();
-	K_INIT_ARG(HANDLE,                           IoCompletionHandle);
-	K_INIT_ARG(PIO_COMPLETION_BASIC_INFORMATION, IoCompletionInformation);
-	NTSTATUS rval;
+	K_INIT_ARG(XboxTypes::HANDLE,                           IoCompletionHandle);
+	K_INIT_ARG(XboxTypes::PIO_COMPLETION_BASIC_INFORMATION, IoCompletionInformation);
+	XboxTypes::NTSTATUS rval;
 
 	K_EXIT_WITH_VALUE(rval);
 	return ERROR_NOT_IMPLEMENTED;

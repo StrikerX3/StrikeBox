@@ -13,10 +13,10 @@
 int Xbox::KePulseEvent()
 {
 	K_ENTER_STDCALL();
-	K_INIT_ARG(PRKEVENT,  Event);
-	K_INIT_ARG(KPRIORITY, Increment);
-	K_INIT_ARG(BOOLEAN,   Wait);
-	LONG rval;
+	K_INIT_ARG(XboxTypes::PRKEVENT,  Event);
+	K_INIT_ARG(XboxTypes::KPRIORITY, Increment);
+	K_INIT_ARG(XboxTypes::BOOLEAN,   Wait);
+	XboxTypes::LONG rval;
 
 	K_EXIT_WITH_VALUE(rval);
 	return ERROR_NOT_IMPLEMENTED;

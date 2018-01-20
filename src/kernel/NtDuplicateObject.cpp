@@ -13,10 +13,10 @@
 int Xbox::NtDuplicateObject()
 {
 	K_ENTER_STDCALL();
-	K_INIT_ARG(HANDLE,  SourceHandle);
-	K_INIT_ARG(PHANDLE, TargetHandle);
-	K_INIT_ARG(ULONG,   Options);
-	NTSTATUS rval;
+	K_INIT_ARG(XboxTypes::HANDLE,  SourceHandle);
+	K_INIT_ARG(XboxTypes::PHANDLE, TargetHandle);
+	K_INIT_ARG(XboxTypes::ULONG,   Options);
+	XboxTypes::NTSTATUS rval;
 
 	K_EXIT_WITH_VALUE(rval);
 	return ERROR_NOT_IMPLEMENTED;

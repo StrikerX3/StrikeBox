@@ -13,10 +13,10 @@
 int Xbox::KeSynchronizeExecution()
 {
 	K_ENTER_STDCALL();
-	K_INIT_ARG(PKINTERRUPT,           Interrupt);
-	K_INIT_ARG(PKSYNCHRONIZE_ROUTINE, SynchronizeRoutine);
-	K_INIT_ARG(PVOID,                 SynchronizeContext);
-	BOOLEAN rval;
+	K_INIT_ARG(XboxTypes::PKINTERRUPT,           Interrupt);
+	K_INIT_ARG(XboxTypes::PKSYNCHRONIZE_ROUTINE, SynchronizeRoutine);
+	K_INIT_ARG(XboxTypes::PVOID,                 SynchronizeContext);
+	XboxTypes::BOOLEAN rval;
 
 	K_EXIT_WITH_VALUE(rval);
 	return ERROR_NOT_IMPLEMENTED;

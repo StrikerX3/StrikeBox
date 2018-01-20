@@ -5,6 +5,7 @@ set(DIR_SOURCES ${DIR_SOURCES}
     ${CMAKE_CURRENT_SOURCE_DIR}/log.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/mem.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/alloc.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/sched.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/timer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/util.cpp

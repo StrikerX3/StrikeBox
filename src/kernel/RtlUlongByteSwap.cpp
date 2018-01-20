@@ -11,8 +11,8 @@
 int Xbox::RtlUlongByteSwap()
 {
 	K_ENTER_FASTCALL();
-	K_INIT_ARG(ULONG, Source);
-	ULONG rval;
+	K_INIT_ARG(XboxTypes::ULONG, Source);
+	XboxTypes::ULONG rval;
 
 	K_EXIT_WITH_VALUE(rval);
 	return ERROR_NOT_IMPLEMENTED;

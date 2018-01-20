@@ -12,8 +12,8 @@
 int Xbox::KeInitializeMutant()
 {
 	K_ENTER_STDCALL();
-	K_INIT_ARG(PRKMUTANT, Mutant);
-	K_INIT_ARG(BOOLEAN,   InitialOwner);
+	K_INIT_ARG(XboxTypes::PRKMUTANT, Mutant);
+	K_INIT_ARG(XboxTypes::BOOLEAN,   InitialOwner);
 
 	K_EXIT();
 	return ERROR_NOT_IMPLEMENTED;

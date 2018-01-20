@@ -12,8 +12,8 @@
 int Xbox::KeBoostPriorityThread()
 {
 	K_ENTER_STDCALL();
-	K_INIT_ARG(PKTHREAD,  Thread);
-	K_INIT_ARG(KPRIORITY, Increment);
+	K_INIT_ARG(XboxTypes::PKTHREAD,  Thread);
+	K_INIT_ARG(XboxTypes::KPRIORITY, Increment);
 
 	K_EXIT();
 	return ERROR_NOT_IMPLEMENTED;

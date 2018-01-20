@@ -12,8 +12,8 @@
 int Xbox::RtlTimeToTimeFields()
 {
 	K_ENTER_STDCALL();
-	K_INIT_ARG(PLARGE_INTEGER, Time);
-	K_INIT_ARG(PTIME_FIELDS,   TimeFields);
+	K_INIT_ARG(XboxTypes::PLARGE_INTEGER, Time);
+	K_INIT_ARG(XboxTypes::PTIME_FIELDS,   TimeFields);
 
 	K_EXIT();
 	return ERROR_NOT_IMPLEMENTED;

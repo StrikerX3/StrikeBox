@@ -188,7 +188,7 @@ def main():
         f.write('#include "common.h"\n\n')
         f.write('struct KernelVariables {\n')
         for v in sorted(var_decls, key=lambda x:x.import_id):
-            f.write('\t%s %s;\n' % (v.type.ljust(max_var_type_name_len), v.name))
+            f.write('\tXboxTypes::%s %s;\n' % (v.type.ljust(max_var_type_name_len), v.name))
         f.write('};\n\n')
 
         # # Generate kernel function prototypes
@@ -224,10 +224,10 @@ def main():
             f.write('\tK_ENTER_%s();\n' % func.calling_convention.upper())
 
             for i, param in enumerate(func.arguments):
-                f.write('\tK_INIT_ARG(%s %s);\n' % ((param[0] + ',').ljust(max_param_type_name_len+1), param[1]))
+                f.write('\tK_INIT_ARG(XboxTypes::%s %s);\n' % ((param[0] + ',').ljust(max_param_type_name_len+1), param[1]))
 
             if func.return_type.lower() != 'void':
-                f.write('\t%s rval;\n' % func.return_type)
+                f.write('\tXboxTypes::%s rval;\n' % func.return_type)
 
             f.write('\n')
 

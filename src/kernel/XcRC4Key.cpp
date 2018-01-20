@@ -13,9 +13,9 @@
 int Xbox::XcRC4Key()
 {
 	K_ENTER_STDCALL();
-	K_INIT_ARG(PUCHAR, pbKeyStruct);
-	K_INIT_ARG(ULONG,  dwKeyLength);
-	K_INIT_ARG(PUCHAR, pbKey);
+	K_INIT_ARG(XboxTypes::PUCHAR, pbKeyStruct);
+	K_INIT_ARG(XboxTypes::ULONG,  dwKeyLength);
+	K_INIT_ARG(XboxTypes::PUCHAR, pbKey);
 
 	K_EXIT();
 	return ERROR_NOT_IMPLEMENTED;

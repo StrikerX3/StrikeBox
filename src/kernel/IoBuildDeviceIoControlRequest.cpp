@@ -19,16 +19,16 @@
 int Xbox::IoBuildDeviceIoControlRequest()
 {
 	K_ENTER_STDCALL();
-	K_INIT_ARG(ULONG,            IoControlCode);
-	K_INIT_ARG(PDEVICE_OBJECT,   DeviceObject);
-	K_INIT_ARG(PVOID,            InputBuffer);
-	K_INIT_ARG(ULONG,            InputBufferLength);
-	K_INIT_ARG(PVOID,            OutputBuffer);
-	K_INIT_ARG(ULONG,            OutputBufferLength);
-	K_INIT_ARG(BOOLEAN,          InternalDeviceIoControl);
-	K_INIT_ARG(PKEVENT,          Event);
-	K_INIT_ARG(PIO_STATUS_BLOCK, IoStatusBlock);
-	PIRP rval;
+	K_INIT_ARG(XboxTypes::ULONG,            IoControlCode);
+	K_INIT_ARG(XboxTypes::PDEVICE_OBJECT,   DeviceObject);
+	K_INIT_ARG(XboxTypes::PVOID,            InputBuffer);
+	K_INIT_ARG(XboxTypes::ULONG,            InputBufferLength);
+	K_INIT_ARG(XboxTypes::PVOID,            OutputBuffer);
+	K_INIT_ARG(XboxTypes::ULONG,            OutputBufferLength);
+	K_INIT_ARG(XboxTypes::BOOLEAN,          InternalDeviceIoControl);
+	K_INIT_ARG(XboxTypes::PKEVENT,          Event);
+	K_INIT_ARG(XboxTypes::PIO_STATUS_BLOCK, IoStatusBlock);
+	XboxTypes::PIRP rval;
 
 	K_EXIT_WITH_VALUE(rval);
 	return ERROR_NOT_IMPLEMENTED;

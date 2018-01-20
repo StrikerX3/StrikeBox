@@ -13,10 +13,10 @@
 int Xbox::RtlCharToInteger()
 {
 	K_ENTER_STDCALL();
-	K_INIT_ARG(PCSZ,   String);
-	K_INIT_ARG(ULONG,  Base);
-	K_INIT_ARG(PULONG, Value);
-	NTSTATUS rval;
+	K_INIT_ARG(XboxTypes::PCSZ,   String);
+	K_INIT_ARG(XboxTypes::ULONG,  Base);
+	K_INIT_ARG(XboxTypes::PULONG, Value);
+	XboxTypes::NTSTATUS rval;
 
 	K_EXIT_WITH_VALUE(rval);
 	return ERROR_NOT_IMPLEMENTED;

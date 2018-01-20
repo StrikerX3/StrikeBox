@@ -11,8 +11,8 @@
 int Xbox::InterlockedIncrement()
 {
 	K_ENTER_FASTCALL();
-	K_INIT_ARG(PLONG, Addend);
-	LONG rval;
+	K_INIT_ARG(XboxTypes::PLONG, Addend);
+	XboxTypes::LONG rval;
 
 	K_EXIT_WITH_VALUE(rval);
 	return ERROR_NOT_IMPLEMENTED;

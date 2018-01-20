@@ -1,6 +1,7 @@
 #include <SDL.h>
 #include "xbox.h"
 #include "timer.h"
+#include "alloc.h"
 
 #define ENABLE_GDB_SERVER     1 // FIXME: Allow enable from cmdline
 #define DUMP_SECTION_CONTENTS 0
@@ -43,7 +44,7 @@ Xbox::Xbox()
 Xbox::~Xbox()
 {
     if (m_cpu) delete m_cpu;
-    if (m_ram) free(m_ram);
+    if (m_ram) vfree(m_ram);
     if (m_mem) delete m_mem;
 }
 

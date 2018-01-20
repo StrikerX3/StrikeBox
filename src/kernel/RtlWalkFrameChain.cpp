@@ -13,10 +13,10 @@
 int Xbox::RtlWalkFrameChain()
 {
 	K_ENTER_STDCALL();
-	K_INIT_ARG(PPVOID, Callers);
-	K_INIT_ARG(ULONG,  Count);
-	K_INIT_ARG(ULONG,  Flags);
-	ULONG rval;
+	K_INIT_ARG(XboxTypes::PPVOID, Callers);
+	K_INIT_ARG(XboxTypes::ULONG,  Count);
+	K_INIT_ARG(XboxTypes::ULONG,  Flags);
+	XboxTypes::ULONG rval;
 
 	K_EXIT_WITH_VALUE(rval);
 	return ERROR_NOT_IMPLEMENTED;

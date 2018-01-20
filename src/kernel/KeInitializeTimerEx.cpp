@@ -12,8 +12,8 @@
 int Xbox::KeInitializeTimerEx()
 {
 	K_ENTER_STDCALL();
-	K_INIT_ARG(PKTIMER,    Timer);
-	K_INIT_ARG(TIMER_TYPE, Type);
+	K_INIT_ARG(XboxTypes::PKTIMER,    Timer);
+	K_INIT_ARG(XboxTypes::TIMER_TYPE, Type);
 
 	K_EXIT();
 	return ERROR_NOT_IMPLEMENTED;

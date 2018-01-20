@@ -12,9 +12,9 @@
 int Xbox::ExAllocatePoolWithTag()
 {
 	K_ENTER_STDCALL();
-	K_INIT_ARG(SIZE_T, NumberOfBytes);
-	K_INIT_ARG(ULONG,  Tag);
-	PVOID rval;
+	K_INIT_ARG(XboxTypes::SIZE_T, NumberOfBytes);
+	K_INIT_ARG(XboxTypes::ULONG,  Tag);
+	XboxTypes::PVOID rval;
 
 	K_EXIT_WITH_VALUE(rval);
 	return ERROR_NOT_IMPLEMENTED;

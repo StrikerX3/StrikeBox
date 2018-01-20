@@ -14,11 +14,11 @@
 int Xbox::NtCreateSemaphore()
 {
 	K_ENTER_STDCALL();
-	K_INIT_ARG(PHANDLE,            SemaphoreHandle);
-	K_INIT_ARG(POBJECT_ATTRIBUTES, ObjectAttributes);
-	K_INIT_ARG(LONG,               InitialCount);
-	K_INIT_ARG(LONG,               MaximumCount);
-	NTSTATUS rval;
+	K_INIT_ARG(XboxTypes::PHANDLE,            SemaphoreHandle);
+	K_INIT_ARG(XboxTypes::POBJECT_ATTRIBUTES, ObjectAttributes);
+	K_INIT_ARG(XboxTypes::LONG,               InitialCount);
+	K_INIT_ARG(XboxTypes::LONG,               MaximumCount);
+	XboxTypes::NTSTATUS rval;
 
 	K_EXIT_WITH_VALUE(rval);
 	return ERROR_NOT_IMPLEMENTED;

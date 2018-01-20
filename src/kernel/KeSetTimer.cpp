@@ -13,10 +13,10 @@
 int Xbox::KeSetTimer()
 {
 	K_ENTER_STDCALL();
-	K_INIT_ARG(PKTIMER,       Timer);
-	K_INIT_ARG(LARGE_INTEGER, DueTime);
-	K_INIT_ARG(PKDPC,         Dpc);
-	BOOLEAN rval;
+	K_INIT_ARG(XboxTypes::PKTIMER,       Timer);
+	K_INIT_ARG(XboxTypes::LARGE_INTEGER, DueTime);
+	K_INIT_ARG(XboxTypes::PKDPC,         Dpc);
+	XboxTypes::BOOLEAN rval;
 
 	K_EXIT_WITH_VALUE(rval);
 	return ERROR_NOT_IMPLEMENTED;

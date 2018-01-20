@@ -13,10 +13,10 @@
 int Xbox::XcPKDecPrivate()
 {
 	K_ENTER_STDCALL();
-	K_INIT_ARG(PUCHAR, pbPrvKey);
-	K_INIT_ARG(PUCHAR, pbInput);
-	K_INIT_ARG(PUCHAR, pbOutput);
-	ULONG rval;
+	K_INIT_ARG(XboxTypes::PUCHAR, pbPrvKey);
+	K_INIT_ARG(XboxTypes::PUCHAR, pbInput);
+	K_INIT_ARG(XboxTypes::PUCHAR, pbOutput);
+	XboxTypes::ULONG rval;
 
 	K_EXIT_WITH_VALUE(rval);
 	return ERROR_NOT_IMPLEMENTED;

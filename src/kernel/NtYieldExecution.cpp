@@ -10,7 +10,7 @@
 int Xbox::NtYieldExecution()
 {
 	K_ENTER_STDCALL();
-	NTSTATUS rval;
+	XboxTypes::NTSTATUS rval;
 
 	K_EXIT_WITH_VALUE(rval);
 	return ERROR_NOT_IMPLEMENTED;

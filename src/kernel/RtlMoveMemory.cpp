@@ -1,5 +1,8 @@
 #include "common.h"
 
+#ifdef _WIN32
+#  undef RtlMoveMemory
+#endif
 /*
  * RtlMoveMemory
  *
@@ -13,9 +16,9 @@
 int Xbox::RtlMoveMemory()
 {
 	K_ENTER_STDCALL();
-	K_INIT_ARG(PVOID,  Destination);
-	K_INIT_ARG(PPVOID, Source);
-	K_INIT_ARG(ULONG,  Length);
+	K_INIT_ARG(XboxTypes::PVOID,  Destination);
+	K_INIT_ARG(XboxTypes::PPVOID, Source);
+	K_INIT_ARG(XboxTypes::ULONG,  Length);
 
 	K_EXIT();
 	return ERROR_NOT_IMPLEMENTED;

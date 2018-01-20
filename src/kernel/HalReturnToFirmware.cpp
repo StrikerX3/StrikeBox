@@ -11,7 +11,7 @@
 int Xbox::HalReturnToFirmware()
 {
 	K_ENTER_STDCALL();
-	K_INIT_ARG(FIRMWARE_REENTRY, Routine);
+	K_INIT_ARG(XboxTypes::FIRMWARE_REENTRY, Routine);
 
 	m_should_run = false;
 

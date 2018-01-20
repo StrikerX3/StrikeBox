@@ -17,13 +17,13 @@
 int Xbox::KeInitializeInterrupt()
 {
 	K_ENTER_STDCALL();
-	K_INIT_ARG(PKINTERRUPT,       Interrupt);
-	K_INIT_ARG(PKSERVICE_ROUTINE, ServiceRoutine);
-	K_INIT_ARG(PVOID,             ServiceContext);
-	K_INIT_ARG(ULONG,             Vector);
-	K_INIT_ARG(KIRQL,             Irql);
-	K_INIT_ARG(KINTERRUPT_MODE,   InterruptMode);
-	K_INIT_ARG(BOOLEAN,           ShareVector);
+	K_INIT_ARG(XboxTypes::PKINTERRUPT,       Interrupt);
+	K_INIT_ARG(XboxTypes::PKSERVICE_ROUTINE, ServiceRoutine);
+	K_INIT_ARG(XboxTypes::PVOID,             ServiceContext);
+	K_INIT_ARG(XboxTypes::ULONG,             Vector);
+	K_INIT_ARG(XboxTypes::KIRQL,             Irql);
+	K_INIT_ARG(XboxTypes::KINTERRUPT_MODE,   InterruptMode);
+	K_INIT_ARG(XboxTypes::BOOLEAN,           ShareVector);
 
 	K_EXIT();
 	return ERROR_NOT_IMPLEMENTED;
