@@ -21,6 +21,42 @@
 #ifdef _WIN32
 	int inet_aton(const char *cp, struct in_addr *inp) { return InetPton(AF_INET, cp, inp); }
 	int close(SOCKET socket) { return closesocket(socket); }
+
+#   define printNetErrorMessage do { \
+		int errCode = WSAGetLastError(); \
+		LPSTR errString = NULL; \
+		int size = FormatMessage( \
+			FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM, \
+			0, \
+			errCode, \
+			0, \
+			(LPSTR)&errString, \
+			0, \
+			0); \
+		fprintf(stderr, "Error: %s\n", errString); \
+		LocalFree(errString); \
+	} while (0);
+
+#   define initNetwork do { \
+		WSADATA wsaData; \
+		int err = WSAStartup(MAKEWORD(2, 2), &wsaData); \
+		if (err != 0) { \
+			printNetErrorMessage; \
+			return 1; \
+		} \
+	} while (0);
+
+#   define shutdownNetwork do { \
+		int err = WSACleanup(); \
+		if (err != 0) { \
+			printNetErrorMessage; \
+		} \
+	} while (0);
+
+#else
+#   define printNetErrorMessage fprintf(stderr, "Error: %s\n", neterrstr)
+#   define initNetwork
+#   define shutdownNetwork
 #endif
 
 #define DEBUG 0
@@ -55,6 +91,8 @@ int GdbServer::Initialize()
     int status;
     int val;
 
+	initNetwork;
+
     /* Fill local address struct */
     m_bind_addr.sin_family = AF_INET;
     m_bind_addr.sin_port = htons(m_bind_port);
@@ -66,7 +104,7 @@ int GdbServer::Initialize()
     /* Create the socket */
     m_sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if (m_sockfd < 0) {
-        fprintf(stderr, "Error: %s\n", strerror(errno));
+        printNetErrorMessage;
         return 1;
     }
 
@@ -74,7 +112,7 @@ int GdbServer::Initialize()
     val = 1;
     status = setsockopt(m_sockfd, SOL_SOCKET, SO_REUSEADDR, (const char *)&val, sizeof(val));
     if (status) {
-        fprintf(stderr, "Error: %s\n", strerror(errno));
+        printNetErrorMessage;
         close(m_sockfd);
         return 1;
     }
@@ -83,7 +121,7 @@ int GdbServer::Initialize()
     val = 1;
     status = setsockopt(m_sockfd, IPPROTO_TCP, TCP_NODELAY, (const char *)&val, sizeof(val));
     if (status) {
-        fprintf(stderr, "Error: %s\n", strerror(errno));
+        printNetErrorMessage;
         close(m_sockfd);
         return 1;
     }
@@ -91,7 +129,7 @@ int GdbServer::Initialize()
     /* Bind the socket to an address/port */
     status = bind(m_sockfd, (struct sockaddr *)&m_bind_addr, sizeof(m_bind_addr));
     if (status) {
-        fprintf(stderr, "Error: %s\n", strerror(errno));
+        printNetErrorMessage;
         close(m_sockfd);
         return 1;
     }
@@ -99,7 +137,7 @@ int GdbServer::Initialize()
     /* Begin waiting for connections */
     status = listen(m_sockfd, 10);
     if (status) {
-        fprintf(stderr, "Error: %s\n", strerror(errno));
+        printNetErrorMessage;
         close(m_sockfd);
         return 1;
     }
@@ -119,6 +157,7 @@ int GdbServer::Shutdown()
     if (m_sockfd >= 0) {
         close(m_sockfd);
     }
+	shutdownNetwork;
     return 0;
 }
 
@@ -137,7 +176,7 @@ int GdbServer::WaitForConnection()
     m_peer_addr_len = sizeof(m_peer_addr);
     status = accept(m_sockfd, (struct sockaddr *)&m_peer_addr, &m_peer_addr_len);
     if (status < 0) {
-        fprintf(stderr, "Error %s\n", strerror(errno));
+		printNetErrorMessage;
         return 1;
     }
     
@@ -152,7 +191,7 @@ int GdbServer::WaitForConnection()
     val = 1;
     status = setsockopt(m_peer_sockfd, IPPROTO_TCP, TCP_NODELAY, (const char *)&val, sizeof(val));
     if (status) {
-        fprintf(stderr, "Error: %s\n", strerror(errno));
+        printNetErrorMessage;
         close(m_peer_sockfd);
         close(m_sockfd);
         return 1;
