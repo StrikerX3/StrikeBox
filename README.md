@@ -1,11 +1,4 @@
-**If you're looking for a functional Xbox emulator, the best Xbox emulation platform to date is [XQEMU](http://xqemu.com/)!**
-
-What is this then? Just some proof of concept stuff I'm toying around with. The
-goal is to make Xbox emulation a little easier to get started with by not
-requiring any disk images or flash dumps. How? High-level emulation of the
-Xbox Kernel and low-level emulation of the graphics/sound/networking
-controllers (required because the Xbox games, or "titles" in MS parlance,
-actually control those things directly and not via the Kernel).
+**If you're looking for a functional Xbox emulator, check out [XQEMU](http://xqemu.com/) or [Cxbx-Reloaded](https://github.com/Cxbx-Reloaded/Cxbx-Reloaded)**
 
 ---
 
@@ -13,67 +6,72 @@ actually control those things directly and not via the Kernel).
 Open-Source (Original) Xbox Emulation Project
 
 The current state of this thing is just a tad bit more tangible than vaporware.
-Essentially right now it just initializes a basic x86 system (courtesy of
-[Unicorn](http://www.unicorn-engine.org/)), loads an XBE, handles a couple of
-the Kernel functions, and renders the framebuffer. No networking, no audio, no
-3D graphics, no real Kernel support... yet ;).
+Essentially right now it just initializes an x86 system (courtesy of
+[HAXM](https://github.com/intel/haxm)) and runs whatever is in ROM, which at
+the moment is nothing.
+
+No networking, no audio, no graphics, no games... yet ;).
+
+The goal is to emulate the Xbox at a low level. The user will have to provide
+their own dump of the MCPX and BIOS ROMs from an Xbox machine, as well as the
+appropriate game media dump in XISO format or from an extracted directory.
 
 How to Build
 ------------
-You'll need CMake, SDL, GLEW, and Unicorn. This should work anywhere with a
-bit of work.
+OpenXBOX uses [CMake](https://cmake.org/) build files to generate projects for
+your preferred development platform. OpenXBOX contains multiple modules, as
+described in the [Project Structure](#project-structure) section below.
+
+You will need to specify a CPU module for OpenXBOX to run. The CMake option
+`CPU_MODULE` gives you a choice of default modules bundled with OpenXBOX that
+can be used for development and release builds.
+
+*(Note: The majority of the recent work has been done on Windows with Visual
+Studio, so it's likely that this doesn't work on other platforms. If that's the
+case, feel free to fix it and submit a pull request!)*
+
+### macOS
+You'll need CMake 2.6 or later and [HAXM](https://software.intel.com/en-us/articles/intel-hardware-accelerated-execution-manager-intel-haxm).
+This should work anywhere with a bit of work. 
 
 ```
-$ brew install cmake sdl2 glew unicorn
+$ brew install cmake
 $ mkdir build; cd build
-$ cmake .. && make
+$ cmake .. -DCPU_MODULE=haxm && make
 $ ./openxbox executable.xbe
 ```
 
-On Windows, you'll need [CMake](https://cmake.org/download/). This method has
-been confirmed to work with [Visual Studio Community 2017](https://www.visualstudio.com/downloads/).
-All necessary dependencies are included in the extern folder.
+### Linux
+Linux is currently unsupported. [KVM](https://www.kernel.org/doc/Documentation/virtual/kvm/api.txt)
+support is planned.
+
+### Windows
+You'll need CMake 3.8 or later, [Visual Studio Community 2017](https://www.visualstudio.com/downloads/)
+and [HAXM](https://software.intel.com/en-us/articles/intel-hardware-accelerated-execution-manager-intel-haxm).
 ```
 > mkdir build
 > cd build
-> cmake -G "Visual Studio 15 2017 Win64" ..
+> cmake -G "Visual Studio 15 2017" .. -DCPU_MODULE=haxm         # for 32-bit builds
+> cmake -G "Visual Studio 15 2017 Win64" .. -DCPU_MODULE=haxm   # for 64-bit builds
 ```
-Then open the .sln file created in the build folder and build the openxbox
-project. Remember to set it as the startup project before running.
+The .sln file will be generated in the build folder, ready to build.
 
-TODO: for now, you need to copy the following required DLLs to the output
-folder in order to run/debug the application:
-- extern/glew-2.1.0/win64/bin/glew32.dll
-- extern/SDL2-2.0.7/lib/x64/SDL2.dll
-- extern/unicorn-1.0.1/win64/unicorn.dll
-- extern/unicorn-1.0.1/win64/libgcc_s_seh-1.dll
-- extern/unicorn-1.0.1/win64/libwinpthread-1.dll
-
-Design Concept
---------------
-- High-Level Emulation (HLE) for Kernel API
-  - When game tries to call into kernel, trap and emulate it with our own code
-  - Sidesteps need for firmware images (BIOS/MCPX) and keys
-  - Faster/easier to integrate into system (access filesystem directly)
-  - Eliminate need for most legacy PC emulation
-- Hardware Accelerated Virtualization of Game Code
-  - [KVM](https://www.kernel.org/doc/Documentation/virtual/kvm/api.txt) on Linux
-  - [HAXM](https://github.com/intel/haxm) or [Hypervisor Framework](https://developer.apple.com/documentation/hypervisor) on macOS
-  - [HAXM](https://github.com/intel/haxm) on Windows?
-  - CPU emulation fallback when hardware acceleration not available
-    - Potentially:
-      - [libx86emu](https://github.com/wfeldt/libx86emu)
-      - [libcpu](https://github.com/libcpu/libcpu)
-      - [bochs](http://bochs.sourceforge.net/)
-      - [unicorn](http://www.unicorn-engine.org/)
-- LLE for code that touches hardware (nv2a, nvnet)
-  - Xbox game code will interface with parts of the hardware directly (for instance, graphics and networking)
-  - We can trap on MMIO accesses directly from virtualized game code, handle the event, then return
+Project Structure
+-----------------
+OpenXBOX is split into multiple modules:
+- `core`: the core of the emulator, providing basic emulation logic and a
+module interface for the various pieces of hardware that composes the Xbox.
+This is a static library meant to be used by front-end engines.
+- `cli`: a command line front-end for OpenXBOX.
+- `common`: common code shared across all modules.
+- `module-common`: contains common definitions and types for OpenXBOX modules.
+- `cpu-module`: defines the interface and basic types for CPU modules.
+- `cpu-haxm-module`: CPU module implementation using [HAXM](https://github.com/intel/haxm).
  
 Debugging Guest Code
 --------------------
-The XBE that is running can be debugged using the GDB debugger. Once enabled,
-the emulator will open a TCP socket upon startup and wait for the GDB debugger
-to connect. Once connected, you can examine the CPU state, set breakpoints, 
-single-step instructions, etc. A sample .gdbinit file is provided with useful
-GDB default settings to be loaded when you start GDB in this directory.
+The guest can be debugged using the GDB debugger. Once enabled, the emulator
+will open a TCP socket upon startup and wait for the GDB debugger to connect.
+Once connected, you can examine the CPU state, set breakpoints, single-step
+instructions, etc. A sample .gdbinit file is provided with useful GDB default
+settings to be loaded when you start GDB in this directory.

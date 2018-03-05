@@ -9,4 +9,9 @@ target remote 127.0.0.1:9269
 # set debug remote 1
 
 # Show disassembly and source code
-layout split
+# layout split
+
+# If you don't have the source code, displaying the disassembly
+# and registers is more useful
+layout regs
+
