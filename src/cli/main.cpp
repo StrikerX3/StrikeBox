@@ -33,13 +33,19 @@ int main(int argc, const char *argv[]) {
 	printf("OpenXBOX v%s\n", info->version);
 	printf("------------------\n");
 
+    // Parse arguments
+    const char *mcpx_path;
+    const char *bios_path;
     const char *xbe_path;
-    const char *usage = "usage: %s <xbe>\n";
+    const char *usage = "usage: %s <mcpx> <bios> <xbe>\n";
 
-    if (argc < 2) {
+    if (argc < 4) {
         printf(usage, basename((char*)argv[0]));
         return 1;
     }
+    mcpx_path = argv[1];
+    bios_path = argv[2];
+    xbe_path = argv[3];
 
 	// Locate and instantiate modules
 	ModuleRepository moduleRepo;
@@ -66,7 +72,6 @@ int main(int argc, const char *argv[]) {
 	log_info("success\n");
 
     // Load XBE executable
-    xbe_path = argv[1];
     Xbe *xbe = new Xbe(xbe_path);
     if (xbe->GetError() != 0) {
 		delete xbe;
@@ -77,54 +82,14 @@ int main(int argc, const char *argv[]) {
     xbe->DumpInformation(stdout);
 #endif
 
-    // TODO: move this to Xbox class
-    FILE *fp;
-    errno_t e;
-    long sz;
-
-    // Load MCPX ROM
-    e = fopen_s(&fp, "path/to/mcpx.bin", "rb");
-    if (e) {
-        delete xbe;
-        return 1;
-    }
-    fseek(fp, 0, SEEK_END);
-    sz = ftell(fp);
-    fseek(fp, 0, SEEK_SET);
-    if (sz != 512) {
-        fprintf(stderr, "MCPX ROM size invalid\n");
-        fclose(fp);
-        return 1;
-    }
-    char *mcpx = new char[sz];
-    fread_s(mcpx, sz, 1, sz, fp);
-    fclose(fp);
-
-    // Load BIOS ROM
-    e = fopen_s(&fp, "path/to/bios.bin", "rb");
-    if (e) {
-        delete xbe;
-        return 1;
-    }
-    fseek(fp, 0, SEEK_END);
-    sz = ftell(fp);
-    if (sz != MiB(1) && sz != KiB(256)) {
-        fprintf(stderr, "BIOS ROM size invalid\n");
-        fclose(fp);
-        return 1;
-    }
-    fseek(fp, 0, SEEK_SET);
-    char *bios = new char[sz];
-    fread_s(bios, sz, 1, sz, fp);
-    fclose(fp);
-
-    uint32_t biosSize = sz;
-
     OpenXBOXSettings settings;
     settings.cpu_singleStep = false;
     settings.debug_dumpMemoryMapping = true;
     settings.debug_dumpXBESectionContents = false;
     settings.gdb_enable = false;
+    settings.hw_sysclock_tickRate = 100.0f;
+    settings.rom_mcpx = mcpx_path;
+    settings.rom_bios = bios_path;
 
 	int result = 0;
     Xbox *xbox = new Xbox(cpuModuleInstance.cpuModule);
@@ -139,7 +104,6 @@ int main(int argc, const char *argv[]) {
 		goto exit;
 	}*/
 	xbox->InitializePreRun();
-    xbox->LoadROMs(mcpx, bios, biosSize);
     xbox->Run();
 	xbox->Cleanup();
 

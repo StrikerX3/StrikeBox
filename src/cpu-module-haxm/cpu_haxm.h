@@ -42,7 +42,7 @@ public:
 
     int InitializeImpl();
 
-	int RunImpl(uint64_t time_limit_us);
+	int RunImpl();
 	int StepImpl(uint64_t num_instructions);
 	InterruptResult InterruptImpl(uint8_t vector);
 

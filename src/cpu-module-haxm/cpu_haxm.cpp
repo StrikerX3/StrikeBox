@@ -61,10 +61,7 @@ int HaxmCpu::InitializeImpl() {
 	return 0;
 }
 
-int HaxmCpu::RunImpl(uint64_t time_limit_us) {
-	// TODO: see if there is a way to limit execution time
-	// One possible approach is to inject an unused interrupt at the deadline
-
+int HaxmCpu::RunImpl() {
 	// Update CPU state if registers were modified
 	if (m_regsChanged) {
 		m_vcpu->SetRegisters(&m_regs);
@@ -118,12 +115,13 @@ int HaxmCpu::RunImpl(uint64_t time_limit_us) {
 }
 
 int HaxmCpu::StepImpl(uint64_t num_instructions) {
+    // FIXME: would be nice if we didn't have to interfere with the VCPU state
 	for (uint64_t i = 0; i < num_instructions; i++) {
 		// Set the trap flag. This will be cleared on the next instruction
 		SetFlags(TF_MASK);
 
 		// Run CPU
-		int result = RunImpl(0);
+		int result = RunImpl();
 
 		// Exit on failure or any other exit reason
 		if (result) {
@@ -366,7 +364,7 @@ int HaxmCpu::HandleIO(uint8_t df, uint16_t port, uint8_t direction, uint16_t siz
 		// direction: read (HAX_IO_OUT) or write (HAX_IO_IN)
 	}
 
-	log_warning("I/O unimplemented!   df: %d\n  port: 0x%04x  direction: %d  size: %d  count: %d\n", df, port, direction, size, count);
+	log_warning("I/O unimplemented!   df: %d  port: 0x%04x  direction: %d  size: %d  count: %d\n", df, port, direction, size, count);
 
 	return 0;
 }

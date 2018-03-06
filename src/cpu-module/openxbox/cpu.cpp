@@ -30,8 +30,8 @@ int Cpu::Initialize() {
 
 #define CHECK_RESULT(expr) result = (expr); { if (result) return result; }
 
-int Cpu::Run(uint64_t time_limit_us) {
-	return RunImpl(time_limit_us);
+int Cpu::Run() {
+	return RunImpl();
 }
 
 int Cpu::Step(uint64_t num_instructions) {

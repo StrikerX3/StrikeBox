@@ -51,6 +51,8 @@ int Xbox::Initialize(OpenXBOXSettings *settings)
 	// Initialize 4 GiB address space
 	m_memRegion = new MemoryRegion(MEM_REGION_NONE, 0x00000000, 0x100000000ULL, NULL);
 
+    // ----- RAM --------------------------------------------------------------
+
 	// Create RAM region
 	log_debug("Allocating RAM (%d MiB)\n", XBOX_RAM_SIZE >> 20);
 	m_ram = (char *)valloc(XBOX_RAM_SIZE);
@@ -62,8 +64,10 @@ int Xbox::Initialize(OpenXBOXSettings *settings)
 	assert(rgn != NULL);
 	m_memRegion->AddSubRegion(rgn);
 
+    // ----- ROM --------------------------------------------------------------
+
 	// Create ROM region
-	log_debug("Allocating ROM (%d KiB)\n", XBOX_ROM_SIZE >> 10);
+	log_debug("Allocating ROM (%d MiB)\n", XBOX_ROM_SIZE >> 20);
 	m_rom = (char *)valloc(XBOX_ROM_SIZE);
 	assert(m_rom != NULL);
 	memset(m_rom, 0, XBOX_ROM_SIZE);
@@ -72,7 +76,65 @@ int Xbox::Initialize(OpenXBOXSettings *settings)
     rgn = new MemoryRegion(MEM_REGION_ROM, 0xFF000000, XBOX_ROM_SIZE, m_rom);
     assert(rgn != NULL);
     m_memRegion->AddSubRegion(rgn);
-    
+
+    // Load ROM files
+    FILE *fp;
+    errno_t e;
+    long sz;
+
+    // Load MCPX ROM
+    log_debug("Loading MCPX ROM %s...", settings->rom_mcpx);
+    e = fopen_s(&fp, settings->rom_mcpx, "rb");
+    if (e) {
+        log_debug("file %s could not be opened\n", settings->rom_mcpx);
+        return 1;
+    }
+    fseek(fp, 0, SEEK_END);
+    sz = ftell(fp);
+    fseek(fp, 0, SEEK_SET);
+    if (sz != 512) {
+        log_debug("incorrect file size: %d (must be 512 bytes)\n", sz);
+        return 2;
+    }
+    char *mcpx = new char[sz];
+    fread_s(mcpx, sz, 1, sz, fp);
+    fclose(fp);
+    log_debug("OK\n");
+
+    // Load BIOS ROM
+    log_debug("Loading BIOS ROM %s...", settings->rom_bios);
+    e = fopen_s(&fp, settings->rom_bios, "rb");
+    if (e) {
+        log_debug("file %s could not be opened\n", settings->rom_bios);
+        return 1;
+    }
+    fseek(fp, 0, SEEK_END);
+    sz = ftell(fp);
+    fseek(fp, 0, SEEK_SET);
+    if (sz != KiB(256) && sz != MiB(1)) {
+        log_debug("incorrect file size: %d (must be 256 KiB or 1024 KiB)\n", sz);
+        return 3;
+    }
+    char *bios = new char[sz];
+    fread_s(bios, sz, 1, sz, fp);
+    fclose(fp);
+    log_debug("OK (%d KiB)\n", sz >> 10);
+
+    uint32_t biosSize = sz;
+
+    // Load BIOS ROM image
+    memcpy(m_rom, bios, biosSize);
+
+    // Overlay MCPX ROM image onto the last 512 bytes
+    memcpy(m_rom + biosSize - 512, mcpx, 512);
+
+    // Replicate resulting ROM image across the entire 16 MiB range
+    for (uint32_t addr = biosSize; addr < MiB(16); addr += biosSize) {
+        memcpy(m_rom + addr, m_rom, biosSize);
+    }
+
+    // ----- CPU --------------------------------------------------------------
+
 	// Initialize CPU
 	log_debug("Initializing CPU\n");
 	if (m_cpuModule == nullptr) {
@@ -89,10 +151,14 @@ int Xbox::Initialize(OpenXBOXSettings *settings)
 	// Allow CPU to update memory map based on device allocation, etc
 	m_cpu->MemMap(m_memRegion);
 
-	// Initialize system clock
+    // ----- Other hardware ---------------------------------------------------
+    
+    // Initialize system clock
 	log_debug("Initializing System Clock\n");
-	m_sysClock = new SystemClock(m_cpu, 100.0f); // TODO: configurable tick rate
+	m_sysClock = new SystemClock(m_cpu, settings->hw_sysclock_tickRate);
 	assert(m_sysClock != NULL);
+
+    // ----- Debugger ---------------------------------------------------------
 
 	// GDB Server
     if (m_settings->gdb_enable) {
@@ -102,19 +168,6 @@ int Xbox::Initialize(OpenXBOXSettings *settings)
     }
 
 	return 0;
-}
-
-void Xbox::LoadROMs(char *mcpx, char *bios, uint32_t biosSize) {
-    // Load BIOS ROM image
-    memcpy(m_rom, bios, biosSize);
-
-    // Overlay MCPX ROM image onto the last 512 bytes
-    memcpy(m_rom + biosSize - 512, mcpx, 512);
-
-    // Replicate resulting ROM image across the entire 16 MiB range
-    for (uint32_t addr = biosSize; addr < MiB(16); addr += biosSize) {
-        memcpy(m_rom + addr, m_rom, biosSize);
-    }
 }
 
 void Xbox::InitializePreRun() {
@@ -164,7 +217,12 @@ int Xbox::RunCpu()
 #ifdef _DEBUG
         t.Start();
 #endif
-		result = m_cpu->Run(100 * 1000);
+        if (m_settings->cpu_singleStep) {
+            result = m_cpu->Step();
+        }
+        else {
+            result = m_cpu->Run();
+        }
 #ifdef _DEBUG
         t.Stop();
 		log_debug("CPU Executed for %lld ms\n", t.GetMillisecondsElapsed());

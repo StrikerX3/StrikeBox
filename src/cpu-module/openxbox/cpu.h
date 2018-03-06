@@ -151,9 +151,9 @@ public:
 	int Initialize();
 
 	/*!
-	 * Runs the CPU for the specified amount of time (in microseconds).
+	 * Runs the CPU until interrupted.
 	 */
-	int Run(uint64_t time_limit_us);
+	int Run();
 
 	/*!
 	 * Runs the specified number of instructions on the CPU.
@@ -406,9 +406,9 @@ protected:
 	virtual int InitializeImpl() = 0;
 
 	/*!
-	 * Runs the CPU for the specified amount of time (in microseconds).
+	 * Runs the CPU until interrupted.
 	 */
-	virtual int RunImpl(uint64_t time_limit_us) = 0;
+	virtual int RunImpl() = 0;
 
 	/*!
 	 * Runs the specified number of instructions on the CPU.

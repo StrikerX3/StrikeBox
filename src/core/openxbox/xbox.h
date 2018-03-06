@@ -62,8 +62,6 @@ public:
 	void InitializePreRun();
 	void Cleanup();
 
-    void LoadROMs(char *mcpx, char *bios, uint32_t biosSize);
-
 	int Run();
 	int RunCpu();
 	void Stop();
