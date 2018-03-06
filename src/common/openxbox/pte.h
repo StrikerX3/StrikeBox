@@ -4,7 +4,7 @@
 
 namespace openxbox {
 
-typedef struct Pte {
+struct Pte {
     uint32_t valid : 1;
     uint32_t write : 1;
     uint32_t owner : 1;
