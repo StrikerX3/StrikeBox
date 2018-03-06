@@ -18,6 +18,7 @@
 #include "openxbox/util.h"
 #include "openxbox/xbe.h"
 #include "openxbox/thread.h"
+#include "openxbox/settings.h"
 
 #include "openxbox/hw/sysclock.h"
 
@@ -44,6 +45,9 @@ protected:
 	SystemClock  *m_sysClock;
 
 
+    // ----- Configuration ----------------------------------------------------
+    OpenXBOXSettings *m_settings;
+
 	// ----- State ------------------------------------------------------------
 	bool m_should_run;
 
@@ -53,10 +57,12 @@ protected:
 public:
 	Xbox(IOpenXBOXCPUModule *cpuModule);
 	~Xbox();
-	int Initialize();
+	int Initialize(OpenXBOXSettings *settings);
 
 	void InitializePreRun();
 	void Cleanup();
+
+    void LoadROMs(char *mcpx, char *bios, uint32_t biosSize);
 
 	int Run();
 	int RunCpu();

@@ -363,7 +363,7 @@ int HaxmCpu::HandleIO(uint8_t df, uint16_t port, uint8_t direction, uint16_t siz
 		// port: port number
 		// ptr: pointer to data buffer
 		// size: size of data buffer
-		// direction: read (HAX_EXIT_IO_OUT) or write (HAX_EXIT_IO_IN)
+		// direction: read (HAX_IO_OUT) or write (HAX_IO_IN)
 	}
 
 	log_warning("I/O unimplemented!   df: %d\n  port: 0x%04x  direction: %d  size: %d  count: %d\n", df, port, direction, size, count);
@@ -374,7 +374,7 @@ int HaxmCpu::HandleIO(uint8_t df, uint16_t port, uint8_t direction, uint16_t siz
 int HaxmCpu::HandleMMIO(uint32_t physAddress, uint8_t direction) {
 	log_warning("MMIO unimplemented!   address: 0x%08x  direction: %d\n", physAddress, direction);
 	// TODO: handle MMIO at the given physical address
-	// direction: read (HAX_EXIT_IO_OUT) or write (HAX_EXIT_IO_IN)
+	// direction: read (HAX_IO_OUT) or write (HAX_IO_IN)
 	return 0;
 }
 
@@ -385,13 +385,13 @@ int HaxmCpu::HandleFastMMIO(struct hax_fastmmio *info) {
 		// info->gpa: physical address
 		// info->value: value to read/write
 		// info->size: number of bytes to read/write
-		// info->direction: read (HAX_EXIT_IO_OUT) or write (HAX_EXIT_IO_IN)
+		// info->direction: read (HAX_IO_OUT) or write (HAX_IO_IN)
 
 		//cpu_physical_memory_rw(info->gpa, (uint8_t *)&info->value, info->size, info->direction);
 	}
 	else {
 		log_warning("Two-way fast MMIO unimplemented!   address1: 0x%08x  address2: 0x%08x  size: %d\n", info->gpa, info->gpa2, info->size);
-		// TODO: handle MMIO between two physical address
+		// TODO: handle MMIO between two physical addresses
 		// info->gpa: physical address to read from
 		// info->gpa2: physical address to write to
 		// info->size: number of bytes to read/write

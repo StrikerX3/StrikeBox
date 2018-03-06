@@ -43,8 +43,9 @@ Xbox::~Xbox()
 /*!
  * Perform basic system initialization
  */
-int Xbox::Initialize()
+int Xbox::Initialize(OpenXBOXSettings *settings)
 {
+    m_settings = settings;
 	MemoryRegion *rgn;
 
 	// Initialize 4 GiB address space
@@ -61,21 +62,17 @@ int Xbox::Initialize()
 	assert(rgn != NULL);
 	m_memRegion->AddSubRegion(rgn);
 
-	// Mirror RAM at address 0x80000000
-	//rgn = new MemoryRegion(MEM_REGION_RAM, 0x80000000, XBOX_RAM_SIZE, m_ram);
-	//assert(rgn != NULL);
-	//m_memRegion->AddSubRegion(rgn);
-
 	// Create ROM region
 	log_debug("Allocating ROM (%d KiB)\n", XBOX_ROM_SIZE >> 10);
 	m_rom = (char *)valloc(XBOX_ROM_SIZE);
 	assert(m_rom != NULL);
 	memset(m_rom, 0, XBOX_ROM_SIZE);
 
-	rgn = new MemoryRegion(MEM_REGION_ROM, 0 - XBOX_ROM_SIZE, XBOX_ROM_SIZE, m_rom);
-	assert(rgn != NULL);
-	m_memRegion->AddSubRegion(rgn);
-
+    // Map ROM to address 0xFF000000
+    rgn = new MemoryRegion(MEM_REGION_ROM, 0xFF000000, XBOX_ROM_SIZE, m_rom);
+    assert(rgn != NULL);
+    m_memRegion->AddSubRegion(rgn);
+    
 	// Initialize CPU
 	log_debug("Initializing CPU\n");
 	if (m_cpuModule == nullptr) {
@@ -98,13 +95,26 @@ int Xbox::Initialize()
 	assert(m_sysClock != NULL);
 
 	// GDB Server
-#if ENABLE_GDB_SERVER
-	log_debug("Starting GDB Server\n");
-	m_gdb = new GdbServer(m_cpu, "127.0.0.1", 9269);
-	m_gdb->Initialize();
-#endif
+    if (m_settings->gdb_enable) {
+        log_debug("Starting GDB Server\n");
+        m_gdb = new GdbServer(m_cpu, "127.0.0.1", 9269);
+        m_gdb->Initialize();
+    }
 
 	return 0;
+}
+
+void Xbox::LoadROMs(char *mcpx, char *bios, uint32_t biosSize) {
+    // Load BIOS ROM image
+    memcpy(m_rom, bios, biosSize);
+
+    // Overlay MCPX ROM image onto the last 512 bytes
+    memcpy(m_rom + biosSize - 512, mcpx, 512);
+
+    // Replicate resulting ROM image across the entire 16 MiB range
+    for (uint32_t addr = biosSize; addr < MiB(16); addr += biosSize) {
+        memcpy(m_rom + addr, m_rom, biosSize);
+    }
 }
 
 void Xbox::InitializePreRun() {
@@ -217,77 +227,77 @@ void Xbox::Cleanup() {
 			}
 		}
 
-#if DUMP_MEM_MAPPING
-        uint32_t cr0;
-        m_cpu->RegRead(REG_CR0, &cr0);
-        if (cr0 & (CR0_PG | CR0_PE)) {
-            log_debug("\nVirtual address mappings:\n");
-            uint32_t cr3;
-            m_cpu->RegRead(REG_CR3, &cr3);
-            for (uint32_t pdeEntry = 0; pdeEntry < 0x1000; pdeEntry += sizeof(Pte)) {
-                Pte *pde;
-                uint32_t pdeAddr = cr3 + pdeEntry;
-                pde = (Pte *)&m_ram[pdeAddr];
+        if (m_settings->debug_dumpMemoryMapping) {
+            uint32_t cr0;
+            m_cpu->RegRead(REG_CR0, &cr0);
+            if (cr0 & (CR0_PG | CR0_PE)) {
+                log_debug("\nVirtual address mappings:\n");
+                uint32_t cr3;
+                m_cpu->RegRead(REG_CR3, &cr3);
+                for (uint32_t pdeEntry = 0; pdeEntry < 0x1000; pdeEntry += sizeof(Pte)) {
+                    Pte *pde;
+                    uint32_t pdeAddr = cr3 + pdeEntry;
+                    pde = (Pte *)&m_ram[pdeAddr];
 
-                char pdeFlags[] = "-----------";
-                pdeFlags[0] = pde->persistAllocation ? 'P' : '-';
-                pdeFlags[1] = pde->guardOrEndOfAllocation ? 'E' : '-';
-                pdeFlags[2] = pde->global ? 'G' : '-';
-                pdeFlags[3] = pde->largePage ? 'L' : '-';
-                pdeFlags[4] = pde->dirty ? 'D' : '-';
-                pdeFlags[5] = pde->accessed ? 'A' : '-';
-                pdeFlags[6] = pde->cacheDisable ? 'N' : '-';
-                pdeFlags[7] = pde->writeThrough ? 'T' : '-';
-                pdeFlags[8] = pde->owner ? 'U' : 'K';
-                pdeFlags[9] = pde->write ? 'W' : 'R';
-                pdeFlags[10] = pde->valid ? 'V' : '-';
+                    char pdeFlags[] = "-----------";
+                    pdeFlags[0] = pde->persistAllocation ? 'P' : '-';
+                    pdeFlags[1] = pde->guardOrEndOfAllocation ? 'E' : '-';
+                    pdeFlags[2] = pde->global ? 'G' : '-';
+                    pdeFlags[3] = pde->largePage ? 'L' : '-';
+                    pdeFlags[4] = pde->dirty ? 'D' : '-';
+                    pdeFlags[5] = pde->accessed ? 'A' : '-';
+                    pdeFlags[6] = pde->cacheDisable ? 'N' : '-';
+                    pdeFlags[7] = pde->writeThrough ? 'T' : '-';
+                    pdeFlags[8] = pde->owner ? 'U' : 'K';
+                    pdeFlags[9] = pde->write ? 'W' : 'R';
+                    pdeFlags[10] = pde->valid ? 'V' : '-';
 
-                if (pde->largePage) {
-                    uint32_t vaddr = (pdeEntry << 20);
-                    uint32_t paddr = (pde->pageFrameNumber << 12);
+                    if (pde->largePage) {
+                        uint32_t vaddr = (pdeEntry << 20);
+                        uint32_t paddr = (pde->pageFrameNumber << 12);
 
-                    log_debug("  0x%08x..0x%08x  ->  0x%08x..0x%08x   PDE 0x%08x [%s]\n",
-                        vaddr, vaddr + MiB(4) - 1,
-                        paddr, paddr + MiB(4) - 1,
-                        pdeAddr, pdeFlags);
-                }
-                else if (pde->valid) {
-                    for (uint32_t pteEntry = 0; pteEntry < 0x1000; pteEntry += sizeof(Pte)) {
-                        Pte *pte;
-                        uint32_t pteAddr = (pde->pageFrameNumber << 12) + pteEntry;
-                        pte = (Pte *)&m_ram[pteAddr];
+                        log_debug("  0x%08x..0x%08x  ->  0x%08x..0x%08x   PDE 0x%08x [%s]\n",
+                            vaddr, vaddr + MiB(4) - 1,
+                            paddr, paddr + MiB(4) - 1,
+                            pdeAddr, pdeFlags);
+                    }
+                    else if (pde->valid) {
+                        for (uint32_t pteEntry = 0; pteEntry < 0x1000; pteEntry += sizeof(Pte)) {
+                            Pte *pte;
+                            uint32_t pteAddr = (pde->pageFrameNumber << 12) + pteEntry;
+                            pte = (Pte *)&m_ram[pteAddr];
 
-                        char pteFlags[] = "----------";
-                        pteFlags[0] = pte->persistAllocation ? 'P' : '-';
-                        pteFlags[1] = pte->guardOrEndOfAllocation ? 'E' : '-';
-                        pteFlags[2] = pte->global ? 'G' : '-';
-                        pteFlags[3] = pte->dirty ? 'D' : '-';
-                        pteFlags[4] = pte->accessed ? 'A' : '-';
-                        pteFlags[5] = pte->cacheDisable ? 'N' : '-';
-                        pteFlags[6] = pte->writeThrough ? 'T' : '-';
-                        pteFlags[7] = pte->owner ? 'U' : 'K';
-                        pteFlags[8] = pte->write ? 'W' : 'R';
-                        pteFlags[9] = pte->valid ? 'V' : '-';
+                            char pteFlags[] = "----------";
+                            pteFlags[0] = pte->persistAllocation ? 'P' : '-';
+                            pteFlags[1] = pte->guardOrEndOfAllocation ? 'E' : '-';
+                            pteFlags[2] = pte->global ? 'G' : '-';
+                            pteFlags[3] = pte->dirty ? 'D' : '-';
+                            pteFlags[4] = pte->accessed ? 'A' : '-';
+                            pteFlags[5] = pte->cacheDisable ? 'N' : '-';
+                            pteFlags[6] = pte->writeThrough ? 'T' : '-';
+                            pteFlags[7] = pte->owner ? 'U' : 'K';
+                            pteFlags[8] = pte->write ? 'W' : 'R';
+                            pteFlags[9] = pte->valid ? 'V' : '-';
 
-                        if (pte->valid) {
-                            uint32_t vaddr = (pdeEntry << 20) | (pteEntry << 10);
-                            uint32_t paddr = (pte->pageFrameNumber << 12) | (vaddr & (KiB(4) - 1));
-                            log_debug("  0x%08x..0x%08x  ->  0x%08x..0x%08x   PDE 0x%08x [%s]   PTE 0x%08x [%s]\n",
-                                vaddr, vaddr + KiB(4) - 1,
-                                paddr, paddr + KiB(4) - 1,
-                                pdeAddr, pdeFlags,
-                                pteAddr, pteFlags);
+                            if (pte->valid) {
+                                uint32_t vaddr = (pdeEntry << 20) | (pteEntry << 10);
+                                uint32_t paddr = (pte->pageFrameNumber << 12) | (vaddr & (KiB(4) - 1));
+                                log_debug("  0x%08x..0x%08x  ->  0x%08x..0x%08x   PDE 0x%08x [%s]   PTE 0x%08x [%s]\n",
+                                    vaddr, vaddr + KiB(4) - 1,
+                                    paddr, paddr + KiB(4) - 1,
+                                    pdeAddr, pdeFlags,
+                                    pteAddr, pteFlags);
+                            }
                         }
                     }
                 }
             }
         }
-#endif
 	}
 
-#if ENABLE_GDB_SERVER
-	m_gdb->Shutdown();
-#endif
+    if (m_settings->gdb_enable) {
+        m_gdb->Shutdown();
+    }
 }
 
 }

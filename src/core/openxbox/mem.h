@@ -19,6 +19,6 @@ namespace openxbox {
 
 // FIXME: Get these from a real xbox
 #define XBOX_RAM_SIZE         MiB(64)
-#define XBOX_ROM_SIZE         MiB(1)
+#define XBOX_ROM_SIZE         MiB(16)
 
 }

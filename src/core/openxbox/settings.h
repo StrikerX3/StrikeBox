@@ -2,38 +2,23 @@
 
 namespace openxbox {
 
-// FIXME: Make everything here configurable.
+struct OpenXBOXSettings {
+    // false: the CPU emulator will execute until interrupted
+    // true: the CPU emulator will execute one instruction at a time
+    bool cpu_singleStep;
 
+    // true: enables the GDB server, allowing the guest to be debugged
+    bool gdb_enable;
 
-// Set to zero to have the system clock interrupt update the system and
-// interrupt clocks by a variable high-precision interval so that the clock
-// runs in real time.
-// Set to non-zero to cause the system clock interrupt to update the system and
-// interrupt clocks by the standard increment of 10000. This may cause clock
-// drift depending on the performance of the emulation.
-#define USE_STANDARD_CLOCK_INCREMENT  0
+    // true: XBE sections will be dumped to individual files
+    bool debug_dumpXBESectionContents;
 
-// Set to zero to use a high-precision timer for KeInterruptTime and
-// KeSystemTime.
-// Set to non-zero to use KeInterruptTime and KeSystemTime, which are updated
-// periodically by the system clock interrupt.
-#define USE_SYSTEM_CLOCK_FOR_TIMES  1
+    // true: dump memory address mappings (page tables) after execution
+    bool debug_dumpMemoryMapping;
 
-
-// When set to zero, the CPU emulator will dedicate up to 100 ms to execution.
-// When non-zero, the CPU emulator will execute one instruction at a time.
-#define CPU_SINGLE_STEP  0
-
-
-// Set to non-zero to enable the GDB server.
-#define ENABLE_GDB_SERVER  0
-
-
-// Set to non-zero to dump XBE section contents.
-#define DUMP_SECTION_CONTENTS  0
-
-
-// Set to non-zero to dump memory address mappings
-#define DUMP_MEM_MAPPING  1
+    // TODO: path to MCPX ROM
+    // TODO: path to BIOS ROM
+    // TODO: path to game XISO or extracted contents
+};
 
 }
