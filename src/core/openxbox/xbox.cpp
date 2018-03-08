@@ -4,19 +4,24 @@
 #include "openxbox/alloc.h"
 #include "openxbox/debug.h"
 
+#include "openxbox/hw/defs.h"
+#include "openxbox/hw/tvenc.h"
+
+#include <chrono>
+
 namespace openxbox {
 
 // CPU emulation thread function
 static uint32_t EmuCpuThreadFunc(void *data) {
-	Xbox *xbox = (Xbox *)data;
-	return xbox->RunCpu();
+    Xbox *xbox = (Xbox *)data;
+    return xbox->RunCpu();
 }
 
 // System clock thread function
 static uint32_t EmuSysClockThreadFunc(void *data) {
-	SystemClock *sysClock = (SystemClock *)data;
-	sysClock->Run();
-	return 0;
+    SystemClock *sysClock = (SystemClock *)data;
+    sysClock->Run();
+    return 0;
 }
 
 
@@ -24,9 +29,9 @@ static uint32_t EmuSysClockThreadFunc(void *data) {
  * Constructor
  */
 Xbox::Xbox(IOpenXBOXCPUModule *cpuModule)
-	: m_cpuModule(cpuModule)
+    : m_cpuModule(cpuModule)
 {
-	m_sysClock = nullptr;
+    m_sysClock = nullptr;
 }
 
 /*!
@@ -34,10 +39,10 @@ Xbox::Xbox(IOpenXBOXCPUModule *cpuModule)
  */
 Xbox::~Xbox()
 {
-	if (m_cpu) m_cpuModule->FreeCPU(m_cpu);
-	if (m_ram) vfree(m_ram);
-	if (m_rom) vfree(m_rom);
-	if (m_memRegion) delete m_memRegion;
+    if (m_cpu) m_cpuModule->FreeCPU(m_cpu);
+    if (m_ram) vfree(m_ram);
+    if (m_rom) vfree(m_rom);
+    if (m_memRegion) delete m_memRegion;
 }
 
 /*!
@@ -46,31 +51,31 @@ Xbox::~Xbox()
 int Xbox::Initialize(OpenXBOXSettings *settings)
 {
     m_settings = settings;
-	MemoryRegion *rgn;
+    MemoryRegion *rgn;
 
-	// Initialize 4 GiB address space
-	m_memRegion = new MemoryRegion(MEM_REGION_NONE, 0x00000000, 0x100000000ULL, NULL);
+    // Initialize 4 GiB address space
+    m_memRegion = new MemoryRegion(MEM_REGION_NONE, 0x00000000, 0x100000000ULL, NULL);
 
     // ----- RAM --------------------------------------------------------------
 
-	// Create RAM region
-	log_debug("Allocating RAM (%d MiB)\n", XBOX_RAM_SIZE >> 20);
-	m_ram = (char *)valloc(XBOX_RAM_SIZE);
-	assert(m_ram != NULL);
-	memset(m_ram, 0, XBOX_RAM_SIZE);
+    // Create RAM region
+    log_debug("Allocating RAM (%d MiB)\n", XBOX_RAM_SIZE >> 20);
+    m_ram = (char *)valloc(XBOX_RAM_SIZE);
+    assert(m_ram != NULL);
+    memset(m_ram, 0, XBOX_RAM_SIZE);
 
-	// Map RAM at address 0x00000000
-	rgn = new MemoryRegion(MEM_REGION_RAM, 0x00000000, XBOX_RAM_SIZE, m_ram);
-	assert(rgn != NULL);
-	m_memRegion->AddSubRegion(rgn);
+    // Map RAM at address 0x00000000
+    rgn = new MemoryRegion(MEM_REGION_RAM, 0x00000000, XBOX_RAM_SIZE, m_ram);
+    assert(rgn != NULL);
+    m_memRegion->AddSubRegion(rgn);
 
     // ----- ROM --------------------------------------------------------------
 
-	// Create ROM region
-	log_debug("Allocating ROM (%d MiB)\n", XBOX_ROM_SIZE >> 20);
-	m_rom = (char *)valloc(XBOX_ROM_SIZE);
-	assert(m_rom != NULL);
-	memset(m_rom, 0, XBOX_ROM_SIZE);
+    // Create ROM region
+    log_debug("Allocating ROM (%d MiB)\n", XBOX_ROM_SIZE >> 20);
+    m_rom = (char *)valloc(XBOX_ROM_SIZE);
+    assert(m_rom != NULL);
+    memset(m_rom, 0, XBOX_ROM_SIZE);
 
     // Map ROM to address 0xFF000000
     rgn = new MemoryRegion(MEM_REGION_ROM, 0xFF000000, XBOX_ROM_SIZE, m_rom);
@@ -135,47 +140,100 @@ int Xbox::Initialize(OpenXBOXSettings *settings)
 
     // ----- CPU --------------------------------------------------------------
 
-	// Initialize CPU
-	log_debug("Initializing CPU\n");
-	if (m_cpuModule == nullptr) {
-		log_fatal("No CPU module specified\n");
-		return -1;
-	}
-	m_cpu = m_cpuModule->GetCPU();
-	if (m_cpu == nullptr) {
-		log_fatal("CPU instantiation failed\n");
-		return -1;
-	}
-	m_cpu->Initialize();
+    // Initialize CPU
+    log_debug("Initializing CPU\n");
+    if (m_cpuModule == nullptr) {
+        log_fatal("No CPU module specified\n");
+        return -1;
+    }
+    m_cpu = m_cpuModule->GetCPU();
+    if (m_cpu == nullptr) {
+        log_fatal("CPU instantiation failed\n");
+        return -1;
+    }
+    m_cpu->Initialize(this);
 
-	// Allow CPU to update memory map based on device allocation, etc
-	m_cpu->MemMap(m_memRegion);
+    // Allow CPU to update memory map based on device allocation, etc
+    m_cpu->MemMap(m_memRegion);
 
-    // ----- Other hardware ---------------------------------------------------
-    
+    // ----- Hardware ---------------------------------------------------------
+
     // Initialize system clock
-	log_debug("Initializing System Clock\n");
-	m_sysClock = new SystemClock(m_cpu, settings->hw_sysclock_tickRate);
-	assert(m_sysClock != NULL);
+    log_debug("Initializing System Clock\n");
+    m_sysClock = new SystemClock(m_cpu, settings->hw_sysclock_tickRate);
+    assert(m_sysClock != NULL);
+
+    // Determine which revisions of which components should be used for the
+    // specified hardware model
+    MCPXRevision mcpxRevision = MCPXRevisionFromHardwareModel(settings->hw_model);
+    SMCRevision smcRevision = SMCRevisionFromHardwareModel(settings->hw_model);
+    TVEncoder tvEncoder = TVEncoderFromHardwareModel(settings->hw_model);
+
+    log_debug("Initializing devices\n");
+    // Create busses
+    m_PCIBus = new PCIBus();
+    m_SMBus = new SMBus();
+
+    // Create devices
+    m_MCPX = new MCPXDevice(mcpxRevision);
+    m_SMC = new SMCDevice(smcRevision);
+    m_EEPROM = new EEPROMDevice();
+    m_NVNet = new NVNetDevice();
+    // TODO: m_NV2A = new NV2ADevice();
+
+    // Connect devices to SMBus
+    m_SMBus->ConnectDevice(kSMBusAddress_SystemMicroController, m_SMC); // W 0x20 R 0x21
+    m_SMBus->ConnectDevice(kSMBusAddress_EEPROM, m_EEPROM); // W 0xA8 R 0xA9
+
+    // TODO: Other SMBus devices to connect
+    //m_SMBus->ConnectDevice(kSMBusAddress_MCPX, m_MCPX); // W 0x10 R 0x11 -- TODO : Is MCPX an SMBus and/or PCI device?
+    //m_SMBus->ConnectDevice(kSMBusAddress_TemperatureMeasurement, m_TemperatureMeasurement); // W 0x98 R 0x99
+    //m_SMBus->ConnectDevice(kSMBusAddress_TVEncoder, m_TVEncoder); // W 0x88 R 0x89
+    switch (tvEncoder) {
+    case TVEncoder::Conexant:
+        // g_SMBus->ConnectDevice(kSMBusAddress_TVEncoder_ID_Conexant, m_TVEncoderConexant); // W 0x8A R 0x8B
+        break;
+    case TVEncoder::Focus:
+        // g_SMBus->ConnectDevice(kSMBusAddress_TVEncoder_ID_Focus, m_TVEncoderFocus); // W 0xD4 R 0xD5
+        break;
+    case TVEncoder::XCalibur:
+        // g_SMBus->ConnectDevice(kSMBusAddress_TVEncoder_ID_XCalibur, m_TVEncoderXCalibur); // W 0xE0 R 0xE1
+        break;
+    }
+
+    // Connect devices to PCI bus
+    m_PCIBus->ConnectDevice(PCI_DEVID(0, PCI_DEVFN(1, 1)), m_SMBus);
+    m_PCIBus->ConnectDevice(PCI_DEVID(0, PCI_DEVFN(4, 0)), m_NVNet);
+    //m_PCIBus->ConnectDevice(PCI_DEVID(0, PCI_DEVFN(4, 1)), m_MCPX); // MCPX device ID = 0x0808 ?
+    //m_PCIBus->ConnectDevice(PCI_DEVID(0, PCI_DEVFN(5, 0)), m_NVAPU);
+    //m_PCIBus->ConnectDevice(PCI_DEVID(0, PCI_DEVFN(6, 0)), m_AC97);
+    //m_PCIBus->ConnectDevice(PCI_DEVID(1, PCI_DEVFN(0, 0)), m_NV2A);
+
+    // TODO: Handle other SMBUS Addresses, like PIC_ADDRESS, XCALIBUR_ADDRESS
+    // Resources:
+    // http://pablot.com/misc/fancontroller.cpp
+    // https://github.com/JayFoxRox/Chihiro-Launcher/blob/master/hook.h
+    // https://github.com/docbrown/vxb/wiki/Xbox-Hardware-Information
+    // https://web.archive.org/web/20100617022549/http://www.xbox-linux.org/wiki/PIC
 
     // ----- Debugger ---------------------------------------------------------
 
-	// GDB Server
+    // GDB Server
     if (m_settings->gdb_enable) {
-        log_debug("Starting GDB Server\n");
         m_gdb = new GdbServer(m_cpu, "127.0.0.1", 9269);
         m_gdb->Initialize();
     }
 
-	return 0;
+    return 0;
 }
 
 void Xbox::InitializePreRun() {
-#if ENABLE_GDB_SERVER
-	// Allow debugging before running so client can setup breakpoints, etc
-	m_gdb->WaitForConnection();
-	m_gdb->Debug(1);
-#endif
+    if (m_settings->gdb_enable) {
+        // Allow debugging before running so client can setup breakpoints, etc
+        log_debug("Starting GDB Server\n");
+        m_gdb->WaitForConnection();
+        m_gdb->Debug(1);
+    }
 }
 
 int Xbox::Run() {
@@ -214,8 +272,10 @@ int Xbox::RunCpu()
 
 	while (m_should_run) {
 		// Run CPU emulation
+#if 0
 #ifdef _DEBUG
         t.Start();
+#endif
 #endif
         if (m_settings->cpu_singleStep) {
             result = m_cpu->Step();
@@ -223,9 +283,11 @@ int Xbox::RunCpu()
         else {
             result = m_cpu->Run();
         }
+#if 0
 #ifdef _DEBUG
         t.Stop();
 		log_debug("CPU Executed for %lld ms\n", t.GetMillisecondsElapsed());
+#endif
 #endif
 
 		// Handle result
@@ -244,11 +306,13 @@ int Xbox::RunCpu()
 			break;
 		}
 
-        // Pring CPU registers for debugging purposes
+#if 1
 #ifdef _DEBUG
-            uint32_t eip;
-            m_cpu->RegRead(REG_EIP, &eip);
-            DumpCPURegisters(m_cpu);
+        // Pring CPU registers for debugging purposes
+        uint32_t eip;
+        m_cpu->RegRead(REG_EIP, &eip);
+        DumpCPURegisters(m_cpu);
+#endif
 #endif
 
 		// Handle reason for the CPU to exit
@@ -267,6 +331,77 @@ void Xbox::Stop() {
 	}
 	m_should_run = false;
 }
+
+void Xbox::IORead(uint32_t addr, uint32_t *value, uint16_t size) {
+    switch (addr) {
+    case 0x8008: { // TODO: Move 0x8008 TIMER to a device
+        if (size == sizeof(uint32_t)) {
+            // This timer counts at 3579545 Hz
+            auto t = std::chrono::high_resolution_clock::now();
+            *value = static_cast<uint32_t>(t.time_since_epoch().count() * 0.003579545);
+        }
+        break;
+    }
+    case 0x80C0: { // TODO: Move 0x80C0 TV encoder to a device
+        if (size == sizeof(uint8_t)) {
+            // field pin from tv encoder?
+            m_field_pin = (m_field_pin + 1) & 1;
+            *value = m_field_pin << 5;
+        }
+        break;
+    }
+    }
+
+    // Pass the IO Read to the PCI Bus.
+    // This will handle devices with BARs set to IO addresses
+    if (m_PCIBus->IORead(addr, value, size)) {
+        return;
+    }
+
+    log_warning("Unhandled I/O read!   address = 0x%08x,  size = %d\n", addr, size);
+}
+
+void Xbox::IOWrite(uint32_t addr, uint32_t value, uint16_t size) {
+    // Pass the IO Write to the PCI Bus.
+    // This will handle devices with BARs set to IO addresses
+    if (m_PCIBus->IOWrite(addr, value, size)) {
+        return;
+    }
+
+    log_warning("Unhandled I/O write!  address = 0x%08x,  size = %d,  value = 0x%08x\n", addr, size, value);
+}
+
+void Xbox::MMIORead(uint32_t addr, uint32_t *value, uint8_t size) {
+    if ((addr & (size - 1)) != 0) {
+        log_warning("Unaligned MMIO read!   address = 0x%08x,  size = %d\n", addr, size);
+        return;
+    }
+
+    // Pass the read to the PCI Bus.
+    // This will handle devices with BARs set to MMIO addresses
+    if (m_PCIBus->MMIORead(addr, value, size)) {
+        return;
+    }
+
+    log_debug("Unhandled MMIO read!   address = 0x%08x,  size = %d\n", addr, size);
+}
+
+void Xbox::MMIOWrite(uint32_t addr, uint32_t value, uint8_t size) {
+    if ((addr & (size - 1)) != 0) {
+        log_warning("Unaligned MMIO write!  address = 0x%08x,  size = %d,  value = 0x%08x\n", addr, size, value);
+        return;
+    }
+
+    // Pass the write to the PCI Bus.
+    // This will handle devices with BARs set to MMIO addresses
+    if (m_PCIBus->MMIOWrite(addr, value, size)) {
+        return;
+    }
+
+    
+    log_debug("Unhandled MMIO write!  address = 0x%08x,  size = %d,  value = 0x%08x\n", addr, size, value);
+}
+
 
 void Xbox::Cleanup() {
 	if (LOG_LEVEL >= LOG_LEVEL_DEBUG) {

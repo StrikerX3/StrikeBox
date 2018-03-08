@@ -1,0 +1,160 @@
+#include "defs.h"
+#include "smc.h"
+#include "led.h"
+
+namespace openxbox {
+
+SMCRevision SMCRevisionFromHardwareModel(HardwareModel hardwareModel) {
+    switch (hardwareModel) {
+    case Revision1_0:
+        return P01; // Our SCM returns PIC version string "P01"
+    case Revision1_1:
+    case Revision1_2:
+    case Revision1_3:
+    case Revision1_4:
+    case Revision1_5:
+    case Revision1_6:
+        // EmuWarning("Guessing SCMRevision");
+        return P2L; // Assumption; Our SCM returns PIC version string "P05"
+    case DebugKit:
+        return D01; // Our SCM returns PIC version string "DXB"
+    default:
+        // UNREACHABLE(hardwareModel);
+        return P2L;
+    }
+}
+
+
+SMCDevice::SMCDevice(SMCRevision revision) {
+    m_revision = revision;
+}
+
+void SMCDevice::Init() {
+    m_PICVersionStringIndex = 0;
+    memset(m_buffer, 0, sizeof(m_buffer));
+    m_buffer[SMCRegister::AVPack] = kSMC_AVPack_HDTV; // see http://xboxdevwiki.net/PIC#The_AV_Pack
+    m_buffer[SMCRegister::LEDSequence] = LED::GREEN;
+    m_buffer[SMCRegister::Scratch] = 0; // http://xboxdevwiki.net/PIC#Scratch_register_values
+}
+
+void SMCDevice::Reset() {
+    // TODO
+}
+
+void SMCDevice::QuickCommand(bool read) {
+    // TODO
+}
+
+uint8_t SMCDevice::ReceiveByte() {
+    return 0; // TODO
+}
+
+uint8_t SMCDevice::ReadByte(uint8_t command) {
+    switch (command) {
+    case SMCRegister::Version:
+        // See http://xboxdevwiki.net/PIC#PIC_version_string
+        switch (m_revision) {
+        case SMCRevision::P01: m_buffer[0] = "P01"[m_PICVersionStringIndex]; break;
+        case SMCRevision::P2L: m_buffer[0] = "P05"[m_PICVersionStringIndex]; break; // ??
+        case SMCRevision::D01: m_buffer[0] = "DXB"[m_PICVersionStringIndex]; break;
+        case SMCRevision::D05: m_buffer[0] = "D05"[m_PICVersionStringIndex]; break; // ??
+        // default: UNREACHABLE(m_revision);
+        }
+
+        m_PICVersionStringIndex = (m_PICVersionStringIndex + 1) % 3;
+        break;
+    //case SMCRegister::TrayState:
+    //case SMCRegister::AVPack:
+    //case SMCRegister::CPUTemp:
+    //case SMCRegister::GPUTemp:
+    case ReadScratchRegister:
+        return m_buffer[0x0E];
+    //case SMCRegister::PowerFanReadback:
+    //case SMCRegister::InterruptReason:
+    //case SMCRegister::Overheated:
+    //case SMCRegister::Scratch:
+    case SMCRegister::Challenge_1C:
+    case SMCRegister::Challenge_1D:
+    case SMCRegister::Challenge_1E:
+    case SMCRegister::Challenge_1F:
+        if (m_revision == SMCRevision::D01)
+            // See http://xboxdevwiki.net/PIC#PIC_Challenge_.28regs_0x1C.7E0x21.29
+            return 0;
+
+        break;
+        // case ...: TODO
+    }
+
+    return m_buffer[command];
+}
+
+uint16_t SMCDevice::ReadWord(uint8_t command) {
+    return 0; // TODO
+}
+
+int SMCDevice::ReadBlock(uint8_t command, uint8_t *data) {
+    return 0; // TODO
+}
+
+void SMCDevice::SendByte(uint8_t data) {
+    // TODO
+}
+
+void SMCDevice::WriteByte(uint8_t command, uint8_t value) {
+    switch (command) {
+    case SMCRegister::Version:
+        // NOTE: MAME Xbox/Chihiro driver doesn't check for zero
+        if (value == 0) {
+            m_PICVersionStringIndex = 0;
+        }
+        return;
+    case SMCRegister::Reset:
+        // See http://xboxdevwiki.net/PIC#Reset_and_Power_Off
+        switch (value) {
+        case kSMCReset_AssertReset: return; // TODO
+        case kSMCReset_AssertPowerCycle: return; // TODO
+        case kSMCReset_AssertShutdown: return; // TODO: Power off, terminating the emulation
+        }
+        // TODO: case PowerFanMode:
+        // TODO: case PowerFanRegister:
+    case SMCRegister::LEDMode:
+        switch (value) {
+        case 0: return; // TODO: Automatic LED management
+        case 1: return; // TODO: Custom sequence
+        default: // TODO:
+            // HalWriteSMBusValue(0x20, 0x08, false, x) and then HalWriteSMBusValue(0x20, 0x07, false, y > 1)
+            // will cause the led to be solid green, while the next pair of 
+            // HalWriteSMBusValue with arbitrary y will cause the led to assume the color of the sequence x
+            // and afterwards this will repeat with whatever y; ntstatus is always 0
+            return;
+        }
+    case SMCRegister::LEDSequence: break; // Let the write go through to the buffer
+    // TODO: case SMCRegister::TrayEject:
+    // TODO: case SMCRegister::ScratchRegister:
+    // TODO: case SMCRegister::ResetOnEject:
+    // TODO: case SMCRegister::InterruptEnable:
+    case SMCRegister::Scratch:
+        // See http://xboxdevwiki.net/PIC#Scratch_register_values
+        switch (value) {
+        case kSMCScratch_TrayEjectPending: return; // TODO
+        case kSMCScratch_DisplayFatalError: return; // TODO
+        case kSMCScratch_ShortAnimation: return; // TODO
+        case kSMCScratch_DashboardBoot: return;  // TODO
+        }
+        break;
+    // TODO: case SMCRegister::PICChallenge_20:
+    // TODO: case SMCRegister::PICChallenge_21:
+    }
+
+    m_buffer[command] = value;
+}
+
+void SMCDevice::WriteWord(uint8_t command, uint16_t value) {
+    // TODO
+}
+
+void SMCDevice::WriteBlock(uint8_t command, uint8_t* data, int length) {
+    // TODO
+}
+
+}

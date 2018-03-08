@@ -21,7 +21,8 @@ Cpu::~Cpu() {
 
 // ----- Basic CPU operations -------------------------------------------------
 
-int Cpu::Initialize() {
+int Cpu::Initialize(IOMapper *ioMapper) {
+    m_ioMapper = ioMapper;
 	for (uint8_t i = 0; i < 0x40; i++) {
 		m_skippedInterrupts[i] = 0;
 	}

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "openxbox/hw/defs.h"
+
 namespace openxbox {
 
 struct OpenXBOXSettings {
@@ -15,6 +17,9 @@ struct OpenXBOXSettings {
 
     // true: dump memory address mappings (page tables) after execution
     bool debug_dumpMemoryMapping = false;
+
+    // The Xbox hardware model to use
+    HardwareModel hw_model = DebugKit;
 
     // The system clock tick rate
     float hw_sysclock_tickRate = 1000.0f;

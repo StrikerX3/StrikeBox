@@ -6,6 +6,7 @@
 #include "openxbox/memregion.h"
 #include "openxbox/gdt.h"
 #include "openxbox/idt.h"
+#include "openxbox/iomapper.h"
 
 namespace openxbox {
 
@@ -148,7 +149,7 @@ public:
 	/*!
 	 * Initializes the CPU.
 	 */
-	int Initialize();
+	int Initialize(IOMapper *ioMapper);
 
 	/*!
 	 * Runs the CPU until interrupted.
@@ -400,6 +401,11 @@ protected:
 	 */
 	struct CpuExitInfo m_exitInfo;
 
+    /*!
+     * The I/O mapper that handles I/O and MMIO for the CPU.
+     */
+    IOMapper *m_ioMapper;
+
 	/*!
 	 * Allows the implementation to do further initialization.
 	 */
@@ -420,8 +426,8 @@ protected:
 	 * Sends an interrupt to the CPU.
 	 */
 	virtual InterruptResult InterruptImpl(uint8_t vector) = 0;
-protected:
-	/*!
+	
+    /*!
 	 * Keeps track of how many interrupts were skipped because they were
 	 * already enqueued.
 	 */

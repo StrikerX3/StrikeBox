@@ -21,6 +21,12 @@
 #include "openxbox/settings.h"
 
 #include "openxbox/hw/sysclock.h"
+#include "openxbox/hw/smbus.h"
+#include "openxbox/hw/pcibus.h"
+#include "openxbox/hw/smc.h"
+#include "openxbox/hw/mcpx.h"
+#include "openxbox/hw/eeprom.h"
+#include "openxbox/hw/nvnet.h"
 
 #include "openxbox/cpu_module.h"
 
@@ -32,7 +38,7 @@ namespace openxbox {
  * This class is the top-level class, will perform initialization and high-level
  * management of the overall emulation flow.
  */
-class Xbox : Emulator {
+class Xbox : Emulator, IOMapper {
 protected:
 	// ----- Modules ----------------------------------------------------------
 	IOpenXBOXCPUModule * m_cpuModule;
@@ -42,8 +48,17 @@ protected:
 	char         *m_ram;
 	char         *m_rom;
 	MemoryRegion *m_memRegion;
-	SystemClock  *m_sysClock;
+	
+    SystemClock  *m_sysClock;
+    SMCDevice    *m_SMC;
+    SMBus        *m_SMBus;
+    PCIBus       *m_PCIBus;
+    MCPXDevice   *m_MCPX;
+    EEPROMDevice *m_EEPROM;
+    NVNetDevice  *m_NVNet;
 
+    // TODO: move to TV encoder device
+    int m_field_pin = 0;
 
     // ----- Configuration ----------------------------------------------------
     OpenXBOXSettings *m_settings;
@@ -65,6 +80,13 @@ public:
 	int Run();
 	int RunCpu();
 	void Stop();
+
+    // IOMapper implementation
+    void IORead(uint32_t addr, uint32_t *value, uint16_t size);
+    void IOWrite(uint32_t addr, uint32_t value, uint16_t size);
+
+    void MMIORead(uint32_t addr, uint32_t *value, uint8_t size);
+    void MMIOWrite(uint32_t addr, uint32_t value, uint8_t size);
 };
 
 }

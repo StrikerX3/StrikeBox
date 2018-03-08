@@ -18,7 +18,7 @@ namespace openxbox {
 // manually mapped to virtual address 0x80010000.
 
 // FIXME: Get these from a real xbox
-#define XBOX_RAM_SIZE         MiB(64)
-#define XBOX_ROM_SIZE         MiB(16)
+#define XBOX_RAM_SIZE  MiB(64)  // TODO: 128 MiB systems
+#define XBOX_ROM_SIZE  MiB(16)
 
 }

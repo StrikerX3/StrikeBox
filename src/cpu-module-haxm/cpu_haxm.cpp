@@ -34,7 +34,7 @@ HaxmCpu::~HaxmCpu() {
 
 int HaxmCpu::InitializeImpl() {
 	if (m_haxm == nullptr) {
-		m_haxm = new Haxm();
+        m_haxm = new Haxm();
 
 		auto status = m_haxm->Initialize();
 		if (status != HXS_SUCCESS) {
@@ -56,7 +56,7 @@ int HaxmCpu::InitializeImpl() {
 		}
 
         m_interruptHandlerCredits = kInterruptHandlerMaxCredits;
-	}
+    }
 
 	return 0;
 }
@@ -97,10 +97,11 @@ int HaxmCpu::RunImpl() {
 	}
 	case HAX_EXIT_IO:          m_exitInfo.reason = CPU_EXIT_NORMAL;            // I/O (in / out instructions)
 		return HandleIO(tunnel->io._df, tunnel->io._port, tunnel->io._direction, tunnel->io._size, tunnel->io._count, m_vcpu->IOTunnel());
-	case HAX_EXIT_MMIO:        m_exitInfo.reason = CPU_EXIT_NORMAL;    return HandleMMIO(tunnel->mmio.gla, tunnel->io._direction);  // MMIO
-	case HAX_EXIT_FAST_MMIO:   m_exitInfo.reason = CPU_EXIT_NORMAL;    return HandleFastMMIO((struct hax_fastmmio *)m_vcpu->IOTunnel());  // Fast MMIO
+	case HAX_EXIT_FAST_MMIO:   m_exitInfo.reason = CPU_EXIT_NORMAL;            // Fast MMIO
+        return HandleFastMMIO((struct hax_fastmmio *)m_vcpu->IOTunnel());
 	case HAX_EXIT_INTERRUPT:   m_exitInfo.reason = CPU_EXIT_NORMAL;    break;  // Let HAXM handle this
 	case HAX_EXIT_PAUSED:      m_exitInfo.reason = CPU_EXIT_NORMAL;    break;  // Let HAXM handle this
+    case HAX_EXIT_MMIO:        m_exitInfo.reason = CPU_EXIT_ERROR;     break;  // Regular MMIO (cannot be implemented)
 	case HAX_EXIT_REALMODE:    m_exitInfo.reason = CPU_EXIT_ERROR;     break;  // Real mode is not supported
 	case HAX_EXIT_UNKNOWN:     m_exitInfo.reason = CPU_EXIT_ERROR;     break;  // VM failed for an unknown reason
 	case HAX_EXIT_STATECHANGE: m_exitInfo.reason = CPU_EXIT_SHUTDOWN;  break;  // The VM is shutting down
@@ -357,50 +358,49 @@ int HaxmCpu::HandleIO(uint8_t df, uint16_t port, uint8_t direction, uint16_t siz
 	}
 	
 	for (uint16_t i = 0; i < count; i++) {
-		// TODO: delegate to I/O mapper
-		// port: port number
-		// ptr: pointer to data buffer
-		// size: size of data buffer
-		// direction: read (HAX_IO_OUT) or write (HAX_IO_IN)
+        uint32_t value;
+        switch (size) {
+        case 1: value = *ptr; break;
+        case 2: value = *reinterpret_cast<uint16_t *>(ptr); break;
+        case 4: value = *reinterpret_cast<uint32_t *>(ptr); break;
+        default: assert(0); // should not happen
+        }
+
+        if (direction == HAX_IO_OUT) {
+            m_ioMapper->IOWrite(port, value, size);
+        }
+        else {
+            m_ioMapper->IORead(port, &value, size);
+        }
+
+        if (df) {
+            ptr -= size;
+        }
+        else {
+            ptr += size;
+        }
 	}
 
-	log_warning("I/O unimplemented!   df: %d  port: 0x%04x  direction: %d  size: %d  count: %d\n", df, port, direction, size, count);
-
-	return 0;
-}
-
-int HaxmCpu::HandleMMIO(uint32_t physAddress, uint8_t direction) {
-	log_warning("MMIO unimplemented!   address: 0x%08x  direction: %d\n", physAddress, direction);
-	// TODO: handle MMIO at the given physical address
-	// direction: read (HAX_IO_OUT) or write (HAX_IO_IN)
 	return 0;
 }
 
 int HaxmCpu::HandleFastMMIO(struct hax_fastmmio *info) {
 	if (info->direction < 2) {
-		log_warning("Fast MMIO unimplemented!   address: 0x%08x  value: 0x%x  size: %d  direction: %d\n", info->gpa, info->value, info->size, info->direction);
-		// TODO: handle MMIO at the given physical address
-		// info->gpa: physical address
-		// info->value: value to read/write
-		// info->size: number of bytes to read/write
-		// info->direction: read (HAX_IO_OUT) or write (HAX_IO_IN)
-
-		//cpu_physical_memory_rw(info->gpa, (uint8_t *)&info->value, info->size, info->direction);
+        if (info->direction == HAX_IO_OUT) {
+            m_ioMapper->MMIOWrite(info->gpa, (uint32_t)info->value, info->size);
+        }
+        else {
+            m_ioMapper->MMIORead(info->gpa, (uint32_t*)&info->value, info->size);
+        }
 	}
 	else {
-		log_warning("Two-way fast MMIO unimplemented!   address1: 0x%08x  address2: 0x%08x  size: %d\n", info->gpa, info->gpa2, info->size);
-		// TODO: handle MMIO between two physical addresses
-		// info->gpa: physical address to read from
-		// info->gpa2: physical address to write to
-		// info->size: number of bytes to read/write
-
 		// HAX API v4 supports transferring data between two MMIO addresses,
 		// info->gpa and info->gpa2 (instructions such as MOVS require this):
 		//  info->direction == 2: gpa ==> gpa2
 
-		uint64_t value;
-		//cpu_physical_memory_rw(info->gpa, (uint8_t *)&value, info->size, 0);
-		//cpu_physical_memory_rw(info->gpa2, (uint8_t *)&value, info->size, 1);
+        uint32_t value;
+        m_ioMapper->MMIORead(info->gpa, &value, info->size);
+        m_ioMapper->MMIOWrite(info->gpa2, value, info->size);
 	}
 	return 0;
 }
