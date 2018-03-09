@@ -20,7 +20,7 @@
 #include "openxbox/thread.h"
 #include "openxbox/settings.h"
 
-#include "openxbox/hw/sysclock.h"
+#include "openxbox/hw/i8254.h"
 #include "openxbox/hw/smbus.h"
 #include "openxbox/hw/pcibus.h"
 #include "openxbox/hw/smc.h"
@@ -50,7 +50,8 @@ protected:
 	char            *m_rom;
 	MemoryRegion    *m_memRegion;
 	
-    SystemClock     *m_sysClock;
+
+    i8254           *m_i8254;
     SMCDevice       *m_SMC;
     SMBus           *m_SMBus;
     PCIBus          *m_PCIBus;

@@ -18,21 +18,12 @@ static uint32_t EmuCpuThreadFunc(void *data) {
     return xbox->RunCpu();
 }
 
-// System clock thread function
-static uint32_t EmuSysClockThreadFunc(void *data) {
-    SystemClock *sysClock = (SystemClock *)data;
-    sysClock->Run();
-    return 0;
-}
-
-
 /*!
  * Constructor
  */
 Xbox::Xbox(IOpenXBOXCPUModule *cpuModule)
     : m_cpuModule(cpuModule)
 {
-    m_sysClock = nullptr;
 }
 
 /*!
@@ -159,11 +150,6 @@ int Xbox::Initialize(OpenXBOXSettings *settings)
 
     // ----- Hardware ---------------------------------------------------------
 
-    // Initialize system clock
-    log_debug("Initializing System Clock\n");
-    m_sysClock = new SystemClock(m_cpu, settings->hw_sysclock_tickRate);
-    assert(m_sysClock != NULL);
-
     // Determine which revisions of which components should be used for the
     // specified hardware model
     MCPXRevision mcpxRevision = MCPXRevisionFromHardwareModel(settings->hw_model);
@@ -171,6 +157,10 @@ int Xbox::Initialize(OpenXBOXSettings *settings)
     TVEncoder tvEncoder = TVEncoderFromHardwareModel(settings->hw_model);
 
     log_debug("Initializing devices\n");
+
+    // Create PIT and PIC
+    m_i8254 = new i8254(m_cpu, settings->hw_sysclock_tickRate);
+
     // Create busses
     m_PCIBus = new PCIBus();
     m_SMBus = new SMBus();
@@ -249,9 +239,6 @@ int Xbox::Run() {
 	Thread *cpuIdleThread = Thread_Create("[HW] CPU", EmuCpuThreadFunc, this);
 
 	// --- Emulator subsystems ------------------------------------------------
-
-	// Start System Clock thread
-	Thread_Create("[HW] System clock", EmuSysClockThreadFunc, m_sysClock);
 	
 	// TODO: start threads to handle other subsystems
 	// - One or more for each piece of hardware
@@ -322,7 +309,8 @@ int Xbox::RunCpu()
 		// Handle reason for the CPU to exit
 		exit_info = m_cpu->GetExitInfo();
 		switch (exit_info->reason) {
-		case CPU_EXIT_SHUTDOWN: log_info("VM is shutting down\n"); Stop(); break;
+        case CPU_EXIT_HLT:      log_info("CPU halted\n");          Stop(); break;
+        case CPU_EXIT_SHUTDOWN: log_info("VM is shutting down\n"); Stop(); break;
 		}
 	}
 
@@ -330,14 +318,17 @@ int Xbox::RunCpu()
 }
 
 void Xbox::Stop() {
-	if (m_sysClock != nullptr) {
-		m_sysClock->Stop();
+	if (m_i8254 != nullptr) {
+        m_i8254->Reset();
 	}
 	m_should_run = false;
 }
 
 void Xbox::IORead(uint32_t addr, uint32_t *value, uint16_t size) {
-    log_spew("Xbox::IORead   address = 0x%x,  size = %d\n", addr, size);
+    log_debug("Xbox::IORead   address = 0x%x,  size = %d\n", addr, size);
+
+    // TODO: proper I/O port mapping
+
     switch (addr) {
     case 0x8008: { // TODO: Move 0x8008 TIMER to a device
         if (size == sizeof(uint32_t)) {
@@ -345,7 +336,7 @@ void Xbox::IORead(uint32_t addr, uint32_t *value, uint16_t size) {
             auto t = std::chrono::high_resolution_clock::now();
             *value = static_cast<uint32_t>(t.time_since_epoch().count() * 0.003579545);
         }
-        break;
+        return;
     }
     case 0x80C0: { // TODO: Move 0x80C0 TV encoder to a device
         if (size == sizeof(uint8_t)) {
@@ -353,33 +344,54 @@ void Xbox::IORead(uint32_t addr, uint32_t *value, uint16_t size) {
             m_field_pin = (m_field_pin + 1) & 1;
             *value = m_field_pin << 5;
         }
-        break;
-    }
-    }
-
-    // Pass the IO Read to the PCI Bus.
-    // This will handle devices with BARs set to IO addresses
-    if (m_PCIBus->IORead(addr, value, size)) {
         return;
     }
+    case PORT_PIT_DATA_0:
+    case PORT_PIT_DATA_1:
+    case PORT_PIT_DATA_2:
+    case PORT_PIT_COMMAND: {
+        m_i8254->IORead(addr, value, size);
+        return;
+    }
+    default:
+        // Pass the IO Read to the PCI Bus.
+        // This will handle devices with BARs set to IO addresses
+        if (m_PCIBus->IORead(addr, value, size)) {
+            return;
+        }
+        break;
+    }
 
-    log_warning("Unhandled I/O read!   address = 0x%x,  size = %d\n", addr, size);
+
+    log_warning("Unhandled I/O!  address = 0x%x,  size = %d,  read\n", addr, size);
 }
 
 void Xbox::IOWrite(uint32_t addr, uint32_t value, uint16_t size) {
-    log_spew("Xbox::IOWrite  address = 0x%x,  size = %d,  value = 0x%x\n", addr, size, value);
+    log_debug("Xbox::IOWrite  address = 0x%x,  size = %d,  value = 0x%x\n", addr, size, value);
 
-    // Pass the IO Write to the PCI Bus.
-    // This will handle devices with BARs set to IO addresses
-    if (m_PCIBus->IOWrite(addr, value, size)) {
+    // TODO: proper I/O port mapping
+
+    switch (addr) {
+    case PORT_PIT_DATA_0:
+    case PORT_PIT_DATA_1:
+    case PORT_PIT_DATA_2:
+    case PORT_PIT_COMMAND:
+        m_i8254->IOWrite(addr, value, size);
         return;
+    default:
+        // Pass the IO Write to the PCI Bus.
+        // This will handle devices with BARs set to IO addresses
+        if (m_PCIBus->IOWrite(addr, value, size)) {
+            return;
+        }
+        break;
     }
 
-    log_warning("Unhandled I/O write!  address = 0x%x,  size = %d,  value = 0x%08x\n", addr, size, value);
+    log_warning("Unhandled I/O!  address = 0x%x,  size = %d,  write 0x%x\n", addr, size, value);
 }
 
 void Xbox::MMIORead(uint32_t addr, uint32_t *value, uint8_t size) {
-    log_spew("Xbox::MMIORead   address = 0x%x,  size = %d\n", addr, size);
+    log_debug("Xbox::MMIORead   address = 0x%x,  size = %d\n", addr, size);
   
     if ((addr & (size - 1)) != 0) {
         log_warning("Unaligned MMIO read!   address = 0x%x,  size = %d\n", addr, size);
@@ -392,11 +404,11 @@ void Xbox::MMIORead(uint32_t addr, uint32_t *value, uint8_t size) {
         return;
     }
 
-    log_warning("Unhandled MMIO read!   address = 0x%x,  size = %d\n", addr, size);
+    log_warning("Unhandled MMIO!  address = 0x%x,  size = %d,  read\n", addr, size);
 }
 
 void Xbox::MMIOWrite(uint32_t addr, uint32_t value, uint8_t size) {
-    log_spew("Xbox::MMIOWrite  address = 0x%x,  size = %d,  value = 0x%x\n", addr, size, value);
+    log_debug("Xbox::MMIOWrite  address = 0x%x,  size = %d,  value = 0x%x\n", addr, size, value);
 
     if ((addr & (size - 1)) != 0) {
         log_warning("Unaligned MMIO write!  address = 0x%x,  size = %d,  value = 0x%x\n", addr, size, value);
@@ -409,8 +421,7 @@ void Xbox::MMIOWrite(uint32_t addr, uint32_t value, uint8_t size) {
         return;
     }
 
-    
-    log_warning("Unhandled MMIO write!  address = 0x%x,  size = %d,  value = 0x%x\n", addr, size, value);
+    log_warning("Unhandled MMIO!  address = 0x%x,  size = %d,  write 0x%x\n", addr, size, value);
 }
 
 
