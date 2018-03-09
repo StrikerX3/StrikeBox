@@ -27,6 +27,7 @@
 #include "openxbox/hw/mcpx.h"
 #include "openxbox/hw/eeprom.h"
 #include "openxbox/hw/nvnet.h"
+#include "openxbox/hw/tvenc.h"
 
 #include "openxbox/cpu_module.h"
 
@@ -44,18 +45,19 @@ protected:
 	IOpenXBOXCPUModule * m_cpuModule;
 
 	// ----- Hardware ---------------------------------------------------------
-	Cpu          *m_cpu;
-	char         *m_ram;
-	char         *m_rom;
-	MemoryRegion *m_memRegion;
+	Cpu             *m_cpu;
+	char            *m_ram;
+	char            *m_rom;
+	MemoryRegion    *m_memRegion;
 	
-    SystemClock  *m_sysClock;
-    SMCDevice    *m_SMC;
-    SMBus        *m_SMBus;
-    PCIBus       *m_PCIBus;
-    MCPXDevice   *m_MCPX;
-    EEPROMDevice *m_EEPROM;
-    NVNetDevice  *m_NVNet;
+    SystemClock     *m_sysClock;
+    SMCDevice       *m_SMC;
+    SMBus           *m_SMBus;
+    PCIBus          *m_PCIBus;
+    MCPXDevice      *m_MCPX;
+    EEPROMDevice    *m_EEPROM;
+    TVEncoderDevice *m_TVEncoder;
+    NVNetDevice     *m_NVNet;
 
     // TODO: move to TV encoder device
     int m_field_pin = 0;

@@ -84,7 +84,7 @@ int main(int argc, const char *argv[]) {
 
     OpenXBOXSettings settings;
     settings.cpu_singleStep = false;
-    settings.debug_dumpMemoryMapping = true;
+    settings.debug_dumpPageTables = false;
     settings.debug_dumpXBESectionContents = false;
     settings.gdb_enable = false;
     settings.hw_model = DebugKit;

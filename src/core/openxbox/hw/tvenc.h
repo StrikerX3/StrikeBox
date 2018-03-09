@@ -3,6 +3,7 @@
 #include <cstdint>
 
 #include "defs.h"
+#include "sm.h"
 
 namespace openxbox {
 
@@ -16,5 +17,9 @@ typedef enum {
 
 
 TVEncoder TVEncoderFromHardwareModel(HardwareModel hardwareModel);
+
+class TVEncoderDevice : public SMDevice {
+
+};
 
 }

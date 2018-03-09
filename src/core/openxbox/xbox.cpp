@@ -6,6 +6,7 @@
 
 #include "openxbox/hw/defs.h"
 #include "openxbox/hw/tvenc.h"
+#include "openxbox/hw/tvenc_conexant.h"
 
 #include <chrono>
 
@@ -191,13 +192,16 @@ int Xbox::Initialize(OpenXBOXSettings *settings)
     //m_SMBus->ConnectDevice(kSMBusAddress_TVEncoder, m_TVEncoder); // W 0x88 R 0x89
     switch (tvEncoder) {
     case TVEncoder::Conexant:
-        // g_SMBus->ConnectDevice(kSMBusAddress_TVEncoder_ID_Conexant, m_TVEncoderConexant); // W 0x8A R 0x8B
+        m_TVEncoder = new TVEncConexantDevice();
+        m_SMBus->ConnectDevice(kSMBusAddress_TVEncoder_ID_Conexant, m_TVEncoder); // W 0x8A R 0x8B
         break;
     case TVEncoder::Focus:
-        // g_SMBus->ConnectDevice(kSMBusAddress_TVEncoder_ID_Focus, m_TVEncoderFocus); // W 0xD4 R 0xD5
+        // m_TVEncoder = new TVEncFocusDevice();
+        // m_SMBus->ConnectDevice(kSMBusAddress_TVEncoder_ID_Focus, m_TVEncoder); // W 0xD4 R 0xD5
         break;
     case TVEncoder::XCalibur:
-        // g_SMBus->ConnectDevice(kSMBusAddress_TVEncoder_ID_XCalibur, m_TVEncoderXCalibur); // W 0xE0 R 0xE1
+        // m_TVEncoder = new TVEncXCaliburDevice();
+        // m_SMBus->ConnectDevice(kSMBusAddress_TVEncoder_ID_XCalibur, m_TVEncoder); // W 0xE0 R 0xE1
         break;
     }
 
@@ -306,7 +310,7 @@ int Xbox::RunCpu()
 			break;
 		}
 
-#if 1
+#if 0
 #ifdef _DEBUG
         // Pring CPU registers for debugging purposes
         uint32_t eip;
@@ -333,6 +337,7 @@ void Xbox::Stop() {
 }
 
 void Xbox::IORead(uint32_t addr, uint32_t *value, uint16_t size) {
+    log_spew("Xbox::IORead   address = 0x%x,  size = %d\n", addr, size);
     switch (addr) {
     case 0x8008: { // TODO: Move 0x8008 TIMER to a device
         if (size == sizeof(uint32_t)) {
@@ -358,22 +363,26 @@ void Xbox::IORead(uint32_t addr, uint32_t *value, uint16_t size) {
         return;
     }
 
-    log_warning("Unhandled I/O read!   address = 0x%08x,  size = %d\n", addr, size);
+    log_warning("Unhandled I/O read!   address = 0x%x,  size = %d\n", addr, size);
 }
 
 void Xbox::IOWrite(uint32_t addr, uint32_t value, uint16_t size) {
+    log_spew("Xbox::IOWrite  address = 0x%x,  size = %d,  value = 0x%x\n", addr, size, value);
+
     // Pass the IO Write to the PCI Bus.
     // This will handle devices with BARs set to IO addresses
     if (m_PCIBus->IOWrite(addr, value, size)) {
         return;
     }
 
-    log_warning("Unhandled I/O write!  address = 0x%08x,  size = %d,  value = 0x%08x\n", addr, size, value);
+    log_warning("Unhandled I/O write!  address = 0x%x,  size = %d,  value = 0x%08x\n", addr, size, value);
 }
 
 void Xbox::MMIORead(uint32_t addr, uint32_t *value, uint8_t size) {
+    log_spew("Xbox::MMIORead   address = 0x%x,  size = %d\n", addr, size);
+  
     if ((addr & (size - 1)) != 0) {
-        log_warning("Unaligned MMIO read!   address = 0x%08x,  size = %d\n", addr, size);
+        log_warning("Unaligned MMIO read!   address = 0x%x,  size = %d\n", addr, size);
         return;
     }
 
@@ -383,12 +392,14 @@ void Xbox::MMIORead(uint32_t addr, uint32_t *value, uint8_t size) {
         return;
     }
 
-    log_debug("Unhandled MMIO read!   address = 0x%08x,  size = %d\n", addr, size);
+    log_warning("Unhandled MMIO read!   address = 0x%x,  size = %d\n", addr, size);
 }
 
 void Xbox::MMIOWrite(uint32_t addr, uint32_t value, uint8_t size) {
+    log_spew("Xbox::MMIOWrite  address = 0x%x,  size = %d,  value = 0x%x\n", addr, size, value);
+
     if ((addr & (size - 1)) != 0) {
-        log_warning("Unaligned MMIO write!  address = 0x%08x,  size = %d,  value = 0x%08x\n", addr, size, value);
+        log_warning("Unaligned MMIO write!  address = 0x%x,  size = %d,  value = 0x%x\n", addr, size, value);
         return;
     }
 
@@ -399,7 +410,7 @@ void Xbox::MMIOWrite(uint32_t addr, uint32_t value, uint8_t size) {
     }
 
     
-    log_debug("Unhandled MMIO write!  address = 0x%08x,  size = %d,  value = 0x%08x\n", addr, size, value);
+    log_warning("Unhandled MMIO write!  address = 0x%x,  size = %d,  value = 0x%x\n", addr, size, value);
 }
 
 
@@ -420,11 +431,11 @@ void Xbox::Cleanup() {
 			}
 		}
 
-        if (m_settings->debug_dumpMemoryMapping) {
+        if (m_settings->debug_dumpPageTables) {
             uint32_t cr0;
             m_cpu->RegRead(REG_CR0, &cr0);
             if (cr0 & (CR0_PG | CR0_PE)) {
-                log_debug("\nVirtual address mappings:\n");
+                log_debug("\nPage tables:\n");
                 uint32_t cr3;
                 m_cpu->RegRead(REG_CR3, &cr3);
                 for (uint32_t pdeEntry = 0; pdeEntry < 0x1000; pdeEntry += sizeof(Pte)) {

@@ -15,8 +15,8 @@ struct OpenXBOXSettings {
     // true: XBE sections will be dumped to individual files
     bool debug_dumpXBESectionContents = false;
 
-    // true: dump memory address mappings (page tables) after execution
-    bool debug_dumpMemoryMapping = false;
+    // true: dump page tables after execution
+    bool debug_dumpPageTables = false;
 
     // The Xbox hardware model to use
     HardwareModel hw_model = DebugKit;
