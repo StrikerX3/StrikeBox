@@ -20,6 +20,8 @@ public:
     void WriteByte(uint8_t command, uint8_t value);
     void WriteWord(uint8_t command, uint16_t value);
     void WriteBlock(uint8_t command, uint8_t* data, int length);
+private:
+    uint8_t m_registers[256];
 };
 
 }

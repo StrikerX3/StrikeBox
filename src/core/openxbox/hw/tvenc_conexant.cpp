@@ -22,11 +22,11 @@ uint8_t TVEncConexantDevice::ReceiveByte() {
 }
 
 uint8_t TVEncConexantDevice::ReadByte(uint8_t command) {
-    return 0; // TODO
+    return *(m_registers + command);
 }
 
 uint16_t TVEncConexantDevice::ReadWord(uint8_t command) {
-    return 0; // TODO
+    return *((uint16_t*)(m_registers + command));
 }
 
 int TVEncConexantDevice::ReadBlock(uint8_t command, uint8_t *data) {
@@ -38,15 +38,15 @@ void TVEncConexantDevice::SendByte(uint8_t data) {
 }
 
 void TVEncConexantDevice::WriteByte(uint8_t command, uint8_t value) {
-    // TODO
+    *((uint8_t*)(m_registers + command)) = value;
 }
 
 void TVEncConexantDevice::WriteWord(uint8_t command, uint16_t value) {
-    // TODO
+    *((uint16_t*)(m_registers + command)) = value;
 }
 
 void TVEncConexantDevice::WriteBlock(uint8_t command, uint8_t* data, int length) {
-    // TOOD
+    memcpy(m_registers + command, data, length);
 }
 
 }
