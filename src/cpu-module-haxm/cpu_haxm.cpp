@@ -358,19 +358,18 @@ int HaxmCpu::HandleIO(uint8_t df, uint16_t port, uint8_t direction, uint16_t siz
 	}
 	
 	for (uint16_t i = 0; i < count; i++) {
-        uint32_t value;
-        switch (size) {
-        case 1: value = *ptr; break;
-        case 2: value = *reinterpret_cast<uint16_t *>(ptr); break;
-        case 4: value = *reinterpret_cast<uint32_t *>(ptr); break;
-        default: assert(0); // should not happen
-        }
-
         if (direction == HAX_IO_OUT) {
+            uint32_t value;
+            switch (size) {
+            case 1: value = *ptr; break;
+            case 2: value = *reinterpret_cast<uint16_t *>(ptr); break;
+            case 4: value = *reinterpret_cast<uint32_t *>(ptr); break;
+            default: assert(0); // should not happen
+            }
             m_ioMapper->IOWrite(port, value, size);
         }
         else {
-            m_ioMapper->IORead(port, &value, size);
+            m_ioMapper->IORead(port, reinterpret_cast<uint32_t*>(buffer), size);
         }
 
         if (df) {
