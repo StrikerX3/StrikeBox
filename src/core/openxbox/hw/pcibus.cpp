@@ -23,7 +23,7 @@ uint32_t PCIBus::IOReadConfigData() {
         return it->second->ReadConfigRegister(m_configAddressRegister.registerNumber & PCI_CONFIG_REGISTER_MASK);
     }
 
-    log_warning("PCIBus::IOReadConfigData: Invalid Device Write (Bus: %d   Slot: %d   Function: %d)\n", m_configAddressRegister.busNumber,
+    log_warning("PCIBus::IOReadConfigData:  Invalid Device Read  (%d:%d:%d)\n", m_configAddressRegister.busNumber,
         PCI_SLOT(m_configAddressRegister.deviceNumber),
         PCI_FUNC(m_configAddressRegister.deviceNumber));
 
@@ -38,7 +38,7 @@ void PCIBus::IOWriteConfigData(uint32_t pData) {
         return;
     }
 
-    log_warning("PCIBus::IOWriteConfigData: Invalid Device Write (Bus: %d   Slot: %d   Function: %d)\n", m_configAddressRegister.busNumber,
+    log_warning("PCIBus::IOWriteConfigData: Invalid Device Write (%d:%d:%d)\n", m_configAddressRegister.busNumber,
         PCI_SLOT(m_configAddressRegister.deviceNumber),
         PCI_FUNC(m_configAddressRegister.deviceNumber));
 }
@@ -70,13 +70,23 @@ bool PCIBus::IOWrite(uint32_t addr, uint32_t value, unsigned size) {
         if (size == sizeof(uint32_t)) {
             IOWriteConfigAddress(value);
             return true;
-        } // TODO : else log wrong size-access?
+        }
+        else {
+            log_warning("PCIBus:IOWrite: non-32-bit write to 0xcf8 with size %d,  address 0x%x,  value 0x%x\n", size, addr, value);
+            IOWriteConfigAddress(value);
+            return true;
+        }
         break;
     case PORT_PCI_CONFIG_DATA: // 0xCFC
         if (size == sizeof(uint32_t)) {
             IOWriteConfigData(value);
             return true; // TODO : Should IOWriteConfigData() success/failure be returned?
-        } // TODO : else log wrong size-access?
+        }
+        else {
+            log_warning("PCIBus:IOWrite: non-32-bit write to 0xcfc with size %d,  address 0x%x,  value 0x%x\n", size, addr, value);
+            IOWriteConfigData(value);
+            return true;
+        }
         break;
     default:
         for (auto it = m_Devices.begin(); it != m_Devices.end(); ++it) {
