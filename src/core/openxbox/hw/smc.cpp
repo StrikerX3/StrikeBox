@@ -73,16 +73,13 @@ uint8_t SMCDevice::ReadByte(uint8_t command) {
     //case SMCRegister::InterruptReason:
     //case SMCRegister::Overheated:
     //case SMCRegister::Scratch:
-    case SMCRegister::Challenge_1C:
-    case SMCRegister::Challenge_1D:
-    case SMCRegister::Challenge_1E:
-    case SMCRegister::Challenge_1F:
-        if (m_revision == SMCRevision::D01)
-            // See http://xboxdevwiki.net/PIC#PIC_Challenge_.28regs_0x1C.7E0x21.29
-            return 0;
 
-        break;
-        // case ...: TODO
+    // See http://xboxdevwiki.net/PIC#PIC_Challenge_.28regs_0x1C.7E0x21.29
+    // Taken from https://github.com/xqemu/xqemu/blob/xbox/hw/xbox/smbus_xbox_smc.c
+    case SMCRegister::Challenge_1C: return 0x52;
+    case SMCRegister::Challenge_1D: return 0x72;
+    case SMCRegister::Challenge_1E: return 0xea;
+    case SMCRegister::Challenge_1F: return 0x46;
     }
 
     return m_buffer[command];
@@ -115,8 +112,8 @@ void SMCDevice::WriteByte(uint8_t command, uint8_t value) {
         case kSMCReset_AssertPowerCycle: return; // TODO
         case kSMCReset_AssertShutdown: return; // TODO: Power off, terminating the emulation
         }
-        // TODO: case PowerFanMode:
-        // TODO: case PowerFanRegister:
+    // TODO: case SMCRegister::PowerFanMode:
+    // TODO: case SMCRegister::PowerFanRegister:
     case SMCRegister::LEDMode:
         switch (value) {
         case 0: return; // TODO: Automatic LED management
