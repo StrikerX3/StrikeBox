@@ -18,29 +18,45 @@ void PCIBus::IOWriteConfigAddress(uint32_t pData) {
 }
 
 uint32_t PCIBus::IOReadConfigData() {
-    auto it = m_Devices.find(PCI_DEVID(m_configAddressRegister.busNumber, m_configAddressRegister.deviceNumber));
+    auto it = m_Devices.find(
+        PCI_DEVID(m_configAddressRegister.busNumber,
+            PCI_DEVFN(m_configAddressRegister.deviceNumber, m_configAddressRegister.functionNumber)
+        )
+    );
     if (it != m_Devices.end()) {
         return it->second->ReadConfigRegister(m_configAddressRegister.registerNumber & PCI_CONFIG_REGISTER_MASK);
     }
 
-    log_warning("PCIBus::IOReadConfigData:  Invalid Device Read  (%d:%d:%d)\n", m_configAddressRegister.busNumber,
-        PCI_SLOT(m_configAddressRegister.deviceNumber),
-        PCI_FUNC(m_configAddressRegister.deviceNumber));
+    log_warning("PCIBus::IOReadConfigData:  Invalid Device Read  (%d:%d:%d)\n",
+        m_configAddressRegister.busNumber,
+        m_configAddressRegister.deviceNumber,
+        m_configAddressRegister.functionNumber);
 
     // Unpopulated PCI slots return 0xFFFFFFFF
     return 0xFFFFFFFF;
 }
 
 void PCIBus::IOWriteConfigData(uint32_t pData) {
-    auto it = m_Devices.find(PCI_DEVID(m_configAddressRegister.busNumber, m_configAddressRegister.deviceNumber));
+    log_spew("PCIBus::IOWriteConfigData: (%d:%d:%d) = 0x%x\n",
+        m_configAddressRegister.busNumber,
+        m_configAddressRegister.deviceNumber,
+        m_configAddressRegister.functionNumber,
+        pData);
+
+    auto it = m_Devices.find(
+        PCI_DEVID(m_configAddressRegister.busNumber,
+            PCI_DEVFN(m_configAddressRegister.deviceNumber, m_configAddressRegister.functionNumber)
+        )
+    );
     if (it != m_Devices.end()) {
         it->second->WriteConfigRegister(m_configAddressRegister.registerNumber & PCI_CONFIG_REGISTER_MASK, pData);
         return;
     }
 
-    log_warning("PCIBus::IOWriteConfigData: Invalid Device Write (%d:%d:%d)\n", m_configAddressRegister.busNumber,
-        PCI_SLOT(m_configAddressRegister.deviceNumber),
-        PCI_FUNC(m_configAddressRegister.deviceNumber));
+    log_warning("PCIBus::IOWriteConfigData: Invalid Device Write (%d:%d:%d)\n",
+        m_configAddressRegister.busNumber,
+        m_configAddressRegister.deviceNumber,
+        m_configAddressRegister.functionNumber);
 }
 
 bool PCIBus::IORead(uint32_t addr, uint32_t* data, unsigned size) {

@@ -459,14 +459,14 @@ void EmuNVNet_Write(uint32_t addr, uint32_t value, int size) {
 void NVNetDevice::Init() {
     PCIBarRegister r;
 
-    // Register Memory bar :
+    // Register Memory bar
     r.Raw.type = PCI_BAR_TYPE_MEMORY;
     r.Memory.address = NVNET_ADDR >> 4;
     RegisterBAR(0, NVNET_SIZE, r.value);
 
-    // Register IO bar :
+    // Register IO bar
     r.Raw.type = PCI_BAR_TYPE_IO;
-    r.IO.address = 0xE000;
+    r.IO.address = 0xE000 >> 2;
     RegisterBAR(1, 8, r.value);
 
     m_deviceID = 0x01C3;

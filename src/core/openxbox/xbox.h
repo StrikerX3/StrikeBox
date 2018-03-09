@@ -25,6 +25,7 @@
 #include "openxbox/hw/pcibus.h"
 #include "openxbox/hw/smc.h"
 #include "openxbox/hw/mcpx.h"
+#include "openxbox/hw/mcpx_ram.h"
 #include "openxbox/hw/eeprom.h"
 #include "openxbox/hw/nvnet.h"
 #include "openxbox/hw/tvenc.h"
@@ -56,6 +57,7 @@ protected:
     SMBus           *m_SMBus;
     PCIBus          *m_PCIBus;
     MCPXDevice      *m_MCPX;
+    MCPXRAMDevice   *m_MCPXRAM;
     EEPROMDevice    *m_EEPROM;
     TVEncoderDevice *m_TVEncoder;
     NVNetDevice     *m_NVNet;

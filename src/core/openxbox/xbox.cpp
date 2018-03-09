@@ -167,6 +167,7 @@ int Xbox::Initialize(OpenXBOXSettings *settings)
 
     // Create devices
     m_MCPX = new MCPXDevice(mcpxRevision);
+    m_MCPXRAM = new MCPXRAMDevice(mcpxRevision);
     m_SMC = new SMCDevice(smcRevision);
     m_EEPROM = new EEPROMDevice();
     m_NVNet = new NVNetDevice();
@@ -196,11 +197,17 @@ int Xbox::Initialize(OpenXBOXSettings *settings)
     }
 
     // Connect devices to PCI bus
+    //m_PCIBus->ConnectDevice(PCI_DEVID(0, PCI_DEVFN(0, 0)), m_HostBridge);
+    m_PCIBus->ConnectDevice(PCI_DEVID(0, PCI_DEVFN(0, 3)), m_MCPXRAM);
     m_PCIBus->ConnectDevice(PCI_DEVID(0, PCI_DEVFN(1, 1)), m_SMBus);
+    //m_PCIBus->ConnectDevice(PCI_DEVID(0, PCI_DEVFN(2, 0)), m_USB2);
+    //m_PCIBus->ConnectDevice(PCI_DEVID(0, PCI_DEVFN(3, 0)), m_USB1);
     m_PCIBus->ConnectDevice(PCI_DEVID(0, PCI_DEVFN(4, 0)), m_NVNet);
     //m_PCIBus->ConnectDevice(PCI_DEVID(0, PCI_DEVFN(4, 1)), m_MCPX); // MCPX device ID = 0x0808 ?
     //m_PCIBus->ConnectDevice(PCI_DEVID(0, PCI_DEVFN(5, 0)), m_NVAPU);
     //m_PCIBus->ConnectDevice(PCI_DEVID(0, PCI_DEVFN(6, 0)), m_AC97);
+    //m_PCIBus->ConnectDevice(PCI_DEVID(0, PCI_DEVFN(9, 0)), m_IDE);
+    //m_PCIBus->ConnectDevice(PCI_DEVID(0, PCI_DEVFN(30, 0)), m_AGP);
     //m_PCIBus->ConnectDevice(PCI_DEVID(1, PCI_DEVFN(0, 0)), m_NV2A);
 
     // TODO: Handle other SMBUS Addresses, like PIC_ADDRESS, XCALIBUR_ADDRESS
@@ -325,7 +332,7 @@ void Xbox::Stop() {
 }
 
 void Xbox::IORead(uint32_t addr, uint32_t *value, uint16_t size) {
-    log_debug("Xbox::IORead   address = 0x%x,  size = %d\n", addr, size);
+    log_spew("Xbox::IORead   address = 0x%x,  size = %d\n", addr, size);
 
     // TODO: proper I/O port mapping
 
@@ -367,7 +374,7 @@ void Xbox::IORead(uint32_t addr, uint32_t *value, uint16_t size) {
 }
 
 void Xbox::IOWrite(uint32_t addr, uint32_t value, uint16_t size) {
-    log_debug("Xbox::IOWrite  address = 0x%x,  size = %d,  value = 0x%x\n", addr, size, value);
+    log_spew("Xbox::IOWrite  address = 0x%x,  size = %d,  value = 0x%x\n", addr, size, value);
 
     // TODO: proper I/O port mapping
 
@@ -391,7 +398,7 @@ void Xbox::IOWrite(uint32_t addr, uint32_t value, uint16_t size) {
 }
 
 void Xbox::MMIORead(uint32_t addr, uint32_t *value, uint8_t size) {
-    log_debug("Xbox::MMIORead   address = 0x%x,  size = %d\n", addr, size);
+    log_spew("Xbox::MMIORead   address = 0x%x,  size = %d\n", addr, size);
   
     if ((addr & (size - 1)) != 0) {
         log_warning("Unaligned MMIO read!   address = 0x%x,  size = %d\n", addr, size);
@@ -408,7 +415,7 @@ void Xbox::MMIORead(uint32_t addr, uint32_t *value, uint8_t size) {
 }
 
 void Xbox::MMIOWrite(uint32_t addr, uint32_t value, uint8_t size) {
-    log_debug("Xbox::MMIOWrite  address = 0x%x,  size = %d,  value = 0x%x\n", addr, size, value);
+    log_spew("Xbox::MMIOWrite  address = 0x%x,  size = %d,  value = 0x%x\n", addr, size, value);
 
     if ((addr & (size - 1)) != 0) {
         log_warning("Unaligned MMIO write!  address = 0x%x,  size = %d,  value = 0x%x\n", addr, size, value);

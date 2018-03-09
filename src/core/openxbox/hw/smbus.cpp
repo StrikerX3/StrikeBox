@@ -5,9 +5,16 @@ namespace openxbox {
 
 void SMBus::Init() {
     PCIBarRegister r;
+    r.value = 0;
     r.Raw.type = PCI_BAR_TYPE_IO;
-    r.IO.address = 0xC000;
-    RegisterBAR(1, 32, r.value);
+    r.IO.address = 0x1000 >> 2;
+    RegisterBAR(0, 16, r.value);
+
+    r.IO.address = 0xC000 >> 2;
+    RegisterBAR(1, 16, r.value);
+
+    r.IO.address = 0xC200 >> 2;
+    RegisterBAR(2, 32, r.value);
 
     m_deviceID = 0x01B4;
     m_vendorID = PCI_VENDOR_ID_NVIDIA;
@@ -95,11 +102,12 @@ void SMBus::ExecuteTransaction() {
 
 uint32_t SMBus::IORead(int barIndex, uint32_t addr, unsigned size) {
     if (barIndex != 1) {
+        log_debug("SMBus::IORead:  unimplemented access to bar %d:  address = 0x%x,  size = %d\n", barIndex, addr, size);
         return 0;
     }
 
     if (size != 1) {
-        log_debug("SMBus::IORead: unexpected size %d\n", size);
+        log_debug("SMBus::IORead:  unexpected size %d   bar = %d,  address = 0x%x\n", size, barIndex, addr);
     }
 
     uint32_t value;
@@ -140,11 +148,12 @@ uint32_t SMBus::IORead(int barIndex, uint32_t addr, unsigned size) {
 
 void SMBus::IOWrite(int barIndex, uint32_t addr, uint32_t value, unsigned size) {
     if (barIndex != 1) {
+        log_debug("SMBus::IOWrite: unimplemented access to bar %d:  address = 0x%x,  size = %d,  value = 0x%x\n", barIndex, addr, size, value);
         return;
     }
 
     if (size != 1) {
-        log_debug("SMBus::IOWrite: unexpected size %d\n", size);
+        log_debug("SMBus::IOWrite: unexpected size %d   bar = %d,  address = 0x%x,  value = 0x%x\n", size, barIndex, addr, value);
     }
 
     addr &= 0x3f;

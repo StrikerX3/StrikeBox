@@ -120,12 +120,11 @@ void SMCDevice::WriteByte(uint8_t command, uint8_t value) {
         case 1: return; // TODO: Custom sequence
         default: // TODO:
             // HalWriteSMBusValue(0x20, 0x08, false, x) and then HalWriteSMBusValue(0x20, 0x07, false, y > 1)
-            // will cause the led to be solid green, while the next pair of 
+            // will cause the led to be solid green, while the next pair of
             // HalWriteSMBusValue with arbitrary y will cause the led to assume the color of the sequence x
             // and afterwards this will repeat with whatever y; ntstatus is always 0
             return;
         }
-    case SMCRegister::LEDSequence: break; // Let the write go through to the buffer
     // TODO: case SMCRegister::TrayEject:
     // TODO: case SMCRegister::ScratchRegister:
     // TODO: case SMCRegister::ResetOnEject:
@@ -142,7 +141,7 @@ void SMCDevice::WriteByte(uint8_t command, uint8_t value) {
     // TODO: case SMCRegister::PICChallenge_20:
     // TODO: case SMCRegister::PICChallenge_21:
     }
-
+    
     m_buffer[command] = value;
 }
 

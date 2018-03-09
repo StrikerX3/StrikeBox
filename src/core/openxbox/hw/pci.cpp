@@ -5,7 +5,10 @@ namespace openxbox {
 
 bool PCIDevice::GetIOBar(uint32_t port, PCIBar* bar) {
     for (auto it = m_BAR.begin(); it != m_BAR.end(); ++it) {
-        if (it->second.reg.Raw.type == PCI_BAR_TYPE_IO && (port >= it->second.reg.IO.address) && (port < it->second.reg.IO.address + it->second.size)) {
+        if (it->second.reg.Raw.type == PCI_BAR_TYPE_IO &&
+            ((port >> 2) >= it->second.reg.IO.address) &&
+            ((port >> 2) < it->second.reg.IO.address + it->second.size)
+        ) {
             *bar = it->second;
             return true;
         }
@@ -16,7 +19,10 @@ bool PCIDevice::GetIOBar(uint32_t port, PCIBar* bar) {
 
 bool PCIDevice::GetMMIOBar(uint32_t addr, PCIBar* bar) {
     for (auto it = m_BAR.begin(); it != m_BAR.end(); ++it) {
-        if (it->second.reg.Raw.type == PCI_BAR_TYPE_MEMORY && (addr >= (it->second.reg.Memory.address << 4)) && (addr < (it->second.reg.Memory.address << 4) + it->second.size)) {
+        if (it->second.reg.Raw.type == PCI_BAR_TYPE_MEMORY &&
+            ((addr >> 4) >= (it->second.reg.Memory.address << 4)) &&
+            ((addr >> 4) < (it->second.reg.Memory.address << 4) + it->second.size)
+        ) {
             *bar = it->second;
             return true;
         }
@@ -74,7 +80,7 @@ uint32_t PCIDevice::ReadConfigRegister(uint32_t reg) {
         return it->second.reg.value;
     }
     default:
-        log_warning("PCIDevice::ReadConfigRegister: Unhandled Register %X\n", reg);
+        log_warning("PCIDevice::ReadConfigRegister:  Unhandled Register %X\n", reg);
         break;
     }
 
