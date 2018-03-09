@@ -98,9 +98,8 @@ uint32_t SMBus::IORead(int barIndex, uint32_t addr, unsigned size) {
         return 0;
     }
 
-    // For now, make SMBus only support byte-reads
     if (size != 1) {
-        return 0; // TODO: Set GS_PRERR_STS in m_Status too?
+        log_debug("SMBus::IORead: unexpected size %d\n", size);
     }
 
     uint32_t value;
@@ -144,9 +143,8 @@ void SMBus::IOWrite(int barIndex, uint32_t addr, uint32_t value, unsigned size) 
         return;
     }
 
-    // For now, make SMBus only support byte-reads
     if (size != 1) {
-        return; // TODO : Set GS_PRERR_STS in m_Status too?
+        log_debug("SMBus::IOWrite: unexpected size %d\n", size);
     }
 
     addr &= 0x3f;
