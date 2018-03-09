@@ -18,6 +18,13 @@ void PCIBus::IOWriteConfigAddress(uint32_t pData) {
 }
 
 uint32_t PCIBus::IOReadConfigData() {
+    log_spew("PCIBus::IOReadConfigData:  (%d:%d:%d reg 0x%x)\n",
+        m_configAddressRegister.busNumber,
+        m_configAddressRegister.deviceNumber,
+        m_configAddressRegister.functionNumber,
+        m_configAddressRegister.registerNumber
+    );
+
     auto it = m_Devices.find(
         PCI_DEVID(m_configAddressRegister.busNumber,
             PCI_DEVFN(m_configAddressRegister.deviceNumber, m_configAddressRegister.functionNumber)
@@ -27,21 +34,25 @@ uint32_t PCIBus::IOReadConfigData() {
         return it->second->ReadConfigRegister(m_configAddressRegister.registerNumber & PCI_CONFIG_REGISTER_MASK);
     }
 
-    log_warning("PCIBus::IOReadConfigData:  Invalid Device Read  (%d:%d:%d)\n",
+    log_warning("PCIBus::IOReadConfigData:  Invalid Device Read  (%d:%d:%d reg 0x%x)\n",
         m_configAddressRegister.busNumber,
         m_configAddressRegister.deviceNumber,
-        m_configAddressRegister.functionNumber);
+        m_configAddressRegister.functionNumber,
+        m_configAddressRegister.registerNumber
+    );
 
     // Unpopulated PCI slots return 0xFFFFFFFF
     return 0xFFFFFFFF;
 }
 
 void PCIBus::IOWriteConfigData(uint32_t pData) {
-    log_spew("PCIBus::IOWriteConfigData: (%d:%d:%d) = 0x%x\n",
+    log_spew("PCIBus::IOWriteConfigData: (%d:%d:%d reg 0x%x) = 0x%x\n",
         m_configAddressRegister.busNumber,
         m_configAddressRegister.deviceNumber,
         m_configAddressRegister.functionNumber,
-        pData);
+        m_configAddressRegister.registerNumber,
+        pData
+    );
 
     auto it = m_Devices.find(
         PCI_DEVID(m_configAddressRegister.busNumber,
@@ -53,10 +64,12 @@ void PCIBus::IOWriteConfigData(uint32_t pData) {
         return;
     }
 
-    log_warning("PCIBus::IOWriteConfigData: Invalid Device Write (%d:%d:%d)\n",
+    log_warning("PCIBus::IOWriteConfigData: Invalid Device Write (%d:%d:%d reg 0x%x)\n",
         m_configAddressRegister.busNumber,
         m_configAddressRegister.deviceNumber,
-        m_configAddressRegister.functionNumber);
+        m_configAddressRegister.functionNumber,
+        m_configAddressRegister.registerNumber
+    );
 }
 
 bool PCIBus::IORead(uint32_t addr, uint32_t* data, unsigned size) {
