@@ -72,6 +72,12 @@ int HaxmCpu::RunImpl() {
 		m_fpuRegsChanged = false;
 	}
 
+    // Inject an interrupt if possible
+    auto tunnel = m_vcpu->Tunnel();
+    if (tunnel->ready_for_interrupt_injection) {
+        InjectPendingInterrupt();
+    }
+
 	// Run CPU
 	auto status = m_vcpu->Run();
 
@@ -85,16 +91,8 @@ int HaxmCpu::RunImpl() {
 	}
 
 	// Handle exit status using tunnel
-	auto tunnel = m_vcpu->Tunnel();
 	switch (tunnel->_exit_status) {
-	case HAX_EXIT_HLT: { // The one instruction OpenXBOX depends on
-		m_exitInfo.reason = CPU_EXIT_HLT;
-		// Make EIP point to the actual HLT instruction
-		uint32_t r;
-		RegRead(REG_EIP, &r);
-		RegWrite(REG_EIP, r - 1);
-		break;
-	}
+    case HAX_EXIT_HLT:         m_exitInfo.reason = CPU_EXIT_HLT;       break;  // HLT instruction
 	case HAX_EXIT_IO:          m_exitInfo.reason = CPU_EXIT_NORMAL;            // I/O (in / out instructions)
 		return HandleIO(tunnel->io._df, tunnel->io._port, tunnel->io._direction, tunnel->io._size, tunnel->io._count, m_vcpu->IOTunnel());
 	case HAX_EXIT_FAST_MMIO:   m_exitInfo.reason = CPU_EXIT_NORMAL;            // Fast MMIO
@@ -106,11 +104,6 @@ int HaxmCpu::RunImpl() {
 	case HAX_EXIT_UNKNOWN:     m_exitInfo.reason = CPU_EXIT_ERROR;     break;  // VM failed for an unknown reason
 	case HAX_EXIT_STATECHANGE: m_exitInfo.reason = CPU_EXIT_SHUTDOWN;  break;  // The VM is shutting down
 	}
-
-    // Inject an interrupt if possible
-    if (tunnel->ready_for_interrupt_injection) {
-        InjectPendingInterrupt();
-    }
 
 	return 0;
 }
