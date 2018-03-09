@@ -18,6 +18,8 @@ namespace openxbox {
 
 #define PCI_VENDOR_ID_NVIDIA  0x10DE
 
+#define PCI_NUM_BARS  6
+
 class PCIDevice;
 
 typedef struct {
@@ -55,9 +57,8 @@ typedef struct {
 
 typedef struct {
     uint32_t size;
+    uint8_t index;
     PCIBarRegister reg;
-    int index;
-    PCIDevice* pDevice;
 } PCIBar;
 
 class PCIDevice {
@@ -72,14 +73,15 @@ public:
 
     // PCI Device Implementation
 public:
+    PCIDevice();
     bool GetIOBar(uint32_t port, PCIBar *bar);
     bool GetMMIOBar(uint32_t addr, PCIBar *bar);
     bool RegisterBAR(int index, uint32_t size, uint32_t defaultValue);
-    bool UpdateBAR(int index, uint32_t newValue);
+    bool UpdateBAR(int index, uint32_t defaultValue);
     uint32_t ReadConfigRegister(uint32_t reg);
     void WriteConfigRegister(uint32_t reg, uint32_t value);
 protected:
-    std::map<int, PCIBar> m_BAR;
+    PCIBar m_BARs[PCI_NUM_BARS];
     uint16_t m_deviceID;
     uint16_t m_vendorID;
 };
