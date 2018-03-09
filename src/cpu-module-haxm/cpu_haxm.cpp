@@ -378,7 +378,7 @@ int HaxmCpu::HandleIO(uint8_t df, uint16_t port, uint8_t direction, uint16_t siz
 
 int HaxmCpu::HandleFastMMIO(struct hax_fastmmio *info) {
 	if (info->direction < 2) {
-        if (info->direction == HAX_IO_OUT) {
+        if (info->direction == HAX_IO_IN) {
             m_ioMapper->MMIOWrite(info->gpa, (uint32_t)info->value, info->size);
         }
         else {
