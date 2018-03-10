@@ -24,7 +24,7 @@ public:
     // EEPROMDevice function
     void SetEEPROM(uint8_t* pEEPROM) { m_pEEPROM = pEEPROM; };
 private:
-    uint8_t * m_pEEPROM;
+    uint8_t *m_pEEPROM;
 };
 
 }

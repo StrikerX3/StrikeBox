@@ -2,36 +2,17 @@
 
 #include <cstdint>
 
+#include "pci_regs.h"
+
 namespace openxbox {
+
+#define PCI_CONFIG_HEADER_SIZE   0x40
 
 #define	PCI_BAR_TYPE_IO          1
 #define PCI_BAR_TYPE_MEMORY      0
 
 #define PCI_NUM_BARS_DEVICE      6
 #define PCI_NUM_BARS_PCI_BRIDGE  2
-
-#define PCI_TYPE_DEVICE          0x00
-#define PCI_TYPE_PCI_BRIDGE      0x01
-// PCI-to-CardBus bridge (type 0x02) is not used on Xbox
-
-// Common PCI configuration space fields
-#define PCI_CONFIG_VENDOR_ID     0x00
-#define PCI_CONFIG_DEVICE_ID     0x02
-#define PCI_CONFIG_COMMAND       0x04
-#define PCI_CONFIG_STATUS        0x06
-#define PCI_CONFIG_HEADER_TYPE   0x0E
-
-// PCI configuration space fields specific to devices
-#define PCIDEV_CONFIG_BAR_0      0x10
-#define PCIDEV_CONFIG_BAR_1      0x14
-#define PCIDEV_CONFIG_BAR_2      0x18
-#define PCIDEV_CONFIG_BAR_3      0x1C
-#define PCIDEV_CONFIG_BAR_4      0x20
-#define PCIDEV_CONFIG_BAR_5      0x24
-
-// PCI configuration space fields specific to PCI bridges
-#define PCIBRIDGE_CONFIG_BAR_0   0x10
-#define PCIBRIDGE_CONFIG_BAR_1   0x14
 
 #define PCI_VENDOR_ID_NVIDIA     0x10DE
 
@@ -74,25 +55,33 @@ public:
 
     // PCI Device Implementation
 public:
-    PCIDevice();
+    PCIDevice(uint8_t type, uint16_t vendorID, uint16_t deviceID, uint8_t revisionID, uint16_t classID,
+		uint16_t subsystemVendorID = 0x00, uint16_t subsystemID = 0x00);
     bool GetIOBar(uint32_t port, uint8_t* barIndex, uint32_t *baseAddress);
     bool GetMMIOBar(uint32_t addr, uint8_t* barIndex, uint32_t *baseAddress);
-    bool RegisterBAR(int index, uint32_t size);
+    bool RegisterBAR(int index, uint32_t size, uint32_t type);
     
-    void ReadConfigRegister(uint32_t reg, uint8_t *value, uint8_t size);
-    void WriteConfigRegister(uint32_t reg, uint8_t *value, uint8_t size);
+    void ReadConfig(uint32_t reg, uint8_t *value, uint8_t size);
+    void WriteConfig(uint32_t reg, uint32_t value, uint8_t size);
 protected:
     uint32_t m_BARSizes[PCI_NUM_BARS_DEVICE];
 
     uint8_t m_configSpace[256];
+	uint8_t m_writeMask[256];
+	uint8_t m_checkMask[256];
+	uint8_t m_write1ToClearMask[256];
 
-    inline uint8_t  ReadConfigRegister8 (uint32_t reg) { return m_configSpace[reg]; }
-    inline uint16_t ReadConfigRegister16(uint32_t reg) { return *reinterpret_cast<uint16_t *>(&m_configSpace[reg]); }
-    inline uint32_t ReadConfigRegister32(uint32_t reg) { return *reinterpret_cast<uint32_t *>(&m_configSpace[reg]); }
+    inline uint8_t  Read8 (uint8_t *buf, uint32_t reg) { return buf[reg]; }
+    inline uint16_t Read16(uint8_t *buf, uint32_t reg) { return *reinterpret_cast<uint16_t *>(&buf[reg]); }
+    inline uint32_t Read32(uint8_t *buf, uint32_t reg) { return *reinterpret_cast<uint32_t *>(&buf[reg]); }
 
-    inline void WriteConfigRegister8 (uint32_t reg, uint8_t  value) { m_configSpace[reg] = value; }
-    inline void WriteConfigRegister16(uint32_t reg, uint16_t value) { *reinterpret_cast<uint16_t *>(&m_configSpace[reg]) = value; }
-    inline void WriteConfigRegister32(uint32_t reg, uint32_t value) { *reinterpret_cast<uint32_t *>(&m_configSpace[reg]) = value; }
+    inline void Write8 (uint8_t *buf, uint32_t reg, uint8_t  value) { buf[reg] = value; }
+    inline void Write16(uint8_t *buf, uint32_t reg, uint16_t value) { *reinterpret_cast<uint16_t *>(&buf[reg]) = value; }
+    inline void Write32(uint8_t *buf, uint32_t reg, uint32_t value) { *reinterpret_cast<uint32_t *>(&buf[reg]) = value; }
+
+	inline uint8_t  TestAndSet8 (uint8_t *buf, uint32_t reg, uint8_t  mask) { uint8_t  val = Read8 (buf, reg); Write8 (buf, reg, val | mask); return val & mask; }
+	inline uint16_t TestAndSet16(uint8_t *buf, uint32_t reg, uint16_t mask) { uint16_t val = Read16(buf, reg); Write16(buf, reg, val | mask); return val & mask; }
+	inline uint32_t TestAndSet32(uint8_t *buf, uint32_t reg, uint32_t mask) { uint32_t val = Read32(buf, reg); Write32(buf, reg, val | mask); return val & mask; }
 };
 
 }

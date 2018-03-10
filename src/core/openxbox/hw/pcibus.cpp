@@ -35,7 +35,7 @@ uint32_t PCIBus::IOReadConfigData(uint8_t size) {
     );
     if (it != m_Devices.end()) {
         uint32_t value = 0;
-        it->second->ReadConfigRegister(m_configAddressRegister.registerNumber & PCI_CONFIG_REGISTER_MASK, reinterpret_cast<uint8_t *>(&value), size);
+        it->second->ReadConfig(m_configAddressRegister.registerNumber & PCI_CONFIG_REGISTER_MASK, reinterpret_cast<uint8_t *>(&value), size);
         return value;
     }
 
@@ -67,7 +67,7 @@ void PCIBus::IOWriteConfigData(uint32_t pData, uint8_t size) {
         )
     );
     if (it != m_Devices.end()) {
-        it->second->WriteConfigRegister(m_configAddressRegister.registerNumber & PCI_CONFIG_REGISTER_MASK, reinterpret_cast<uint8_t *>(&pData), size);
+        it->second->WriteConfig(m_configAddressRegister.registerNumber & PCI_CONFIG_REGISTER_MASK, pData, size);
         return;
     }
 
@@ -91,7 +91,7 @@ bool PCIBus::IORead(uint32_t addr, uint32_t* data, unsigned size) {
             uint8_t barIndex;
             uint32_t baseAddress;
             if (it->second->GetIOBar(addr, &barIndex, &baseAddress)) {
-                *data = it->second->IORead(barIndex, addr - baseAddress, size);
+                *data = it->second->IORead(barIndex, addr - (baseAddress << 2), size);
                 return true;
             }
         }

@@ -308,7 +308,7 @@ int Xbox::RunCpu()
 
 #if 0
 #ifdef _DEBUG
-        // Pring CPU registers for debugging purposes
+        // Print CPU registers for debugging purposes
         uint32_t eip;
         m_cpu->RegRead(REG_EIP, &eip);
         DumpCPURegisters(m_cpu);

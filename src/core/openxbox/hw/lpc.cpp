@@ -4,17 +4,15 @@
 
 namespace openxbox {
 
-LPCDevice::LPCDevice() {
+LPCDevice::LPCDevice()
+	: PCIDevice(PCI_HEADER_TYPE_NORMAL, PCI_VENDOR_ID_NVIDIA, 0x01B2, 0xD4, /*TODO: classID*/0x00)
+{
 }
 
 // PCI Device functions
 
 void LPCDevice::Init() {
-    WriteConfigRegister8(PCI_CONFIG_HEADER_TYPE, PCI_TYPE_DEVICE);
-    WriteConfigRegister16(PCI_CONFIG_VENDOR_ID, PCI_VENDOR_ID_NVIDIA);
-    WriteConfigRegister16(PCI_CONFIG_DEVICE_ID, 0x01B2);
-
-    RegisterBAR(0, 0x100); // I/O: 0x8000 - 0x80FF
+    RegisterBAR(0, 0x100, PCI_BAR_TYPE_IO); // 0x8000 - 0x80FF
 }
 
 void LPCDevice::Reset() {

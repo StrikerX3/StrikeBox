@@ -3,13 +3,15 @@
 
 namespace openxbox {
 
-void SMBus::Init() {
-    WriteConfigRegister8(PCI_CONFIG_HEADER_TYPE, PCI_TYPE_DEVICE);
-    WriteConfigRegister16(PCI_CONFIG_VENDOR_ID, PCI_VENDOR_ID_NVIDIA);
-    WriteConfigRegister16(PCI_CONFIG_DEVICE_ID, 0x01B4);
+SMBus::SMBus()
+	: PCIDevice(PCI_HEADER_TYPE_NORMAL, PCI_VENDOR_ID_NVIDIA, 0x01B4, 0xD1, /*TODO: classID*/0x00)
+{
+	m_Status = 0;
+}
 
-    RegisterBAR(1, 0x10); // I/O: 0xC000 - 0xC00F
-    RegisterBAR(2, 0x20); // I/O: 0xC200 - 0xC21F
+void SMBus::Init() {
+    RegisterBAR(1, 0x10, PCI_BAR_TYPE_IO); // 0xC000 - 0xC00F
+    RegisterBAR(2, 0x20, PCI_BAR_TYPE_IO); // 0xC200 - 0xC21F
 }
 
 void SMBus::Reset() {

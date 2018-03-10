@@ -4,15 +4,14 @@
 
 namespace openxbox {
 
-AGPDevice::AGPDevice() {
+AGPDevice::AGPDevice()
+	: PCIDevice(PCI_HEADER_TYPE_NORMAL, PCI_VENDOR_ID_NVIDIA, 0x01B7, 0xA1, /*TODO: classID*/0x00)
+{
 }
 
 // PCI Device functions
 
 void AGPDevice::Init() {
-    WriteConfigRegister8(PCI_CONFIG_HEADER_TYPE, PCI_TYPE_DEVICE);
-    WriteConfigRegister16(PCI_CONFIG_VENDOR_ID, PCI_VENDOR_ID_NVIDIA);
-    WriteConfigRegister16(PCI_CONFIG_DEVICE_ID, 0x01B7);
 
 }
 

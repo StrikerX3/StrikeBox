@@ -49,7 +49,7 @@ namespace openxbox {
 
 class SMBus : public PCIDevice {
 public:
-    using PCIDevice::PCIDevice;
+    SMBus();
 
     // PCI Functions
     void Init();
