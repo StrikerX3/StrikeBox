@@ -77,6 +77,7 @@ public:
 	HaxmVMStatus FreeMemory64(uint64_t basePhysicalAddress, uint64_t size);
 
 	HaxmVCPUStatus CreateVCPU(HaxmVCPU **vcpu);
+	HaxmVCPUStatus FreeVCPU(HaxmVCPU **vcpu);
 
 	HaxmVMStatus Close();
 

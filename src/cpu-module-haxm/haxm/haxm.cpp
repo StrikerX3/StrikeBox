@@ -345,6 +345,20 @@ HaxmVCPUStatus HaxmVM::CreateVCPU(HaxmVCPU **vcpu) {
 	return status;
 }
 
+HaxmVCPUStatus HaxmVM::FreeVCPU(HaxmVCPU **vcpu) {
+	for (auto it = m_vcpus.begin(); it != m_vcpus.end(); it++) {
+		if (*it == *vcpu) {
+			(*vcpu)->Close();
+			m_vcpus.erase(it);
+			delete *vcpu;
+			*vcpu = nullptr;
+			return HXVCPUS_SUCCESS;
+		}
+	}
+
+	return HXVCPUS_FAILED;
+}
+
 HaxmVMStatus HaxmVM::Close() {
 	if (m_hVM != INVALID_HANDLE_VALUE) {
 		// Close VCPUs
@@ -498,7 +512,7 @@ HaxmVCPUStatus HaxmVCPU::GetMSRs(struct hax_msr_data *msrData) {
 
 	bResult = DeviceIoControl(m_hVCPU,
 		HAX_VCPU_IOCTL_GET_MSRS,
-		NULL, 0,
+		msrData, sizeof(struct hax_msr_data),
 		msrData, sizeof(struct hax_msr_data),
 		&returnSize,
 		(LPOVERLAPPED)NULL);
