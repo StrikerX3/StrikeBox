@@ -10,10 +10,10 @@ AGPDevice::AGPDevice() {
 // PCI Device functions
 
 void AGPDevice::Init() {
-    RegisterBAR(0, 0x100, 0x8000);
+    WriteConfigRegister8(PCI_CONFIG_HEADER_TYPE, PCI_TYPE_DEVICE);
+    WriteConfigRegister16(PCI_CONFIG_VENDOR_ID, PCI_VENDOR_ID_NVIDIA);
+    WriteConfigRegister16(PCI_CONFIG_DEVICE_ID, 0x01B7);
 
-    m_deviceID = 0x01B7;
-    m_vendorID = PCI_VENDOR_ID_NVIDIA;
 }
 
 void AGPDevice::Reset() {

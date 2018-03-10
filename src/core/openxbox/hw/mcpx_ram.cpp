@@ -11,8 +11,9 @@ MCPXRAMDevice::MCPXRAMDevice(MCPXRevision revision) {
 // PCI Device functions
 
 void MCPXRAMDevice::Init() {
-    m_deviceID = 0x02A6;
-    m_vendorID = PCI_VENDOR_ID_NVIDIA;
+    WriteConfigRegister8(PCI_CONFIG_HEADER_TYPE, PCI_TYPE_DEVICE);
+    WriteConfigRegister16(PCI_CONFIG_VENDOR_ID, PCI_VENDOR_ID_NVIDIA);
+    WriteConfigRegister16(PCI_CONFIG_DEVICE_ID, 0x02A6);
 }
 
 void MCPXRAMDevice::Reset() {

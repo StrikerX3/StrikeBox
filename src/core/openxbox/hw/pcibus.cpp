@@ -1,6 +1,8 @@
 #include "pcibus.h"
 #include "openxbox/log.h"
 
+#include <cassert>
+
 namespace openxbox {
 
 void PCIBus::ConnectDevice(uint32_t deviceId, PCIDevice *pDevice) {
@@ -32,7 +34,9 @@ uint32_t PCIBus::IOReadConfigData(uint8_t size) {
         )
     );
     if (it != m_Devices.end()) {
-        return it->second->ReadConfigRegister(m_configAddressRegister.registerNumber & PCI_CONFIG_REGISTER_MASK, size);
+        uint32_t value = 0;
+        it->second->ReadConfigRegister(m_configAddressRegister.registerNumber & PCI_CONFIG_REGISTER_MASK, reinterpret_cast<uint8_t *>(&value), size);
+        return value;
     }
 
     log_warning("PCIBus::IOReadConfigData:  Invalid Device Read  (%d:%d:%d reg 0x%x size %d)\n",
@@ -63,7 +67,7 @@ void PCIBus::IOWriteConfigData(uint32_t pData, uint8_t size) {
         )
     );
     if (it != m_Devices.end()) {
-        it->second->WriteConfigRegister(m_configAddressRegister.registerNumber & PCI_CONFIG_REGISTER_MASK, pData, size);
+        it->second->WriteConfigRegister(m_configAddressRegister.registerNumber & PCI_CONFIG_REGISTER_MASK, reinterpret_cast<uint8_t *>(&pData), size);
         return;
     }
 
@@ -84,9 +88,10 @@ bool PCIBus::IORead(uint32_t addr, uint32_t* data, unsigned size) {
         return true;
     default:
         for (auto it = m_Devices.begin(); it != m_Devices.end(); ++it) {
-            PCIBar bar;
-            if (it->second->GetIOBar(addr, &bar)) {
-                *data = it->second->IORead(bar.index, addr - bar.reg.IO.address, size);
+            uint8_t barIndex;
+            uint32_t baseAddress;
+            if (it->second->GetIOBar(addr, &barIndex, &baseAddress)) {
+                *data = it->second->IORead(barIndex, addr - baseAddress, size);
                 return true;
             }
         }
@@ -113,9 +118,10 @@ bool PCIBus::IOWrite(uint32_t addr, uint32_t value, unsigned size) {
         return true; // TODO : Should IOWriteConfigData() success/failure be returned?
     default:
         for (auto it = m_Devices.begin(); it != m_Devices.end(); ++it) {
-            PCIBar bar;
-            if (it->second->GetIOBar(addr, &bar)) {
-                it->second->IOWrite(bar.index, addr - (bar.reg.IO.address << 2), value, size);
+            uint8_t barIndex;
+            uint32_t baseAddress;
+            if (it->second->GetIOBar(addr, &barIndex, &baseAddress)) {
+                it->second->IOWrite(barIndex, addr - (baseAddress << 2), value, size);
                 return true;
             }
         }
@@ -126,9 +132,10 @@ bool PCIBus::IOWrite(uint32_t addr, uint32_t value, unsigned size) {
 
 bool PCIBus::MMIORead(uint32_t addr, uint32_t* data, unsigned size) {
     for (auto it = m_Devices.begin(); it != m_Devices.end(); ++it) {
-        PCIBar bar;
-        if (it->second->GetMMIOBar(addr, &bar)) {
-            *data = it->second->MMIORead(bar.index, addr - (bar.reg.Memory.address << 4), size);
+        uint8_t barIndex;
+        uint32_t baseAddress;
+        if (it->second->GetMMIOBar(addr, &barIndex, &baseAddress)) {
+            *data = it->second->MMIORead(barIndex, addr - (baseAddress << 4), size);
             return true;
         }
     }
@@ -138,9 +145,10 @@ bool PCIBus::MMIORead(uint32_t addr, uint32_t* data, unsigned size) {
 
 bool PCIBus::MMIOWrite(uint32_t addr, uint32_t value, unsigned size) {
     for (auto it = m_Devices.begin(); it != m_Devices.end(); ++it) {
-        PCIBar bar;
-        if (it->second->GetMMIOBar(addr, &bar)) {
-            it->second->MMIOWrite(bar.index, addr - (bar.reg.Memory.address << 4), value, size);
+        uint8_t barIndex;
+        uint32_t baseAddress;
+        if (it->second->GetMMIOBar(addr, &barIndex, &baseAddress)) {
+            it->second->MMIOWrite(barIndex, addr - (baseAddress << 4), value, size);
             return true;
         }
     }

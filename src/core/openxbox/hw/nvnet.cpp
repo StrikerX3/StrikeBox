@@ -457,20 +457,14 @@ void EmuNVNet_Write(uint32_t addr, uint32_t value, int size) {
 // PCI Device functions
 
 void NVNetDevice::Init() {
+    WriteConfigRegister8(PCI_CONFIG_HEADER_TYPE, PCI_TYPE_DEVICE);
+    WriteConfigRegister16(PCI_CONFIG_VENDOR_ID, PCI_VENDOR_ID_NVIDIA);
+    WriteConfigRegister16(PCI_CONFIG_DEVICE_ID, 0x01C3);
+
     PCIBarRegister r;
 
-    // Register Memory bar
-    r.Raw.type = PCI_BAR_TYPE_MEMORY;
-    r.Memory.address = NVNET_ADDR >> 4;
-    RegisterBAR(0, NVNET_SIZE, r.value);
-
-    // Register IO bar
-    r.Raw.type = PCI_BAR_TYPE_IO;
-    r.IO.address = 0xE000 >> 2;
-    RegisterBAR(1, 8, r.value);
-
-    m_deviceID = 0x01C3;
-    m_vendorID = PCI_VENDOR_ID_NVIDIA;
+    RegisterBAR(0, NVNET_SIZE);  // Memory: 0xFEF00000 - 0xFEF003FF
+    RegisterBAR(1, 8); // I/O: 0xE000 - 0xE007
 }
 
 void NVNetDevice::Reset() {
