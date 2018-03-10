@@ -19,12 +19,13 @@ void PCIBus::IOWriteConfigAddress(uint32_t pData) {
     memcpy(&m_configAddressRegister, &pData, sizeof(PCIConfigAddressRegister));
 }
 
-uint32_t PCIBus::IOReadConfigData(uint8_t size) {
-    log_spew("PCIBus::IOReadConfigData:  (%d:%d:%d reg 0x%x size %d)\n",
+uint32_t PCIBus::IOReadConfigData(uint8_t size, uint8_t regOffset) {
+    log_spew("PCIBus::IOReadConfigData:  (%d:%d:%d reg 0x%x offset %d size %d)\n",
         m_configAddressRegister.busNumber,
         m_configAddressRegister.deviceNumber,
         m_configAddressRegister.functionNumber,
         m_configAddressRegister.registerNumber,
+		regOffset,
         size
     );
 
@@ -35,15 +36,16 @@ uint32_t PCIBus::IOReadConfigData(uint8_t size) {
     );
     if (it != m_Devices.end()) {
         uint32_t value = 0;
-        it->second->ReadConfig(m_configAddressRegister.registerNumber & PCI_CONFIG_REGISTER_MASK, reinterpret_cast<uint8_t *>(&value), size);
+        it->second->ReadConfig((m_configAddressRegister.registerNumber & PCI_CONFIG_REGISTER_MASK) + regOffset, reinterpret_cast<uint8_t *>(&value), size);
         return value;
     }
 
-    log_warning("PCIBus::IOReadConfigData:  Invalid Device Read  (%d:%d:%d reg 0x%x size %d)\n",
+    log_warning("PCIBus::IOReadConfigData:  Invalid Device Read  (%d:%d:%d reg 0x%x offset %d size %d)\n",
         m_configAddressRegister.busNumber,
         m_configAddressRegister.deviceNumber,
         m_configAddressRegister.functionNumber,
         m_configAddressRegister.registerNumber,
+		regOffset,
         size
     );
 
@@ -51,12 +53,13 @@ uint32_t PCIBus::IOReadConfigData(uint8_t size) {
     return 0xFFFFFFFF;
 }
 
-void PCIBus::IOWriteConfigData(uint32_t pData, uint8_t size) {
-    log_spew("PCIBus::IOWriteConfigData: (%d:%d:%d reg 0x%x size %d) = 0x%x\n",
+void PCIBus::IOWriteConfigData(uint32_t pData, uint8_t size, uint8_t regOffset) {
+    log_spew("PCIBus::IOWriteConfigData: (%d:%d:%d reg 0x%x offset %d size %d) = 0x%x\n",
         m_configAddressRegister.busNumber,
         m_configAddressRegister.deviceNumber,
         m_configAddressRegister.functionNumber,
         m_configAddressRegister.registerNumber,
+		regOffset,
         size,
         pData
     );
@@ -67,15 +70,16 @@ void PCIBus::IOWriteConfigData(uint32_t pData, uint8_t size) {
         )
     );
     if (it != m_Devices.end()) {
-        it->second->WriteConfig(m_configAddressRegister.registerNumber & PCI_CONFIG_REGISTER_MASK, pData, size);
+        it->second->WriteConfig((m_configAddressRegister.registerNumber & PCI_CONFIG_REGISTER_MASK) + regOffset, pData, size);
         return;
     }
 
-    log_warning("PCIBus::IOWriteConfigData: Invalid Device Write (%d:%d:%d reg 0x%x size %d) = 0x%x\n",
+    log_warning("PCIBus::IOWriteConfigData: Invalid Device Write (%d:%d:%d reg 0x%x offset %d size %d) = 0x%x\n",
         m_configAddressRegister.busNumber,
         m_configAddressRegister.deviceNumber,
         m_configAddressRegister.functionNumber,
         m_configAddressRegister.registerNumber,
+		regOffset,
         size,
         pData
     );
@@ -83,8 +87,11 @@ void PCIBus::IOWriteConfigData(uint32_t pData, uint8_t size) {
 
 bool PCIBus::IORead(uint32_t addr, uint32_t* data, unsigned size) {
     switch (addr) {
-    case PORT_PCI_CONFIG_DATA: // 0xCFC
-        *data = IOReadConfigData(size);
+	case PORT_PCI_CONFIG_DATA: // 0xCFC
+	case PORT_PCI_CONFIG_DATA + 1: // 0xCFD
+	case PORT_PCI_CONFIG_DATA + 2: // 0xCFE
+	case PORT_PCI_CONFIG_DATA + 3: // 0xCFF
+		*data = IOReadConfigData(size, addr - PORT_PCI_CONFIG_DATA);
         return true;
     default:
         for (auto it = m_Devices.begin(); it != m_Devices.end(); ++it) {
@@ -113,8 +120,11 @@ bool PCIBus::IOWrite(uint32_t addr, uint32_t value, unsigned size) {
             return true;
         }
         break;
-    case PORT_PCI_CONFIG_DATA: // 0xCFC
-        IOWriteConfigData(value, size);
+	case PORT_PCI_CONFIG_DATA: // 0xCFC
+	case PORT_PCI_CONFIG_DATA + 1: // 0xCFD
+	case PORT_PCI_CONFIG_DATA + 2: // 0xCFE
+	case PORT_PCI_CONFIG_DATA + 3: // 0xCFF
+        IOWriteConfigData(value, size, addr - PORT_PCI_CONFIG_DATA);
         return true; // TODO : Should IOWriteConfigData() success/failure be returned?
     default:
         for (auto it = m_Devices.begin(); it != m_Devices.end(); ++it) {

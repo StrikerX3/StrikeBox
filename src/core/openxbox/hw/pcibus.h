@@ -41,8 +41,8 @@ public:
     void Reset();
 private:
     void IOWriteConfigAddress(uint32_t pData);
-    void IOWriteConfigData(uint32_t pData, uint8_t size);
-    uint32_t IOReadConfigData(uint8_t size);
+    void IOWriteConfigData(uint32_t pData, uint8_t size, uint8_t regOffset);
+    uint32_t IOReadConfigData(uint8_t size, uint8_t regOffset);
 
     std::map<uint32_t, PCIDevice*> m_Devices;
     PCIConfigAddressRegister m_configAddressRegister;
