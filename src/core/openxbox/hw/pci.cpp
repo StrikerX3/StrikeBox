@@ -63,26 +63,37 @@ bool PCIDevice::UpdateBAR(int index, uint32_t newValue) {
     return true;
 }
 
-uint32_t PCIDevice::ReadConfigRegister(uint32_t reg) {
-    log_spew("PCIDevice::ReadConfigRegister:  register = 0x%x\n", reg);
+uint32_t PCIDevice::ReadConfigRegister(uint32_t reg, uint8_t size) {
+    log_spew("PCIDevice::ReadConfigRegister:  register = 0x%x,  size = %d\n", reg, size);
 
     switch (reg) {
-    case PCI_CONFIG_DEVICE:
-        return (m_deviceID << 16) | m_vendorID;
-    case PCI_CONFIG_BAR_0:
-    case PCI_CONFIG_BAR_1:
-    case PCI_CONFIG_BAR_2:
-    case PCI_CONFIG_BAR_3:
-    case PCI_CONFIG_BAR_4:
-    case PCI_CONFIG_BAR_5:
-    {
-        int barIndex = (reg - PCI_CONFIG_BAR_0) >> 2;
-        if (m_BARs[barIndex].size == 0) {
-            log_warning("PCIDevice::ReadConfigRegister: Trying to Read a BAR that does not exist (index: %d)\n", barIndex);
-            return 0xFFFFFFFF;
+    case PCIDEV_CONFIG_DEVICE_ID:
+        if (size == 4) {
+            return (m_deviceID << 16) | m_vendorID;
+        }
+        if (size == 2) {
+            return m_vendorID;
+        }
+        return m_vendorID & 0xFF;
+    case PCIDEV_CONFIG_BAR_0:
+    case PCIDEV_CONFIG_BAR_1:
+    case PCIDEV_CONFIG_BAR_2:
+    case PCIDEV_CONFIG_BAR_3:
+    case PCIDEV_CONFIG_BAR_4:
+    case PCIDEV_CONFIG_BAR_5: {
+        int barIndex = (reg - PCIDEV_CONFIG_BAR_0) >> 2;
+
+        if (size == 4) {
+            if (m_BARs[barIndex].size == 0) {
+                log_warning("PCIDevice::ReadConfigRegister: Trying to Read a BAR that does not exist (index: %d)\n", barIndex);
+                return 0xFFFFFFFF;
+            }
+
+            return m_BARs[barIndex].reg.value;
         }
 
-        return m_BARs[barIndex].reg.value;
+        log_warning("PCIDevice::ReadConfigRegister:  Attempted to read %d-bit value from BAR register (index: %d)\n", size << 3, barIndex);
+        return 0xFFFFFFFF;
     }
     default:
         log_warning("PCIDevice::ReadConfigRegister:  Unhandled register %X\n", reg);
@@ -92,23 +103,28 @@ uint32_t PCIDevice::ReadConfigRegister(uint32_t reg) {
     return 0;
 }
 
-void PCIDevice::WriteConfigRegister(uint32_t reg, uint32_t value) {
-    log_spew("PCIDevice::WriteConfigRegister: register = 0x%x,  value = 0x%x\n", reg, value);
+void PCIDevice::WriteConfigRegister(uint32_t reg, uint32_t value, uint8_t size) {
+    log_spew("PCIDevice::WriteConfigRegister: register = 0x%x,  value = 0x%x,  size = %d\n", reg, value, size);
 
     switch (reg) {
-    case PCI_CONFIG_BAR_0:
-    case PCI_CONFIG_BAR_1:
-    case PCI_CONFIG_BAR_2:
-    case PCI_CONFIG_BAR_3:
-    case PCI_CONFIG_BAR_4:
-    case PCI_CONFIG_BAR_5:
+    case PCIDEV_CONFIG_BAR_0:
+    case PCIDEV_CONFIG_BAR_1:
+    case PCIDEV_CONFIG_BAR_2:
+    case PCIDEV_CONFIG_BAR_3:
+    case PCIDEV_CONFIG_BAR_4:
+    case PCIDEV_CONFIG_BAR_5:
     {
-        int barIndex = (reg - PCI_CONFIG_BAR_0) >> 2;
-        UpdateBAR(barIndex, value);
+        int barIndex = (reg - PCIDEV_CONFIG_BAR_0) >> 2;
+        if (size == 4) {
+            UpdateBAR(barIndex, value);
+        }
+        else {
+            log_warning("PCIDevice::WriteConfigRegister: Attempted to write %d-bit value to BAR register (index: %d)\n", size << 3, barIndex);
+        }
         break;
     }
     default:
-        log_warning("PCIDevice::WriteConfigRegister: Unhandled register %X,  value 0x%x\n", reg, value);
+        log_warning("PCIDevice::WriteConfigRegister: Unhandled register 0x%x,  value 0x%x,  size = %d\n", reg, value, size);
         break;
     }
 }

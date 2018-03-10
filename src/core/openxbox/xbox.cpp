@@ -166,8 +166,8 @@ int Xbox::Initialize(OpenXBOXSettings *settings)
     m_SMBus = new SMBus();
 
     // Create devices
-    m_MCPX = new MCPXDevice(mcpxRevision);
     m_MCPXRAM = new MCPXRAMDevice(mcpxRevision);
+    m_LPC = new LPCDevice();
     m_SMC = new SMCDevice(smcRevision);
     m_EEPROM = new EEPROMDevice();
     m_NVNet = new NVNetDevice();
@@ -199,7 +199,7 @@ int Xbox::Initialize(OpenXBOXSettings *settings)
     // Connect devices to PCI bus
     //m_PCIBus->ConnectDevice(PCI_DEVID(0, PCI_DEVFN(0, 0)), m_HostBridge);
     m_PCIBus->ConnectDevice(PCI_DEVID(0, PCI_DEVFN(0, 3)), m_MCPXRAM);
-    //m_PCIBus->ConnectDevice(PCI_DEVID(0, PCI_DEVFN(1, 0)), m_LPC);
+    m_PCIBus->ConnectDevice(PCI_DEVID(0, PCI_DEVFN(1, 0)), m_LPC);
     m_PCIBus->ConnectDevice(PCI_DEVID(0, PCI_DEVFN(1, 1)), m_SMBus);
     //m_PCIBus->ConnectDevice(PCI_DEVID(0, PCI_DEVFN(2, 0)), m_USB2);
     //m_PCIBus->ConnectDevice(PCI_DEVID(0, PCI_DEVFN(3, 0)), m_USB1);

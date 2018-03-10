@@ -17,12 +17,13 @@ void PCIBus::IOWriteConfigAddress(uint32_t pData) {
     memcpy(&m_configAddressRegister, &pData, sizeof(PCIConfigAddressRegister));
 }
 
-uint32_t PCIBus::IOReadConfigData() {
-    log_spew("PCIBus::IOReadConfigData:  (%d:%d:%d reg 0x%x)\n",
+uint32_t PCIBus::IOReadConfigData(uint8_t size) {
+    log_spew("PCIBus::IOReadConfigData:  (%d:%d:%d reg 0x%x size %d)\n",
         m_configAddressRegister.busNumber,
         m_configAddressRegister.deviceNumber,
         m_configAddressRegister.functionNumber,
-        m_configAddressRegister.registerNumber
+        m_configAddressRegister.registerNumber,
+        size
     );
 
     auto it = m_Devices.find(
@@ -31,26 +32,28 @@ uint32_t PCIBus::IOReadConfigData() {
         )
     );
     if (it != m_Devices.end()) {
-        return it->second->ReadConfigRegister(m_configAddressRegister.registerNumber & PCI_CONFIG_REGISTER_MASK);
+        return it->second->ReadConfigRegister(m_configAddressRegister.registerNumber & PCI_CONFIG_REGISTER_MASK, size);
     }
 
-    log_warning("PCIBus::IOReadConfigData:  Invalid Device Read  (%d:%d:%d reg 0x%x)\n",
+    log_warning("PCIBus::IOReadConfigData:  Invalid Device Read  (%d:%d:%d reg 0x%x size %d)\n",
         m_configAddressRegister.busNumber,
         m_configAddressRegister.deviceNumber,
         m_configAddressRegister.functionNumber,
-        m_configAddressRegister.registerNumber
+        m_configAddressRegister.registerNumber,
+        size
     );
 
     // Unpopulated PCI slots return 0xFFFFFFFF
     return 0xFFFFFFFF;
 }
 
-void PCIBus::IOWriteConfigData(uint32_t pData) {
-    log_spew("PCIBus::IOWriteConfigData: (%d:%d:%d reg 0x%x) = 0x%x\n",
+void PCIBus::IOWriteConfigData(uint32_t pData, uint8_t size) {
+    log_spew("PCIBus::IOWriteConfigData: (%d:%d:%d reg 0x%x size %d) = 0x%x\n",
         m_configAddressRegister.busNumber,
         m_configAddressRegister.deviceNumber,
         m_configAddressRegister.functionNumber,
         m_configAddressRegister.registerNumber,
+        size,
         pData
     );
 
@@ -60,26 +63,25 @@ void PCIBus::IOWriteConfigData(uint32_t pData) {
         )
     );
     if (it != m_Devices.end()) {
-        it->second->WriteConfigRegister(m_configAddressRegister.registerNumber & PCI_CONFIG_REGISTER_MASK, pData);
+        it->second->WriteConfigRegister(m_configAddressRegister.registerNumber & PCI_CONFIG_REGISTER_MASK, pData, size);
         return;
     }
 
-    log_warning("PCIBus::IOWriteConfigData: Invalid Device Write (%d:%d:%d reg 0x%x)\n",
+    log_warning("PCIBus::IOWriteConfigData: Invalid Device Write (%d:%d:%d reg 0x%x size %d) = 0x%x\n",
         m_configAddressRegister.busNumber,
         m_configAddressRegister.deviceNumber,
         m_configAddressRegister.functionNumber,
-        m_configAddressRegister.registerNumber
+        m_configAddressRegister.registerNumber,
+        size,
+        pData
     );
 }
 
 bool PCIBus::IORead(uint32_t addr, uint32_t* data, unsigned size) {
     switch (addr) {
     case PORT_PCI_CONFIG_DATA: // 0xCFC
-        if (size == sizeof(uint32_t)) {
-            *data = IOReadConfigData();
-            return true;
-        } // TODO : else log wrong size-access?
-        break;
+        *data = IOReadConfigData(size);
+        return true;
     default:
         for (auto it = m_Devices.begin(); it != m_Devices.end(); ++it) {
             PCIBar bar;
@@ -101,27 +103,19 @@ bool PCIBus::IOWrite(uint32_t addr, uint32_t value, unsigned size) {
             return true;
         }
         else {
-            log_warning("PCIBus:IOWrite: non-32-bit write to 0xcf8 with size %d,  address 0x%x,  value 0x%x\n", size, addr, value);
+            log_warning("PCIBus:IOWrite: Writing %d-bit PCI config address,  address 0x%x,  value 0x%x\n", size << 3, addr, value);
             IOWriteConfigAddress(value);
             return true;
         }
         break;
     case PORT_PCI_CONFIG_DATA: // 0xCFC
-        if (size == sizeof(uint32_t)) {
-            IOWriteConfigData(value);
-            return true; // TODO : Should IOWriteConfigData() success/failure be returned?
-        }
-        else {
-            log_warning("PCIBus:IOWrite: non-32-bit write to 0xcfc with size %d,  address 0x%x,  value 0x%x\n", size, addr, value);
-            IOWriteConfigData(value);
-            return true;
-        }
-        break;
+        IOWriteConfigData(value, size);
+        return true; // TODO : Should IOWriteConfigData() success/failure be returned?
     default:
         for (auto it = m_Devices.begin(); it != m_Devices.end(); ++it) {
             PCIBar bar;
             if (it->second->GetIOBar(addr, &bar)) {
-                it->second->IOWrite(bar.index, addr - bar.reg.IO.address, value, size);
+                it->second->IOWrite(bar.index, addr - (bar.reg.IO.address << 2), value, size);
                 return true;
             }
         }

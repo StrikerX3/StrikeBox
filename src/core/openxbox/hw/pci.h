@@ -4,30 +4,25 @@
 
 namespace openxbox {
 
-#define	PCI_BAR_TYPE_IO       1
-#define PCI_BAR_TYPE_MEMORY   0
+#define	PCI_BAR_TYPE_IO          1
+#define PCI_BAR_TYPE_MEMORY      0
 
-#define PCI_CONFIG_DEVICE     0x00
-#define PCI_CONFIG_BAR_0      0x10
-#define PCI_CONFIG_BAR_1      0x14
-#define PCI_CONFIG_BAR_2      0x18
-#define PCI_CONFIG_BAR_3      0x1C
-#define PCI_CONFIG_BAR_4      0x20
-#define PCI_CONFIG_BAR_5      0x24
 
-#define PCI_VENDOR_ID_NVIDIA  0x10DE
+#define PCIDEV_CONFIG_DEVICE_ID  0x00
+#define PCIDEV_CONFIG_COMMAND    0x04
+#define PCIDEV_CONFIG_STATUS     0x06
+#define PCIDEV_CONFIG_BAR_0      0x10
+#define PCIDEV_CONFIG_BAR_1      0x14
+#define PCIDEV_CONFIG_BAR_2      0x18
+#define PCIDEV_CONFIG_BAR_3      0x1C
+#define PCIDEV_CONFIG_BAR_4      0x20
+#define PCIDEV_CONFIG_BAR_5      0x24
 
-#define PCI_NUM_BARS  6
+#define PCI_VENDOR_ID_NVIDIA     0x10DE
+
+#define PCI_NUM_BARS             6
 
 class PCIDevice;
-
-typedef struct {
-
-} PCIBarMemory;
-
-typedef struct {
-
-} PCIBarIO;
 
 typedef struct {
     union {
@@ -77,8 +72,8 @@ public:
     bool GetMMIOBar(uint32_t addr, PCIBar *bar);
     bool RegisterBAR(int index, uint32_t size, uint32_t defaultValue);
     bool UpdateBAR(int index, uint32_t defaultValue);
-    uint32_t ReadConfigRegister(uint32_t reg);
-    void WriteConfigRegister(uint32_t reg, uint32_t value);
+    uint32_t ReadConfigRegister(uint32_t reg, uint8_t size);
+    void WriteConfigRegister(uint32_t reg, uint32_t value, uint8_t size);
 protected:
     PCIBar m_BARs[PCI_NUM_BARS];
     uint16_t m_deviceID;
