@@ -110,7 +110,7 @@ bool PCIDevice::GetIOBar(uint32_t port, uint8_t* barIndex, uint32_t *baseAddress
         break;
     }
     default: {
-        log_warning("PCIDevice::GetIOBar: invalid device type 0x%x\n", headerType);
+        log_warning("PCIDevice::GetIOBar: Invalid device type 0x%x\n", headerType);
         return false;
     }
     }
@@ -158,7 +158,7 @@ bool PCIDevice::GetMMIOBar(uint32_t addr, uint8_t* barIndex, uint32_t *baseAddre
         break;
     }
     default: {
-        log_warning("PCIDevice::GetIOBar: invalid device type 0x%x\n", headerType);
+        log_warning("PCIDevice::GetMMIOBar: Invalid device type 0x%x\n", headerType);
         return false;
     }
     }
