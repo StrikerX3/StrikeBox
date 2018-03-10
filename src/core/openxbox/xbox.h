@@ -80,9 +80,6 @@ protected:
 	AGPDevice        *m_AGPBridge;
 	NV2ADevice       *m_NV2A;
 
-    // TODO: move to TV encoder device
-    int m_field_pin = 0;
-
     // ----- Configuration ----------------------------------------------------
     OpenXBOXSettings *m_settings;
 

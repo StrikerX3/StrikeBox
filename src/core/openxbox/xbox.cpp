@@ -346,22 +346,6 @@ void Xbox::IORead(uint32_t addr, uint32_t *value, uint16_t size) {
     // TODO: proper I/O port mapping
 
     switch (addr) {
-    case 0x8008: { // TODO: Move 0x8008 TIMER to a device
-        if (size == sizeof(uint32_t)) {
-            // This timer counts at 3579545 Hz
-            auto t = std::chrono::high_resolution_clock::now();
-            *value = static_cast<uint32_t>(t.time_since_epoch().count() * 0.003579545);
-        }
-        return;
-    }
-    case 0x80C0: { // TODO: Move 0x80C0 TV encoder to a device
-        if (size == sizeof(uint8_t)) {
-            // field pin from tv encoder?
-            m_field_pin = (m_field_pin + 1) & 1;
-            *value = m_field_pin << 5;
-        }
-        return;
-    }
     case PORT_PIT_DATA_0:
     case PORT_PIT_DATA_1:
     case PORT_PIT_DATA_2:
