@@ -1,11 +1,11 @@
-#include "defs.h"
 #include "mcpx_ram.h"
 #include "openxbox/log.h"
 
 namespace openxbox {
 
 MCPXRAMDevice::MCPXRAMDevice(MCPXRevision revision)
-	: PCIDevice(PCI_HEADER_TYPE_NORMAL, PCI_VENDOR_ID_NVIDIA, 0x02A6, 0xA1, /*TODO: classID*/0x00)
+	: PCIDevice(PCI_HEADER_TYPE_NORMAL, PCI_VENDOR_ID_NVIDIA, 0x02A6, 0xA1,
+		0x05, 0x00, 0x00) // RAM controller
 {
     m_revision = revision;
 }

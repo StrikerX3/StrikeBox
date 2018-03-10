@@ -1,4 +1,3 @@
-#include "defs.h"
 #include "smc.h"
 #include "led.h"
 

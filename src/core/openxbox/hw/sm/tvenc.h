@@ -2,7 +2,7 @@
 
 #include <cstdint>
 
-#include "defs.h"
+#include "../defs.h"
 #include "sm.h"
 
 namespace openxbox {

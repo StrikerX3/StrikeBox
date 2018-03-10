@@ -55,7 +55,8 @@ public:
 
     // PCI Device Implementation
 public:
-    PCIDevice(uint8_t type, uint16_t vendorID, uint16_t deviceID, uint8_t revisionID, uint16_t classID,
+    PCIDevice(uint8_t type, uint16_t vendorID, uint16_t deviceID,
+		uint8_t revisionID, uint8_t classID, uint8_t subclass, uint8_t progIF,
 		uint16_t subsystemVendorID = 0x00, uint16_t subsystemID = 0x00);
     bool GetIOBar(uint32_t port, uint8_t* barIndex, uint32_t *baseAddress);
     bool GetMMIOBar(uint32_t addr, uint8_t* barIndex, uint32_t *baseAddress);

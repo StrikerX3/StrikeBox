@@ -455,7 +455,8 @@ void EmuNVNet_Write(uint32_t addr, uint32_t value, int size) {
 /* NVNetDevice */
 
 NVNetDevice::NVNetDevice()
-	: PCIDevice(PCI_HEADER_TYPE_NORMAL, PCI_VENDOR_ID_NVIDIA, 0x01C3, 0xD2, /*TODO: classID*/0x00)
+	: PCIDevice(PCI_HEADER_TYPE_NORMAL, PCI_VENDOR_ID_NVIDIA, 0x01C3, 0xD2,
+		0x02, 0x00, 0x00) // Ethernet controller
 {
 }
 

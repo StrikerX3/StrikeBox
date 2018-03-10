@@ -1,18 +1,18 @@
-#include "defs.h"
 #include "agp.h"
 #include "openxbox/log.h"
 
 namespace openxbox {
 
 AGPDevice::AGPDevice()
-	: PCIDevice(PCI_HEADER_TYPE_NORMAL, PCI_VENDOR_ID_NVIDIA, 0x01B7, 0xA1, /*TODO: classID*/0x00)
+	: PCIDevice(PCI_HEADER_TYPE_BRIDGE, PCI_VENDOR_ID_NVIDIA, 0x01B7, 0xA1,
+		/*TODO: classID*/0x00, /*TODO: subclass*/0x00, 0x00,
+		/*TODO: subsystemVendorID*/0x00, /*TODO: subsystemID*/0x00)
 {
 }
 
 // PCI Device functions
 
 void AGPDevice::Init() {
-
 }
 
 void AGPDevice::Reset() {

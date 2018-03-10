@@ -4,7 +4,8 @@
 namespace openxbox {
 
 SMBus::SMBus()
-	: PCIDevice(PCI_HEADER_TYPE_NORMAL, PCI_VENDOR_ID_NVIDIA, 0x01B4, 0xD1, /*TODO: classID*/0x00)
+	: PCIDevice(PCI_HEADER_TYPE_NORMAL, PCI_VENDOR_ID_NVIDIA, 0x01B4, 0xD1,
+		0x0c, 0x05, 0x00) // SMBus
 {
 	m_Status = 0;
 }

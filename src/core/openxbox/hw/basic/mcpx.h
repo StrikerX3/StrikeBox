@@ -2,8 +2,7 @@
 
 #include <cstdint>
 
-#include "defs.h"
-#include "pci.h"
+#include "../defs.h"
 
 namespace openxbox {
 

@@ -1,7 +1,7 @@
 #pragma once
 
-#include "pci.h"
-#include "sm.h"
+#include "../pci/pci.h"
+#include "../sm/sm.h"
 
 #include <map>
 

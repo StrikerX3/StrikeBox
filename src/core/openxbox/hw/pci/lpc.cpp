@@ -1,11 +1,11 @@
-#include "defs.h"
 #include "lpc.h"
 #include "openxbox/log.h"
 
 namespace openxbox {
 
 LPCDevice::LPCDevice()
-	: PCIDevice(PCI_HEADER_TYPE_NORMAL, PCI_VENDOR_ID_NVIDIA, 0x01B2, 0xD4, /*TODO: classID*/0x00)
+	: PCIDevice(PCI_HEADER_TYPE_BRIDGE, PCI_VENDOR_ID_NVIDIA, 0x01B2, 0xD4,
+		0x06, 0x01, 0x00) // ISA bridge
 {
 }
 

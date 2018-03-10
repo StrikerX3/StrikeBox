@@ -20,17 +20,23 @@
 #include "openxbox/thread.h"
 #include "openxbox/settings.h"
 
-#include "openxbox/hw/i8254.h"
-#include "openxbox/hw/smbus.h"
-#include "openxbox/hw/pcibus.h"
-#include "openxbox/hw/smc.h"
-#include "openxbox/hw/mcpx.h"
-#include "openxbox/hw/mcpx_ram.h"
-#include "openxbox/hw/lpc.h"
-#include "openxbox/hw/agp.h"
-#include "openxbox/hw/eeprom.h"
-#include "openxbox/hw/nvnet.h"
-#include "openxbox/hw/tvenc.h"
+#include "openxbox/hw/basic/i8254.h"
+#include "openxbox/hw/bus/smbus.h"
+#include "openxbox/hw/bus/pcibus.h"
+#include "openxbox/hw/sm/smc.h"
+#include "openxbox/hw/sm/eeprom.h"
+#include "openxbox/hw/sm/tvenc.h"
+#include "openxbox/hw/pci/hostbridge.h"
+#include "openxbox/hw/pci/mcpx_ram.h"
+#include "openxbox/hw/pci/lpc.h"
+#include "openxbox/hw/pci/agp.h"
+#include "openxbox/hw/pci/pcibridge.h"
+#include "openxbox/hw/pci/usb_pci.h"
+#include "openxbox/hw/pci/nvnet.h"
+#include "openxbox/hw/pci/nvapu.h"
+#include "openxbox/hw/pci/ac97.h"
+#include "openxbox/hw/pci/ide.h"
+#include "openxbox/hw/pci/nv2a.h"
 
 #include "openxbox/cpu_module.h"
 
@@ -48,23 +54,31 @@ protected:
 	IOpenXBOXCPUModule * m_cpuModule;
 
 	// ----- Hardware ---------------------------------------------------------
-	Cpu             *m_cpu;
-	char            *m_ram;
-	char            *m_rom;
-	MemoryRegion    *m_memRegion;
+	Cpu              *m_cpu;
+	char             *m_ram;
+	char             *m_rom;
+	MemoryRegion     *m_memRegion;
 	
-    i8254           *m_i8254;
+    i8254            *m_i8254;
 
-    SMBus           *m_SMBus;
-    SMCDevice       *m_SMC;
-    EEPROMDevice    *m_EEPROM;
-    TVEncoderDevice *m_TVEncoder;
+    SMBus            *m_SMBus;
+    SMCDevice        *m_SMC;
+    EEPROMDevice     *m_EEPROM;
+    TVEncoderDevice  *m_TVEncoder;
 
-    PCIBus          *m_PCIBus;
-    MCPXRAMDevice   *m_MCPXRAM;
-    LPCDevice       *m_LPC;
-    NVNetDevice     *m_NVNet;
-    AGPDevice       *m_AGPBridge;
+    PCIBus           *m_PCIBus;
+	HostBridgeDevice *m_HostBridge;
+    MCPXRAMDevice    *m_MCPXRAM;
+    LPCDevice        *m_LPC;
+	USBPCIDevice     *m_USB1;
+	USBPCIDevice     *m_USB2;
+    NVNetDevice      *m_NVNet;
+	NVAPUDevice      *m_NVAPU;
+	AC97Device       *m_AC97;
+	PCIBridgeDevice  *m_PCIBridge;
+	IDEDevice        *m_IDE;
+	AGPDevice        *m_AGPBridge;
+	NV2ADevice       *m_NV2A;
 
     // TODO: move to TV encoder device
     int m_field_pin = 0;

@@ -2,15 +2,15 @@
 
 #include <cstdint>
 
-#include "defs.h"
+#include "../defs.h"
 #include "pci.h"
 
 namespace openxbox {
 
-class LPCDevice : public PCIDevice {
+class IDEDevice : public PCIDevice {
 public:
     // constructor
-    LPCDevice();
+	IDEDevice();
 
     // PCI Device functions
     void Init();

@@ -1,4 +1,4 @@
-#include "defs.h"
+#include "../defs.h"
 #include "mcpx.h"
 
 namespace openxbox {

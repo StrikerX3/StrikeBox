@@ -2,16 +2,15 @@
 
 #include <cstdint>
 
-#include "defs.h"
+#include "../defs.h"
 #include "pci.h"
-#include "mcpx.h"
 
 namespace openxbox {
 
-class MCPXRAMDevice : public PCIDevice {
+class PCIBridgeDevice : public PCIDevice {
 public:
     // constructor
-    MCPXRAMDevice(MCPXRevision revision);
+	PCIBridgeDevice();
 
     // PCI Device functions
     void Init();
@@ -21,8 +20,6 @@ public:
     void IOWrite(int barIndex, uint32_t port, uint32_t value, unsigned size);
     uint32_t MMIORead(int barIndex, uint32_t addr, unsigned size);
     void MMIOWrite(int barIndex, uint32_t addr, uint32_t value, unsigned size);
-private:
-    MCPXRevision m_revision;
 };
 
 }

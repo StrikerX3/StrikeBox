@@ -1,4 +1,3 @@
-#include "defs.h"
 #include "tvenc.h"
 
 namespace openxbox {

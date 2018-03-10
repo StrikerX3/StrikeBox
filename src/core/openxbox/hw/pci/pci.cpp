@@ -5,7 +5,8 @@
 
 namespace openxbox {
 
-PCIDevice::PCIDevice(uint8_t type, uint16_t vendorID, uint16_t deviceID, uint8_t revisionID, uint16_t classID,
+PCIDevice::PCIDevice(uint8_t type, uint16_t vendorID, uint16_t deviceID,
+	uint8_t revisionID, uint8_t classID, uint8_t subclass, uint8_t progIF,
 	uint16_t subsystemVendorID, uint16_t subsystemID
 ) {
     memset(m_configSpace, 0, sizeof(m_configSpace));
@@ -14,16 +15,19 @@ PCIDevice::PCIDevice(uint8_t type, uint16_t vendorID, uint16_t deviceID, uint8_t
 	memset(m_write1ToClearMask, 0, sizeof(m_write1ToClearMask));
     memset(m_BARSizes, 0, sizeof(m_BARSizes));
 
+	Write8(m_configSpace, PCI_HEADER_TYPE, type);
 	Write16(m_configSpace, PCI_VENDOR_ID, vendorID);
 	Write16(m_configSpace, PCI_DEVICE_ID, deviceID);
+
 	Write8(m_configSpace, PCI_REVISION_ID, revisionID);
-	Write16(m_configSpace, PCI_CLASS_DEVICE, classID);
+	Write16(m_configSpace, PCI_CLASS_DEVICE, classID | (subclass << 8));
+	Write8(m_configSpace, PCI_CLASS_PROG, progIF);
+
 	if (type == PCI_HEADER_TYPE_BRIDGE) {
 		Write16(m_configSpace, PCI_SUBSYSTEM_VENDOR_ID, subsystemVendorID);
 		Write16(m_configSpace, PCI_SUBSYSTEM_ID, subsystemID);
 	}
 
-	Write8(m_configSpace, PCI_HEADER_TYPE, type);
 	Write16(m_checkMask, PCI_VENDOR_ID, 0xffff);
 	Write16(m_checkMask, PCI_DEVICE_ID, 0xffff);
 	Write8(m_checkMask, PCI_STATUS, PCI_STATUS_CAP_LIST);
