@@ -212,6 +212,7 @@ int HaxmCpu::RunImpl() {
 			msr.entries[mi++].entry = 0x0000020d;
 			msr.entries[mi++].entry = 0x0000020e;
 			msr.entries[mi++].entry = 0x0000020f;
+			msr.entries[mi++].entry = 0x0000001b;
 			msr.nr_msr = mi;
 
 			m_vcpu->GetRegisters(&state);
