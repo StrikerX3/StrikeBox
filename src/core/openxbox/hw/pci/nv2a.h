@@ -10,7 +10,7 @@ namespace openxbox {
 class NV2ADevice : public PCIDevice {
 public:
     // constructor
-	NV2ADevice();
+	NV2ADevice(uint16_t vendorID, uint16_t deviceID, uint8_t revisionID);
 
     // PCI Device functions
     void Init();

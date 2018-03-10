@@ -8,6 +8,7 @@ namespace openxbox {
 
 #define PCI_CONFIG_HEADER_SIZE   0x40
 
+#define	PCI_BAR_TYPE_MASK        1
 #define	PCI_BAR_TYPE_IO          1
 #define PCI_BAR_TYPE_MEMORY      0
 
@@ -63,7 +64,7 @@ public:
     bool RegisterBAR(int index, uint32_t size, uint32_t type);
     
     void ReadConfig(uint32_t reg, uint8_t *value, uint8_t size);
-    void WriteConfig(uint32_t reg, uint32_t value, uint8_t size);
+    virtual void WriteConfig(uint32_t reg, uint32_t value, uint8_t size);
 protected:
     uint32_t m_BARSizes[PCI_NUM_BARS_DEVICE];
 

@@ -155,11 +155,24 @@ bool PCIBus::MMIORead(uint32_t addr, uint32_t* data, unsigned size) {
 
 bool PCIBus::MMIOWrite(uint32_t addr, uint32_t value, unsigned size) {
     for (auto it = m_Devices.begin(); it != m_Devices.end(); ++it) {
+        PCIDevice *dev = it->second;
         uint8_t barIndex;
         uint32_t baseAddress;
-        if (it->second->GetMMIOBar(addr, &barIndex, &baseAddress)) {
-            it->second->MMIOWrite(barIndex, addr - (baseAddress << 4), value, size);
+        if (dev->GetMMIOBar(addr, &barIndex, &baseAddress)) {
+            dev->MMIOWrite(barIndex, addr - (baseAddress << 4), value, size);
             return true;
+        }
+
+        uint8_t headerType;
+        dev->ReadConfig(PCI_HEADER_TYPE, &headerType, sizeof(uint8_t));
+        if (headerType == PCI_HEADER_TYPE_BRIDGE) {
+            uint16_t memBase;
+            uint16_t memLimit;
+            dev->ReadConfig(PCI_MEMORY_BASE, (uint8_t *)&memBase, sizeof(uint16_t));
+            dev->ReadConfig(PCI_MEMORY_LIMIT, (uint8_t *)&memLimit, sizeof(uint16_t));
+            if (memLimit > 0) {
+               memBase = memBase;
+            }
         }
     }
 

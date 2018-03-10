@@ -3,8 +3,8 @@
 
 namespace openxbox {
 
-IDEDevice::IDEDevice()
-	: PCIDevice(PCI_HEADER_TYPE_NORMAL, PCI_VENDOR_ID_NVIDIA, 0x01BC, 0xD2,
+IDEDevice::IDEDevice(uint16_t vendorID, uint16_t deviceID, uint8_t revisionID)
+	: PCIDevice(PCI_HEADER_TYPE_NORMAL, vendorID, deviceID, revisionID,
 		0x01, 0x01, 0x8A) // IDE controller
 {
 }

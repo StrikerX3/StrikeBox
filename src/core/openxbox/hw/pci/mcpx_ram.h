@@ -11,7 +11,7 @@ namespace openxbox {
 class MCPXRAMDevice : public PCIDevice {
 public:
     // constructor
-    MCPXRAMDevice(MCPXRevision revision);
+    MCPXRAMDevice(uint16_t vendorID, uint16_t deviceID, uint8_t revisionID, MCPXRevision revision);
 
     // PCI Device functions
     void Init();

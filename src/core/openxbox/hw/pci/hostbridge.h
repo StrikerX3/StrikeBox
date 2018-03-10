@@ -10,7 +10,7 @@ namespace openxbox {
 class HostBridgeDevice : public PCIDevice {
 public:
     // constructor
-	HostBridgeDevice();
+	HostBridgeDevice(uint16_t vendorID, uint16_t deviceID, uint8_t revisionID);
 
     // PCI Device functions
     void Init();

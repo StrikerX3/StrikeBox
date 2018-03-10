@@ -3,9 +3,10 @@
 
 namespace openxbox {
 
-LPCDevice::LPCDevice()
-	: PCIDevice(PCI_HEADER_TYPE_BRIDGE, PCI_VENDOR_ID_NVIDIA, 0x01B2, 0xD4,
-		0x06, 0x01, 0x00) // ISA bridge
+LPCDevice::LPCDevice(uint16_t vendorID, uint16_t deviceID, uint8_t revisionID)
+	: PCIDevice(PCI_HEADER_TYPE_BRIDGE, vendorID, deviceID, revisionID,
+		0x06, 0x01, 0x00, // ISA bridge
+        /*TODO: subsystemVendorID*/0x00, /*TODO: subsystemID*/0x00)
 {
 }
 
@@ -29,9 +30,9 @@ uint32_t LPCDevice::IORead(int barIndex, uint32_t port, unsigned size) {
 	switch (port) {
 	case 0x8008: { // TODO: Move 0x8008 TIMER to a device
 		if (size == sizeof(uint32_t)) {
-			// This timer counts at 3579545 Hz
+			// This timer counts at 3375000 Hz
 			auto t = std::chrono::high_resolution_clock::now();
-			return static_cast<uint32_t>(t.time_since_epoch().count() * 0.003579545);
+			return static_cast<uint32_t>(t.time_since_epoch().count() * 0.003375000);
 		}
 		break;
 	}

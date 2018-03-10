@@ -33,7 +33,7 @@
 #include "openxbox/hw/pci/hostbridge.h"
 #include "openxbox/hw/pci/mcpx_ram.h"
 #include "openxbox/hw/pci/lpc.h"
-#include "openxbox/hw/pci/agp.h"
+#include "openxbox/hw/pci/agpbridge.h"
 #include "openxbox/hw/pci/pcibridge.h"
 #include "openxbox/hw/pci/usb_pci.h"
 #include "openxbox/hw/pci/nvnet.h"
@@ -82,7 +82,7 @@ protected:
 	AC97Device       *m_AC97;
 	PCIBridgeDevice  *m_PCIBridge;
 	IDEDevice        *m_IDE;
-	AGPDevice        *m_AGPBridge;
+	AGPBridgeDevice  *m_AGPBridge;
 	NV2ADevice       *m_NV2A;
 
     // ----- Configuration ----------------------------------------------------

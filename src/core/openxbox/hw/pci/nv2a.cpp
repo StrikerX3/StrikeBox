@@ -3,8 +3,8 @@
 
 namespace openxbox {
 
-NV2ADevice::NV2ADevice()
-	: PCIDevice(PCI_HEADER_TYPE_NORMAL, PCI_VENDOR_ID_NVIDIA, 0x02A0, 0xA1,
+NV2ADevice::NV2ADevice(uint16_t vendorID, uint16_t deviceID, uint8_t revisionID)
+	: PCIDevice(PCI_HEADER_TYPE_NORMAL, vendorID, deviceID, revisionID,
 		0x03, 0x00, 0x00) // VGA-compatible controller
 {
 }

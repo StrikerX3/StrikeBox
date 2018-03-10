@@ -98,7 +98,6 @@ PCIDevice::PCIDevice(uint8_t type, uint16_t vendorID, uint16_t deviceID,
 bool PCIDevice::GetIOBar(uint32_t port, uint8_t* barIndex, uint32_t *baseAddress) {
     uint8_t headerType = m_configSpace[PCI_HEADER_TYPE];
     uint8_t numBARs;
-    uint8_t baseReg;
 
     switch (headerType) {
     case PCI_HEADER_TYPE_NORMAL: {
@@ -122,7 +121,7 @@ bool PCIDevice::GetIOBar(uint32_t port, uint8_t* barIndex, uint32_t *baseAddress
         
 		uint32_t barValue = Read32(m_configSpace, PCI_BASE_ADDRESS_0 + i * sizeof(PCIBarRegister));
         PCIBarRegister *bar = reinterpret_cast<PCIBarRegister *>(&barValue);
-		if (bar->Raw.type != PCI_BAR_TYPE_IO) {
+		if ((bar->Raw.type & PCI_BAR_TYPE_MASK) != PCI_BAR_TYPE_IO) {
 			// BAR is not I/O
 			continue;
 		}
@@ -170,7 +169,7 @@ bool PCIDevice::GetMMIOBar(uint32_t addr, uint8_t* barIndex, uint32_t *baseAddre
         
 		uint32_t barValue = Read32(m_configSpace, PCI_BASE_ADDRESS_0 + i * sizeof(PCIBarRegister));
 		PCIBarRegister *bar = reinterpret_cast<PCIBarRegister *>(&barValue);
-		if (bar->Raw.type != PCI_BAR_TYPE_MEMORY) {
+        if ((bar->Raw.type & PCI_BAR_TYPE_MASK) != PCI_BAR_TYPE_MEMORY) {
 			// BAR is not memory
 			continue;
 		}

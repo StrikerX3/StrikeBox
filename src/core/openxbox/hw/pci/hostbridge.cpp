@@ -3,11 +3,12 @@
 
 namespace openxbox {
 
-HostBridgeDevice::HostBridgeDevice()
-	: PCIDevice(PCI_HEADER_TYPE_BRIDGE, PCI_VENDOR_ID_NVIDIA, 0x02A5, 0xA1,
+HostBridgeDevice::HostBridgeDevice(uint16_t vendorID, uint16_t deviceID, uint8_t revisionID)
+	: PCIDevice(PCI_HEADER_TYPE_BRIDGE, vendorID, deviceID, revisionID,
 		0x06, 0x00, 0x00, // Host bridge
 		/*TODO: subsystemVendorID*/0x00, /*TODO: subsystemID*/0x00)
 {
+    Write8(m_configSpace, PCI_INTERRUPT_PIN, 0x1);
 }
 
 // PCI Device functions

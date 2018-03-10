@@ -172,18 +172,18 @@ int Xbox::Initialize(OpenXBOXSettings *settings)
     // Create devices
     m_SMC = new SMCDevice(smcRevision);
     m_EEPROM = new EEPROMDevice();
-	m_HostBridge = new HostBridgeDevice();
-    m_MCPXRAM = new MCPXRAMDevice(mcpxRevision);
-    m_LPC = new LPCDevice();
-	m_USB1 = new USBPCIDevice();
-	m_USB2 = new USBPCIDevice();
-    m_NVNet = new NVNetDevice();
-	m_NVAPU = new NVAPUDevice();
-	m_AC97 = new AC97Device();
-	m_PCIBridge = new PCIBridgeDevice();
-	m_IDE = new IDEDevice();
-	m_AGPBridge = new AGPDevice();
-    m_NV2A = new NV2ADevice();
+	m_HostBridge = new HostBridgeDevice(PCI_VENDOR_ID_NVIDIA, 0x02A5, 0xA1);
+    m_MCPXRAM = new MCPXRAMDevice(PCI_VENDOR_ID_NVIDIA, 0x02A6, 0xA1, mcpxRevision);
+    m_LPC = new LPCDevice(PCI_VENDOR_ID_NVIDIA, 0x01B2, 0xD4);
+	m_USB1 = new USBPCIDevice(PCI_VENDOR_ID_NVIDIA, 0x02A5, 0xA1);
+	m_USB2 = new USBPCIDevice(PCI_VENDOR_ID_NVIDIA, 0x02A5, 0xA1);
+    m_NVNet = new NVNetDevice(PCI_VENDOR_ID_NVIDIA, 0x01C3, 0xD2);
+	m_NVAPU = new NVAPUDevice(PCI_VENDOR_ID_NVIDIA, 0x01B0, 0xD2);
+	m_AC97 = new AC97Device(PCI_VENDOR_ID_NVIDIA, 0x01B1, 0xD2);
+	m_PCIBridge = new PCIBridgeDevice(PCI_VENDOR_ID_NVIDIA, 0x01B8, 0xD2);
+	m_IDE = new IDEDevice(PCI_VENDOR_ID_NVIDIA, 0x01BC, 0xD2);
+	m_AGPBridge = new AGPBridgeDevice(PCI_VENDOR_ID_NVIDIA, 0x01B7, 0xA1);
+    m_NV2A = new NV2ADevice(PCI_VENDOR_ID_NVIDIA, 0x02A0, 0xA1);
 
     // Connect devices to SMBus
     m_SMBus->ConnectDevice(kSMBusAddress_SystemMicroController, m_SMC); // W 0x20 R 0x21
@@ -376,6 +376,7 @@ void Xbox::IORead(uint32_t addr, uint32_t *value, uint16_t size) {
 
 
     log_warning("Unhandled I/O!  address = 0x%x,  size = %d,  read\n", addr, size);
+    *value = 0;
 }
 
 void Xbox::IOWrite(uint32_t addr, uint32_t value, uint16_t size) {
@@ -425,6 +426,7 @@ void Xbox::MMIORead(uint32_t addr, uint32_t *value, uint8_t size) {
     }
 
     log_warning("Unhandled MMIO!  address = 0x%x,  size = %d,  read\n", addr, size);
+    *value = 0;
 }
 
 void Xbox::MMIOWrite(uint32_t addr, uint32_t value, uint8_t size) {
