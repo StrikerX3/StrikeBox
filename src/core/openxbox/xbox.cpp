@@ -159,11 +159,15 @@ int Xbox::Initialize(OpenXBOXSettings *settings)
     log_debug("Initializing devices\n");
 
     // Create PIT and PIC
-    m_i8254 = new i8254(m_cpu, settings->hw_sysclock_tickRate);
+    m_i8259 = new i8259(m_cpu);
+    m_i8254 = new i8254(m_i8259, settings->hw_sysclock_tickRate);
+    
+    m_i8259->Reset();
+    m_i8254->Reset();
 
     // Create busses
     m_PCIBus = new PCIBus();
-    m_SMBus = new SMBus();
+    m_SMBus = new SMBus(m_i8259);
 
     // Create devices
     m_SMC = new SMCDevice(smcRevision);
@@ -346,6 +350,14 @@ void Xbox::IORead(uint32_t addr, uint32_t *value, uint16_t size) {
     // TODO: proper I/O port mapping
 
     switch (addr) {
+    case PORT_PIC_MASTER_COMMAND:
+    case PORT_PIC_MASTER_DATA:
+    case PORT_PIC_SLAVE_COMMAND:
+    case PORT_PIC_SLAVE_DATA:
+    case PORT_PIC_MASTER_ELCR:
+    case PORT_PIC_SLAVE_ELCR:
+        m_i8259->IORead(addr, value, size);
+        break;
     case PORT_PIT_DATA_0:
     case PORT_PIT_DATA_1:
     case PORT_PIT_DATA_2:
@@ -372,6 +384,14 @@ void Xbox::IOWrite(uint32_t addr, uint32_t value, uint16_t size) {
     // TODO: proper I/O port mapping
 
     switch (addr) {
+    case PORT_PIC_MASTER_COMMAND:
+    case PORT_PIC_MASTER_DATA:
+    case PORT_PIC_MASTER_ELCR:
+    case PORT_PIC_SLAVE_COMMAND:
+    case PORT_PIC_SLAVE_DATA:
+    case PORT_PIC_SLAVE_ELCR:
+        m_i8259->IOWrite(addr, value, size);
+        return;
     case PORT_PIT_DATA_0:
     case PORT_PIT_DATA_1:
     case PORT_PIT_DATA_2:

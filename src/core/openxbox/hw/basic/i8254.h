@@ -2,7 +2,7 @@
 
 #include <cstdint>
 
-#include "openxbox/cpu.h"
+#include "i8259.h"
 
 namespace openxbox {
 
@@ -14,7 +14,7 @@ namespace openxbox {
 class i8254
 {
 public:
-    i8254(Cpu *cpu, float tickRate = 1000.0f);
+    i8254(i8259 *pic, float tickRate = 1000.0f);
     void Reset();
     
     void Run();
@@ -22,7 +22,7 @@ public:
     void IORead(uint32_t addr, uint32_t *value, uint16_t size);
     void IOWrite(uint32_t addr, uint32_t value, uint16_t size);
 private:
-    Cpu *m_cpu;
+    i8259 *m_pic;
     float m_tickRate;
     bool m_running;
 };

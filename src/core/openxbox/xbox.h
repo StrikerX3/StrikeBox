@@ -21,11 +21,15 @@
 #include "openxbox/settings.h"
 
 #include "openxbox/hw/basic/i8254.h"
+#include "openxbox/hw/basic/i8259.h"
+
 #include "openxbox/hw/bus/smbus.h"
 #include "openxbox/hw/bus/pcibus.h"
+
 #include "openxbox/hw/sm/smc.h"
 #include "openxbox/hw/sm/eeprom.h"
 #include "openxbox/hw/sm/tvenc.h"
+
 #include "openxbox/hw/pci/hostbridge.h"
 #include "openxbox/hw/pci/mcpx_ram.h"
 #include "openxbox/hw/pci/lpc.h"
@@ -60,6 +64,7 @@ protected:
 	MemoryRegion     *m_memRegion;
 	
     i8254            *m_i8254;
+    i8259            *m_i8259;
 
     SMBus            *m_SMBus;
     SMCDevice        *m_SMC;

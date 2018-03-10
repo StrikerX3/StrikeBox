@@ -3,9 +3,10 @@
 
 namespace openxbox {
 
-SMBus::SMBus()
+SMBus::SMBus(i8259 *pic)
 	: PCIDevice(PCI_HEADER_TYPE_NORMAL, PCI_VENDOR_ID_NVIDIA, 0x01B4, 0xD1,
 		0x0c, 0x05, 0x00) // SMBus
+    , m_pic(pic)
 {
 	m_Status = 0;
 }
@@ -156,10 +157,10 @@ void SMBus::IOWrite(int barIndex, uint32_t addr, uint32_t value, unsigned size) 
     case SMB_GLOBAL_STATUS:
         // If a new status is being set and interrupts are enabled, trigger an interrupt
         if ((m_Control & GE_HCYC_EN) && ((value & GS_CLEAR_STS) & (~(m_Status & GS_CLEAR_STS)))) {
-            // TODO: RaiseIRQ
+            m_pic->RaiseIRQ(SMB_IRQ);
         }
         else {
-            // TODO LowerIRQ
+            m_pic->LowerIRQ(SMB_IRQ);
         }
 
         if (value & GS_CLEAR_STS) {
@@ -186,7 +187,7 @@ void SMBus::IOWrite(int barIndex, uint32_t addr, uint32_t value, unsigned size) 
             ExecuteTransaction();
 
             if ((value & GE_HCYC_EN) && (m_Status & GS_CLEAR_STS)) {
-                // TODO: RaiseIRQ
+                m_pic->RaiseIRQ(SMB_IRQ);
             }
         }
 

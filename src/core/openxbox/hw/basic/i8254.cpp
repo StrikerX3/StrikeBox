@@ -16,8 +16,8 @@ static uint32_t i8254ThreadFunc(void *data) {
     return 0;
 }
 
-i8254::i8254(Cpu *cpu, float tickRate)
-    : m_cpu(cpu)
+i8254::i8254(i8259 *pic, float tickRate)
+    : m_pic(pic)
     , m_tickRate(tickRate)
     , m_running(false)
 {
@@ -49,10 +49,12 @@ void i8254::Run() {
 
     m_running = true;
     while (m_running) {
-        m_cpu->Interrupt(0x30);
+        m_pic->RaiseIRQ(0);
 
         nextStop += interval;
         std::this_thread::sleep_until(nextStop);
+
+        m_pic->LowerIRQ(0);
     }
 }
 
