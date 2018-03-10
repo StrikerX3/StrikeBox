@@ -171,6 +171,7 @@ int Xbox::Initialize(OpenXBOXSettings *settings)
     m_SMC = new SMCDevice(smcRevision);
     m_EEPROM = new EEPROMDevice();
     m_NVNet = new NVNetDevice();
+    m_AGPBridge = new AGPDevice();
     // TODO: m_NV2A = new NV2ADevice();
 
     // Connect devices to SMBus
@@ -208,7 +209,7 @@ int Xbox::Initialize(OpenXBOXSettings *settings)
     //m_PCIBus->ConnectDevice(PCI_DEVID(0, PCI_DEVFN(6, 0)), m_AC97);
     //m_PCIBus->ConnectDevice(PCI_DEVID(0, PCI_DEVFN(8, 0)), m_PCIBridge);
     //m_PCIBus->ConnectDevice(PCI_DEVID(0, PCI_DEVFN(9, 0)), m_IDE);
-    //m_PCIBus->ConnectDevice(PCI_DEVID(0, PCI_DEVFN(30, 0)), m_AGPBus);
+    m_PCIBus->ConnectDevice(PCI_DEVID(0, PCI_DEVFN(30, 0)), m_AGPBridge);
     //m_PCIBus->ConnectDevice(PCI_DEVID(1, PCI_DEVFN(0, 0)), m_NV2A);
 
     // TODO: Handle other SMBUS Addresses, like PIC_ADDRESS, XCALIBUR_ADDRESS

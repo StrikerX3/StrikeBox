@@ -27,6 +27,7 @@
 #include "openxbox/hw/mcpx.h"
 #include "openxbox/hw/mcpx_ram.h"
 #include "openxbox/hw/lpc.h"
+#include "openxbox/hw/agp.h"
 #include "openxbox/hw/eeprom.h"
 #include "openxbox/hw/nvnet.h"
 #include "openxbox/hw/tvenc.h"
@@ -52,16 +53,18 @@ protected:
 	char            *m_rom;
 	MemoryRegion    *m_memRegion;
 	
-
     i8254           *m_i8254;
-    SMCDevice       *m_SMC;
+
     SMBus           *m_SMBus;
+    SMCDevice       *m_SMC;
+    EEPROMDevice    *m_EEPROM;
+    TVEncoderDevice *m_TVEncoder;
+
     PCIBus          *m_PCIBus;
     MCPXRAMDevice   *m_MCPXRAM;
     LPCDevice       *m_LPC;
-    EEPROMDevice    *m_EEPROM;
-    TVEncoderDevice *m_TVEncoder;
     NVNetDevice     *m_NVNet;
+    AGPDevice       *m_AGPBridge;
 
     // TODO: move to TV encoder device
     int m_field_pin = 0;
