@@ -4,11 +4,11 @@
 
 namespace openxbox {
 
-// TODO: Refer to QEMU if we ever need to complete this implementation:
+// Implementation based on QEMU:
 // https://github.com/qemu/qemu/blob/master/hw/intc/i8259_common.c
 // https://github.com/qemu/qemu/blob/master/hw/intc/i8259.c
 
-// XQEMU has some additional modifications:
+// With additional modifications from XQEMU:
 // https://github.com/xqemu/xqemu/commit/ad6aef5a665bec48153f300ca7ccd41423d5d7ff#diff-6dd7dc24a8a5780de84f792316cc450d
 // https://github.com/xqemu/xqemu/commit/32cba22156197c7371cca4f54952c6f7dfe6ed9c#diff-565ee39a6444946e5a0055218276766d
 
@@ -114,6 +114,7 @@ void i8259::SetIRQ(int pic, int index, bool asserted) {
         m_PreviousIRR[pic] |= mask;
     }
     else {
+        m_IRR[pic] &= ~mask;
         m_PreviousIRR[pic] &= ~mask;
     }
 
