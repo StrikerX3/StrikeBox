@@ -7,6 +7,7 @@ file(GLOB DIR_SOURCES
     )
 
 add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/openxbox/hw")
+add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/openxbox/util")
 
 set(SOURCES ${SOURCES}
     ${DIR_HEADERS}

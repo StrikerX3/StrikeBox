@@ -5,7 +5,7 @@
 
 namespace openxbox {
 
-SuperIO::SuperIO() {
+SuperIO::SuperIO(i8259 *pic, CharDriver *chrs[SUPERIO_SERIAL_PORT_COUNT]) {
     memset(m_configRegs, 0, sizeof(m_configRegs));
     memset(m_deviceRegs, 0, sizeof(m_deviceRegs));
 
@@ -15,7 +15,25 @@ SuperIO::SuperIO() {
     m_inConfigMode = false;
     m_selectedReg = 0;
 
-    // TODO: init serial cores
+    // Initialize serial ports
+    for (int i = 0; i < SUPERIO_SERIAL_PORT_COUNT; i++) {
+        m_serialPorts[i] = new Serial(pic);
+        m_serialPorts[i]->Init(chrs[i]);
+    }
+}
+
+void SuperIO::Init() {
+    for (int i = 0; i < SUPERIO_SERIAL_PORT_COUNT; i++) {
+        uint8_t *dev = m_deviceRegs[DEVICE_SERIAL_PORT_1 + i];
+        if (dev[CONFIG_DEVICE_ACTIVATE] && !m_serialPorts[i]->m_active) {
+
+            uint32_t iobase = (dev[CONFIG_DEVICE_BASE_ADDRESS_HIGH] << 8) | dev[CONFIG_DEVICE_BASE_ADDRESS_LOW];
+            uint32_t irq = dev[CONFIG_DEVICE_INTERRUPT];
+
+            m_serialPorts[i]->SetIRQ(irq);
+            m_serialPorts[i]->m_active = true;
+        }
+    }
 }
 
 void SuperIO::Reset() {
@@ -23,8 +41,9 @@ void SuperIO::Reset() {
 
 bool SuperIO::MapIO(IOMapper *mapper) {
     if (!mapper->MapIODevice(PORT_SUPERIO_BASE, PORT_SUPERIO_COUNT, this)) return false;
-    if (!mapper->MapIODevice(PORT_SUPERIO_UART_BASE_1, PORT_SUPERIO_UART_COUNT_1, this)) return false;
-    if (!mapper->MapIODevice(PORT_SUPERIO_UART_BASE_2, PORT_SUPERIO_UART_COUNT_2, this)) return false;
+    for (int i = 0; i < SUPERIO_SERIAL_PORT_COUNT; i++) {
+        if (!m_serialPorts[i]->MapIO(mapper)) return false;
+    }
 
     return true;
 }
@@ -55,14 +74,6 @@ bool SuperIO::IORead(uint32_t port, uint32_t *value, uint8_t size) {
             }
         }
         return true;
-    }
-
-    if (port >= PORT_SUPERIO_UART_BASE_1 && port <= PORT_SUPERIO_UART_END_1) {
-        // TODO: redirect to serial device 1
-    }
-
-    if (port >= PORT_SUPERIO_UART_BASE_2 && port <= PORT_SUPERIO_UART_END_2) {
-        // TODO: redirect to serial device 2
     }
 
     log_warning("SuperIO::IORead:  Unhandled read!   port = 0x%x,  size = %d\n", port, size);

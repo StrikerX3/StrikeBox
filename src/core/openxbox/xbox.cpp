@@ -8,6 +8,8 @@
 #include "openxbox/hw/sm/tvenc.h"
 #include "openxbox/hw/sm/tvenc_conexant.h"
 
+#include "openxbox/hw/basic/char_null.h"
+
 #include <chrono>
 
 namespace openxbox {
@@ -189,7 +191,12 @@ int Xbox::Initialize(OpenXBOXSettings *settings)
     m_i8254 = new i8254(m_i8259, settings->hw_sysclock_tickRate);
     m_CMOS = new CMOS();
     if (settings->hw_model == DebugKit) {
-        m_SuperIO = new SuperIO();
+        m_CharDrivers[0] = new NullCharDriver();
+        m_CharDrivers[1] = new NullCharDriver();
+        for (int i = 0; i < SUPERIO_SERIAL_PORT_COUNT; i++) {
+            m_CharDrivers[i]->Init();
+        }
+        m_SuperIO = new SuperIO(m_i8259, m_CharDrivers);
     }
     
     m_i8259->Reset();

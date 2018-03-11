@@ -3,6 +3,7 @@
 #include <cstdint>
 
 #include "openxbox/cpu.h"
+#include "serial.h"
 
 namespace openxbox {
 
@@ -12,13 +13,7 @@ namespace openxbox {
 #define PORT_SUPERIO_BASE        PORT_SUPERIO_CONFIG
 #define PORT_SUPERIO_COUNT       2
 
-#define PORT_SUPERIO_UART_BASE_1   0x3F8
-#define PORT_SUPERIO_UART_END_1    0x3FF
-#define PORT_SUPERIO_UART_COUNT_1  (PORT_SUPERIO_UART_END_1 - PORT_SUPERIO_UART_BASE_1 + 1)
-
-#define PORT_SUPERIO_UART_BASE_2   0x2F8
-#define PORT_SUPERIO_UART_END_2    0x2FF
-#define PORT_SUPERIO_UART_COUNT_2  (PORT_SUPERIO_UART_END_2 - PORT_SUPERIO_UART_BASE_2 + 1)
+#define SUPERIO_SERIAL_PORT_COUNT 2
 
 
 #define DEVICE_FDD               0x0
@@ -44,12 +39,13 @@ namespace openxbox {
 #define CONFIG_DEVICE_ACTIVATE              0x30
 #define CONFIG_DEVICE_BASE_ADDRESS_HIGH     0x60
 #define CONFIG_DEVICE_BASE_ADDRESS_LOW      0x61
-#define CONFIG_DEVICE_INETRRUPT             0x70
-
+#define CONFIG_DEVICE_INTERRUPT             0x70
 
 class SuperIO : public IODevice {
 public:
-    SuperIO();
+    SuperIO(i8259 *pic, CharDriver *chrs[SUPERIO_SERIAL_PORT_COUNT]);
+
+    void Init();
 	void Reset();
 
     bool MapIO(IOMapper *mapper);
@@ -65,6 +61,8 @@ private:
 
     uint8_t m_configRegs[MAX_CONFIG_REG];
     uint8_t m_deviceRegs[MAX_DEVICE][MAX_DEVICE_REGS];
+
+    Serial *m_serialPorts[SUPERIO_SERIAL_PORT_COUNT];
 };
 
 }

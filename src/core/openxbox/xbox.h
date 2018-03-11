@@ -68,8 +68,9 @@ protected:
 	
     i8254            *m_i8254;
     i8259            *m_i8259;
-    SuperIO          *m_SuperIO;
     CMOS             *m_CMOS;
+    CharDriver       *m_CharDrivers[SUPERIO_SERIAL_PORT_COUNT];
+    SuperIO          *m_SuperIO;
 
     SMBus            *m_SMBus;
     SMCDevice        *m_SMC;
