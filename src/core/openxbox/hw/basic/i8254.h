@@ -3,6 +3,7 @@
 #include <cstdint>
 
 #include "i8259.h"
+#include "openxbox/io.h"
 
 namespace openxbox {
 
@@ -11,16 +12,15 @@ namespace openxbox {
 #define PORT_PIT_DATA_2		0x42
 #define PORT_PIT_COMMAND	0x43
 
-class i8254
-{
+class i8254 : public IODevice {
 public:
     i8254(i8259 *pic, float tickRate = 1000.0f);
     void Reset();
     
     void Run();
 
-    void IORead(uint32_t addr, uint32_t *value, uint16_t size);
-    void IOWrite(uint32_t addr, uint32_t value, uint16_t size);
+    bool IORead(uint32_t port, uint32_t *value, uint8_t size) override;
+    bool IOWrite(uint32_t port, uint32_t value, uint8_t size) override;
 private:
     i8259 *m_pic;
     float m_tickRate;

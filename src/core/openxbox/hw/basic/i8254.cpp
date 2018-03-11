@@ -27,11 +27,12 @@ void i8254::Reset() {
     m_running = false;
 }
 
-void i8254::IORead(uint32_t addr, uint32_t *value, uint16_t size) {
+bool i8254::IORead(uint32_t port, uint32_t *value, uint8_t size) {
     *value = 0;
+    return true;
 }
 
-void i8254::IOWrite(uint32_t addr, uint32_t value, uint16_t size) {
+bool i8254::IOWrite(uint32_t port, uint32_t value, uint8_t size) {
     // HACK: The Xbox always inits the PIT to the same value:
     //   Timer 0, Mode 2, 1ms interrupt interval.
     // Rather than fully implement the PIC, we just wait for the command to
@@ -40,6 +41,7 @@ void i8254::IOWrite(uint32_t addr, uint32_t value, uint16_t size) {
         m_running = true;
         Thread_Create("[HW] i8254", i8254ThreadFunc, this);
     }
+    return true;
 }
 
 void i8254::Run() {

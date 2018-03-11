@@ -253,4 +253,22 @@ void PCIDevice::WriteConfig(uint32_t reg, uint32_t value, uint8_t size) {
 	// TODO: handle Message Signalled Interrupts
 }
 
+void PCIDevice::PCIIORead(int barIndex, uint32_t port, uint32_t *value, uint8_t size) {
+    log_spew("PCIDevice::PCIIORead:  bar = %d,  port = 0x%x,  size = %d\n", barIndex, port, size);
+    *value = 0;
+}
+
+void PCIDevice::PCIIOWrite(int barIndex, uint32_t port, uint32_t value, uint8_t size) {
+    log_spew("PCIDevice::PCIIOWrite: bar = %d,  port = 0x%x,  value = 0x%x,  size = %d\n", barIndex, port, value, size);
+}
+
+void PCIDevice::PCIMMIORead(int barIndex, uint32_t addr, uint32_t *value, uint8_t size) {
+    log_spew("PCIDevice::PCIMMIORead:  bar = %d,  address = 0x%x,  size = %d\n", barIndex, addr, size);
+    *value = 0;
+}
+
+void PCIDevice::PCIMMIOWrite(int barIndex, uint32_t addr, uint32_t value, uint8_t size) {
+    log_spew("PCIDevice::PCIMMIOWrite: bar = %d,  address = 0x%x,  value = 0x%x,  size = %d\n", barIndex, addr, value, size);
+}
+
 }

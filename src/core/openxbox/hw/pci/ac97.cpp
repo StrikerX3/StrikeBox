@@ -20,36 +20,4 @@ void AC97Device::Init() {
 void AC97Device::Reset() {
 }
 
-uint32_t AC97Device::IORead(int barIndex, uint32_t port, unsigned size) {
-    //log_spew("AC97Device::IORead:   bar = %d,  port = 0x%x,  size = %d\n", barIndex, port, size);
-
-    // TODO
-	log_warning("AC97Device::IORead:  Unimplemented!  bar = %d,  port = 0x%x,  size = %d\n", barIndex, port, size);
-
-    return 0;
-}
-
-void AC97Device::IOWrite(int barIndex, uint32_t port, uint32_t value, unsigned size) {
-    //log_spew("AC97Device::IOWrite:  bar = %d,  port = 0x%x,  size = %d,  value = 0x%x\n", barIndex, port, size, value);
-
-    // TODO
-	log_warning("AC97Device::IOWrite: Unimplemented!  bar = %d,  port = 0x%x,  size = %d,  value = 0x%x\n", barIndex, port, size, value);
-}
-
-uint32_t AC97Device::MMIORead(int barIndex, uint32_t addr, unsigned size) {
-	//log_spew("AC97Device::MMIORead:   bar = %d,  addr = 0x%x,  size = %d\n", barIndex, addr, size);
-
-    // TODO
-	log_warning("AC97Device::MMIORead:  Unimplemented!  bar = %d,  addr = 0x%x,  size = %d\n", barIndex, addr, size);
-
-    return 0;
-}
-
-void AC97Device::MMIOWrite(int barIndex, uint32_t addr, uint32_t value, unsigned size) {
-    //log_spew("AC97Device::MMIOWrite:  bar = %d,  addr = 0x%x,  size = %d,  value = 0x%x\n", barIndex, addr, size, value);
-
-    // TODO
-	log_warning("AC97Device::MMIOWrite: Unimplemented!  bar = %d,  addr = 0x%x,  size = %d,  value = 0x%x\n", barIndex, addr, size, value);
-}
-
 }

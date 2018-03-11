@@ -3,6 +3,7 @@
 #include <cstdint>
 
 #include "pci_regs.h"
+#include "openxbox/io.h"
 
 namespace openxbox {
 
@@ -49,20 +50,22 @@ class PCIDevice {
 public:
     virtual void Init() = 0;
     virtual void Reset() = 0;
-    virtual uint32_t IORead(int barIndex, uint32_t port, unsigned size) = 0;
-    virtual void IOWrite(int barIndex, uint32_t port, uint32_t value, unsigned size) = 0;
-    virtual uint32_t MMIORead(int barIndex, uint32_t addr, unsigned size) = 0;
-    virtual void MMIOWrite(int barIndex, uint32_t addr, uint32_t value, unsigned size) = 0;
 
+    virtual void PCIIORead(int barIndex, uint32_t port, uint32_t *value, uint8_t size);
+    virtual void PCIIOWrite(int barIndex, uint32_t port, uint32_t value, uint8_t size);
+    virtual void PCIMMIORead(int barIndex, uint32_t addr, uint32_t *value, uint8_t size);
+    virtual void PCIMMIOWrite(int barIndex, uint32_t addr, uint32_t value, uint8_t size);
+    
     // PCI Device Implementation
 public:
     PCIDevice(uint8_t type, uint16_t vendorID, uint16_t deviceID,
 		uint8_t revisionID, uint8_t classID, uint8_t subclass, uint8_t progIF,
 		uint16_t subsystemVendorID = 0x00, uint16_t subsystemID = 0x00);
+
     bool GetIOBar(uint32_t port, uint8_t* barIndex, uint32_t *baseAddress);
     bool GetMMIOBar(uint32_t addr, uint8_t* barIndex, uint32_t *baseAddress);
     bool RegisterBAR(int index, uint32_t size, uint32_t type);
-    
+
     void ReadConfig(uint32_t reg, uint8_t *value, uint8_t size);
     virtual void WriteConfig(uint32_t reg, uint32_t value, uint8_t size);
 protected:

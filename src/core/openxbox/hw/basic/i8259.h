@@ -16,13 +16,13 @@ namespace openxbox {
 #define PIC_MASTER	0
 #define PIC_SLAVE	1
 
-class i8259 {
+class i8259 : public IODevice {
 public:
 	i8259(Cpu *cpu);
 	void Reset();
 
-	void IORead(uint32_t addr, uint32_t *value, uint16_t size);
-	void IOWrite(uint32_t addr, uint32_t value, uint16_t size);
+	bool IORead(uint32_t port, uint32_t *value, uint8_t size) override;
+    bool IOWrite(uint32_t port, uint32_t value, uint8_t size) override;
 
 	void RaiseIRQ(int index);
 	void LowerIRQ(int index);

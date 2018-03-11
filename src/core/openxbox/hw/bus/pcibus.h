@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../pci/pci.h"
+#include "openxbox/io.h"
 
 #include <map>
 
@@ -28,15 +29,15 @@ typedef struct {
     uint8_t enable : 1;
 } PCIConfigAddressRegister;
 
-class PCIBus {
+class PCIBus : public IODevice {
 public:
     void ConnectDevice(uint32_t deviceId, PCIDevice *pDevice);
 
-    bool IORead(uint32_t addr, uint32_t* value, unsigned size);
-    bool IOWrite(uint32_t addr, uint32_t value, unsigned size);
+    bool IORead(uint32_t port, uint32_t *value, uint8_t size) override;
+    bool IOWrite(uint32_t port, uint32_t value, uint8_t size) override;
 
-    bool MMIORead(uint32_t addr, uint32_t * data, unsigned size);
-    bool MMIOWrite(uint32_t addr, uint32_t value, unsigned size);
+    bool MMIORead(uint32_t addr, uint32_t *value, uint8_t size) override;
+    bool MMIOWrite(uint32_t addr, uint32_t value, uint8_t size) override;
 
     void Reset();
 private:

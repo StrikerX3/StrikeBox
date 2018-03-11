@@ -85,20 +85,20 @@ void PCIBus::IOWriteConfigData(uint32_t pData, uint8_t size, uint8_t regOffset) 
     );
 }
 
-bool PCIBus::IORead(uint32_t addr, uint32_t* data, unsigned size) {
-    switch (addr) {
+bool PCIBus::IORead(uint32_t port, uint32_t *value, uint8_t size) {
+    switch (port) {
 	case PORT_PCI_CONFIG_DATA: // 0xCFC
 	case PORT_PCI_CONFIG_DATA + 1: // 0xCFD
 	case PORT_PCI_CONFIG_DATA + 2: // 0xCFE
 	case PORT_PCI_CONFIG_DATA + 3: // 0xCFF
-		*data = IOReadConfigData(size, addr - PORT_PCI_CONFIG_DATA);
+		*value = IOReadConfigData(size, port - PORT_PCI_CONFIG_DATA);
         return true;
     default:
         for (auto it = m_Devices.begin(); it != m_Devices.end(); ++it) {
             uint8_t barIndex;
             uint32_t baseAddress;
-            if (it->second->GetIOBar(addr, &barIndex, &baseAddress)) {
-                *data = it->second->IORead(barIndex, addr - (baseAddress << 2), size);
+            if (it->second->GetIOBar(port, &barIndex, &baseAddress)) {
+                it->second->PCIIORead(barIndex, port - (baseAddress << 2), value, size);
                 return true;
             }
         }
@@ -107,15 +107,15 @@ bool PCIBus::IORead(uint32_t addr, uint32_t* data, unsigned size) {
     return false;
 }
 
-bool PCIBus::IOWrite(uint32_t addr, uint32_t value, unsigned size) {
-    switch (addr) {
+bool PCIBus::IOWrite(uint32_t port, uint32_t value, uint8_t size) {
+    switch (port) {
     case PORT_PCI_CONFIG_ADDRESS: // 0xCF8
         if (size == sizeof(uint32_t)) {
             IOWriteConfigAddress(value);
             return true;
         }
         else {
-            log_warning("PCIBus:IOWrite: Writing %d-bit PCI config address,  address 0x%x,  value 0x%x\n", size << 3, addr, value);
+            log_warning("PCIBus:IOWrite: Writing %d-bit PCI config address,  address 0x%x,  value 0x%x\n", size << 3, port, value);
             IOWriteConfigAddress(value);
             return true;
         }
@@ -124,14 +124,14 @@ bool PCIBus::IOWrite(uint32_t addr, uint32_t value, unsigned size) {
 	case PORT_PCI_CONFIG_DATA + 1: // 0xCFD
 	case PORT_PCI_CONFIG_DATA + 2: // 0xCFE
 	case PORT_PCI_CONFIG_DATA + 3: // 0xCFF
-        IOWriteConfigData(value, size, addr - PORT_PCI_CONFIG_DATA);
+        IOWriteConfigData(value, size, port - PORT_PCI_CONFIG_DATA);
         return true; // TODO : Should IOWriteConfigData() success/failure be returned?
     default:
         for (auto it = m_Devices.begin(); it != m_Devices.end(); ++it) {
             uint8_t barIndex;
             uint32_t baseAddress;
-            if (it->second->GetIOBar(addr, &barIndex, &baseAddress)) {
-                it->second->IOWrite(barIndex, addr - (baseAddress << 2), value, size);
+            if (it->second->GetIOBar(port, &barIndex, &baseAddress)) {
+                it->second->PCIIOWrite(barIndex, port - (baseAddress << 2), value, size);
                 return true;
             }
         }
@@ -140,12 +140,12 @@ bool PCIBus::IOWrite(uint32_t addr, uint32_t value, unsigned size) {
     return false;
 }
 
-bool PCIBus::MMIORead(uint32_t addr, uint32_t* data, unsigned size) {
+bool PCIBus::MMIORead(uint32_t addr, uint32_t *value, uint8_t size) {
     for (auto it = m_Devices.begin(); it != m_Devices.end(); ++it) {
         uint8_t barIndex;
         uint32_t baseAddress;
         if (it->second->GetMMIOBar(addr, &barIndex, &baseAddress)) {
-            *data = it->second->MMIORead(barIndex, addr - (baseAddress << 4), size);
+            it->second->PCIMMIORead(barIndex, addr - (baseAddress << 4), value, size);
             return true;
         }
     }
@@ -153,13 +153,13 @@ bool PCIBus::MMIORead(uint32_t addr, uint32_t* data, unsigned size) {
     return false;
 }
 
-bool PCIBus::MMIOWrite(uint32_t addr, uint32_t value, unsigned size) {
+bool PCIBus::MMIOWrite(uint32_t addr, uint32_t value, uint8_t size) {
     for (auto it = m_Devices.begin(); it != m_Devices.end(); ++it) {
         PCIDevice *dev = it->second;
         uint8_t barIndex;
         uint32_t baseAddress;
         if (dev->GetMMIOBar(addr, &barIndex, &baseAddress)) {
-            dev->MMIOWrite(barIndex, addr - (baseAddress << 4), value, size);
+            dev->PCIMMIOWrite(barIndex, addr - (baseAddress << 4), value, size);
             return true;
         }
 

@@ -16,10 +16,8 @@ public:
     void Init();
     void Reset();
 
-    uint32_t IORead(int barIndex, uint32_t port, unsigned size);
-    void IOWrite(int barIndex, uint32_t port, uint32_t value, unsigned size);
-    uint32_t MMIORead(int barIndex, uint32_t addr, unsigned size);
-    void MMIOWrite(int barIndex, uint32_t addr, uint32_t value, unsigned size);
+    void PCIIORead(int barIndex, uint32_t port, uint32_t *value, uint8_t size) override;
+    void PCIIOWrite(int barIndex, uint32_t port, uint32_t value, uint8_t size) override;
 
 private:
 	int m_field_pin = 0;

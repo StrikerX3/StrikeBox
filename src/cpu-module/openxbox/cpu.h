@@ -6,7 +6,7 @@
 #include "openxbox/memregion.h"
 #include "openxbox/gdt.h"
 #include "openxbox/idt.h"
-#include "openxbox/iomapper.h"
+#include "openxbox/io.h"
 
 namespace openxbox {
 

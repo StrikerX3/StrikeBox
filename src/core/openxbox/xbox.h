@@ -52,7 +52,7 @@ namespace openxbox {
  * This class is the top-level class, will perform initialization and high-level
  * management of the overall emulation flow.
  */
-class Xbox : Emulator, IOMapper {
+class Xbox : Emulator {
 protected:
 	// ----- Modules ----------------------------------------------------------
 	IOpenXBOXCPUModule * m_cpuModule;
@@ -62,6 +62,7 @@ protected:
 	char             *m_ram;
 	char             *m_rom;
 	MemoryRegion     *m_memRegion;
+    IOMapper          m_ioMapper;
 	
     i8254            *m_i8254;
     i8259            *m_i8259;
@@ -105,13 +106,6 @@ public:
 	int Run();
 	int RunCpu();
 	void Stop();
-
-    // IOMapper implementation
-    void IORead(uint32_t addr, uint32_t *value, uint16_t size);
-    void IOWrite(uint32_t addr, uint32_t value, uint16_t size);
-
-    void MMIORead(uint32_t addr, uint32_t *value, uint8_t size);
-    void MMIOWrite(uint32_t addr, uint32_t value, uint8_t size);
 };
 
 }

@@ -95,65 +95,63 @@ void SMBus::ExecuteTransaction() {
     m_Status |= GS_HCYC_STS;
 }
 
-
-uint32_t SMBus::IORead(int barIndex, uint32_t addr, unsigned size) {
+void SMBus::PCIIORead(int barIndex, uint32_t port, uint32_t *value, uint8_t size) {
     if (barIndex != 1) {
-        log_debug("SMBus::IORead:  unimplemented access to bar %d:  address = 0x%x,  size = %d\n", barIndex, addr, size);
-        return 0;
+        log_debug("SMBus::PCIIORead:  unimplemented access to bar %d:  port = 0x%x,  size = %d\n", barIndex, port, size);
+        *value = 0;
+        return;
     }
 
     if (size != 1) {
-        log_debug("SMBus::IORead:  unexpected size %d   bar = %d,  address = 0x%x\n", size, barIndex, addr);
+        log_debug("SMBus::PCIIORead:  unexpected size %d   bar = %d,  port = 0x%x\n", size, barIndex, port);
     }
 
-    uint32_t value;
-    addr &= 0x3f;
+    port &= 0x3f;
 
-    switch (addr) {
+    switch (port) {
     case SMB_GLOBAL_STATUS:
-        value = m_Status;
+        *value = m_Status;
         break;
     case SMB_GLOBAL_ENABLE:
-        value = m_Control & 0x1f;
+        *value = m_Control & 0x1f;
         break;
     case SMB_HOST_COMMAND:
-        value = m_Command;
+        *value = m_Command;
         break;
     case SMB_HOST_ADDRESS:
-        value = m_Address;
+        *value = m_Address;
         break;
     case SMB_HOST_DATA:
-        value = m_Data0;
+        *value = m_Data0;
         break;
     case SMB_HOST_DATA + 1:
-        value = m_Data1;
+        *value = m_Data1;
         break;
     case SMB_HOST_BLOCK_DATA:
-        value = m_Data[m_Index++];
+        *value = m_Data[m_Index++];
         if (m_Index > 31) {
             m_Index = 0;
         }
         break;
     default:
-        value = 0;
+        log_debug("SMBus::PCIIOWrite: Unhandled read!   bar = %d,  port = 0x%x,  size = %d\n", barIndex, port, size);
+        *value = 0;
         break;
     }
-
-    return value;
 }
 
-void SMBus::IOWrite(int barIndex, uint32_t addr, uint32_t value, unsigned size) {
+void SMBus::PCIIOWrite(int barIndex, uint32_t port, uint32_t value, uint8_t size) {
     if (barIndex != 1) {
-        log_debug("SMBus::IOWrite: unimplemented access to bar %d:  address = 0x%x,  size = %d,  value = 0x%x\n", barIndex, addr, size, value);
+        log_debug("SMBus::PCIIOWrite: unimplemented access to bar %d:  port = 0x%x,  size = %d,  value = 0x%x\n", barIndex, port, size, value);
         return;
     }
 
     if (size != 1) {
-        log_debug("SMBus::IOWrite: unexpected size %d   bar = %d,  address = 0x%x,  value = 0x%x\n", size, barIndex, addr, value);
+        log_debug("SMBus::PCIIOWrite: unexpected size %d   bar = %d,  port = 0x%x,  value = 0x%x\n", size, barIndex, port, value);
     }
 
-    addr &= 0x3f;
-    switch (addr) {
+    port &= 0x3f;
+    switch (port) {
     case SMB_GLOBAL_STATUS:
         // If a new status is being set and interrupts are enabled, trigger an interrupt
         if ((m_Control & GE_HCYC_EN) && ((value & GS_CLEAR_STS) & (~(m_Status & GS_CLEAR_STS)))) {
@@ -211,16 +209,9 @@ void SMBus::IOWrite(int barIndex, uint32_t addr, uint32_t value, unsigned size) 
         }
         break;
     default:
+        log_debug("SMBus::PCIIOWrite: Unhandled write!  bar = %d,  port = 0x%x,  value = 0x%x,  size = %d\n", barIndex, port, value, size);
         break;
     }
-}
-
-uint32_t SMBus::MMIORead(int barIndex, uint32_t addr, unsigned size) {
-    return 0;
-}
-
-void SMBus::MMIOWrite(int barIndex, uint32_t addr, uint32_t value, unsigned size) {
-
 }
 
 }

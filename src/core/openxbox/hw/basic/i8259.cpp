@@ -1,6 +1,7 @@
 #include "i8259.h"
 
 #include "openxbox/log.h"
+#include "openxbox/io.h"
 
 namespace openxbox {
 
@@ -121,54 +122,56 @@ void i8259::SetIRQ(int pic, int index, bool asserted) {
     UpdateIRQ(pic);
 }
 
-void i8259::IORead(uint32_t addr, uint32_t *value, uint16_t size) {
-    switch (addr) {
+bool i8259::IORead(uint32_t port, uint32_t *value, uint8_t size) {
+    switch (port) {
     case PORT_PIC_MASTER_COMMAND:
         *value = CommandRead(PIC_MASTER);
-        return;
+        return true;
     case PORT_PIC_SLAVE_COMMAND:
         *value = CommandRead(PIC_SLAVE);
-        return;
+        return true;
     case PORT_PIC_MASTER_DATA:
         *value = DataRead(PIC_MASTER);
-        return;
+        return true;
     case PORT_PIC_SLAVE_DATA:
         *value = DataRead(PIC_SLAVE);
-        return;
+        return true;
     case PORT_PIC_MASTER_ELCR:
         *value = m_ELCR[PIC_MASTER];
-        return;
+        return true;
     case PORT_PIC_SLAVE_ELCR:
         *value = m_ELCR[PIC_SLAVE];
-        return;
+        return true;
     }
 
-    log_warning("i8295::IORead:  Invalid address 0x%x\n", addr);
+    log_warning("i8259::IORead:  Invalid address 0x%x\n", port);
+    return false;
 }
 
-void i8259::IOWrite(uint32_t addr, uint32_t value, uint16_t size) {
-    switch (addr) {
+bool i8259::IOWrite(uint32_t port, uint32_t value, uint8_t size) {
+    switch (port) {
     case PORT_PIC_MASTER_COMMAND:
         CommandWrite(PIC_MASTER, value);
-        return;
+        return true;
     case PORT_PIC_SLAVE_COMMAND:
         CommandWrite(PIC_SLAVE, value);
-        return;
+        return true;
     case PORT_PIC_MASTER_DATA:
         DataWrite(PIC_MASTER, value);
-        return;
+        return true;
     case PORT_PIC_SLAVE_DATA:
         DataWrite(PIC_SLAVE, value);
-        return;
+        return true;
     case PORT_PIC_MASTER_ELCR:
         m_ELCR[PIC_MASTER] = value & m_ELCRMask[PIC_MASTER];
-        return;
+        return true;
     case PORT_PIC_SLAVE_ELCR:
         m_ELCR[PIC_SLAVE] = value & m_ELCRMask[PIC_SLAVE];
-        return;
+        return true;
     }
 
-    log_warning("i8295::IOWrite: Invalid address 0x%x\n", addr);
+    log_warning("i8259::IOWrite: Invalid address 0x%x\n", port);
+    return false;
 }
 
 uint32_t i8259::CommandRead(int pic) {

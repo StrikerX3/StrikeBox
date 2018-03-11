@@ -143,7 +143,7 @@ int Xbox::Initialize(OpenXBOXSettings *settings)
         log_fatal("CPU instantiation failed\n");
         return -1;
     }
-    m_cpu->Initialize(this);
+    m_cpu->Initialize(&m_ioMapper);
 
     // Allow CPU to update memory map based on device allocation, etc
     m_cpu->MemMap(m_memRegion);
@@ -222,6 +222,19 @@ int Xbox::Initialize(OpenXBOXSettings *settings)
     m_PCIBus->ConnectDevice(PCI_DEVID(0, PCI_DEVFN(9, 0)), m_IDE);
     m_PCIBus->ConnectDevice(PCI_DEVID(0, PCI_DEVFN(30, 0)), m_AGPBridge);
     m_PCIBus->ConnectDevice(PCI_DEVID(1, PCI_DEVFN(0, 0)), m_NV2A);
+
+    // Map I/O ports and MMIO addresses
+    m_ioMapper.MapIODevice(PORT_PIC_MASTER_COMMAND, 2, m_i8259);
+    m_ioMapper.MapIODevice(PORT_PIC_SLAVE_COMMAND, 2, m_i8259);
+    m_ioMapper.MapIODevice(PORT_PIC_MASTER_ELCR, 2, m_i8259);
+    
+    m_ioMapper.MapIODevice(PORT_PIT_DATA_0, 4, m_i8254);
+
+    m_ioMapper.MapIODevice(PORT_PCI_CONFIG_ADDRESS, 1, m_PCIBus);
+    m_ioMapper.MapIODevice(PORT_PCI_CONFIG_DATA, 4, m_PCIBus);
+
+    // Add the PCI bus as a dynamic I/O mapper
+    m_ioMapper.AddDevice(m_PCIBus);
 
     // TODO: Handle other SMBUS Addresses, like PIC_ADDRESS, XCALIBUR_ADDRESS
     // Resources:
@@ -343,109 +356,6 @@ void Xbox::Stop() {
 	}
 	m_should_run = false;
 }
-
-void Xbox::IORead(uint32_t addr, uint32_t *value, uint16_t size) {
-    log_spew("Xbox::IORead   address = 0x%x,  size = %d\n", addr, size);
-
-    // TODO: proper I/O port mapping
-
-    switch (addr) {
-    case PORT_PIC_MASTER_COMMAND:
-    case PORT_PIC_MASTER_DATA:
-    case PORT_PIC_SLAVE_COMMAND:
-    case PORT_PIC_SLAVE_DATA:
-    case PORT_PIC_MASTER_ELCR:
-    case PORT_PIC_SLAVE_ELCR:
-        m_i8259->IORead(addr, value, size);
-        break;
-    case PORT_PIT_DATA_0:
-    case PORT_PIT_DATA_1:
-    case PORT_PIT_DATA_2:
-    case PORT_PIT_COMMAND: {
-        m_i8254->IORead(addr, value, size);
-        return;
-    }
-    default:
-        // Pass the IO Read to the PCI Bus.
-        // This will handle devices with BARs set to IO addresses
-        if (m_PCIBus->IORead(addr, value, size)) {
-            return;
-        }
-        break;
-    }
-
-
-    log_warning("Unhandled I/O!  address = 0x%x,  size = %d,  read\n", addr, size);
-    *value = 0;
-}
-
-void Xbox::IOWrite(uint32_t addr, uint32_t value, uint16_t size) {
-    log_spew("Xbox::IOWrite  address = 0x%x,  size = %d,  value = 0x%x\n", addr, size, value);
-
-    // TODO: proper I/O port mapping
-
-    switch (addr) {
-    case PORT_PIC_MASTER_COMMAND:
-    case PORT_PIC_MASTER_DATA:
-    case PORT_PIC_MASTER_ELCR:
-    case PORT_PIC_SLAVE_COMMAND:
-    case PORT_PIC_SLAVE_DATA:
-    case PORT_PIC_SLAVE_ELCR:
-        m_i8259->IOWrite(addr, value, size);
-        return;
-    case PORT_PIT_DATA_0:
-    case PORT_PIT_DATA_1:
-    case PORT_PIT_DATA_2:
-    case PORT_PIT_COMMAND:
-        m_i8254->IOWrite(addr, value, size);
-        return;
-    default:
-        // Pass the IO Write to the PCI Bus.
-        // This will handle devices with BARs set to IO addresses
-        if (m_PCIBus->IOWrite(addr, value, size)) {
-            return;
-        }
-        break;
-    }
-
-    log_warning("Unhandled I/O!  address = 0x%x,  size = %d,  write 0x%x\n", addr, size, value);
-}
-
-void Xbox::MMIORead(uint32_t addr, uint32_t *value, uint8_t size) {
-    log_spew("Xbox::MMIORead   address = 0x%x,  size = %d\n", addr, size);
-  
-    if ((addr & (size - 1)) != 0) {
-        log_warning("Unaligned MMIO read!   address = 0x%x,  size = %d\n", addr, size);
-        return;
-    }
-
-    // Pass the read to the PCI Bus.
-    // This will handle devices with BARs set to MMIO addresses
-    if (m_PCIBus->MMIORead(addr, value, size)) {
-        return;
-    }
-
-    log_warning("Unhandled MMIO!  address = 0x%x,  size = %d,  read\n", addr, size);
-    *value = 0;
-}
-
-void Xbox::MMIOWrite(uint32_t addr, uint32_t value, uint8_t size) {
-    log_spew("Xbox::MMIOWrite  address = 0x%x,  size = %d,  value = 0x%x\n", addr, size, value);
-
-    if ((addr & (size - 1)) != 0) {
-        log_warning("Unaligned MMIO write!  address = 0x%x,  size = %d,  value = 0x%x\n", addr, size, value);
-        return;
-    }
-
-    // Pass the write to the PCI Bus.
-    // This will handle devices with BARs set to MMIO addresses
-    if (m_PCIBus->MMIOWrite(addr, value, size)) {
-        return;
-    }
-
-    log_warning("Unhandled MMIO!  address = 0x%x,  size = %d,  write 0x%x\n", addr, size, value);
-}
-
 
 void Xbox::Cleanup() {
 	if (LOG_LEVEL >= LOG_LEVEL_DEBUG) {

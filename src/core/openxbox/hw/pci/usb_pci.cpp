@@ -18,36 +18,4 @@ void USBPCIDevice::Init() {
 void USBPCIDevice::Reset() {
 }
 
-uint32_t USBPCIDevice::IORead(int barIndex, uint32_t port, unsigned size) {
-    //log_spew("USBPCIDevice::IORead:   bar = %d,  port = 0x%x,  size = %d\n", barIndex, port, size);
-
-    // TODO
-	log_warning("USBPCIDevice::IORead:  Unimplemented!  bar = %d,  port = 0x%x,  size = %d\n", barIndex, port, size);
-
-    return 0;
-}
-
-void USBPCIDevice::IOWrite(int barIndex, uint32_t port, uint32_t value, unsigned size) {
-    //log_spew("USBPCIDevice::IOWrite:  bar = %d,  port = 0x%x,  size = %d,  value = 0x%x\n", barIndex, port, size, value);
-
-    // TODO
-	log_warning("USBPCIDevice::IOWrite: Unimplemented!  bar = %d,  port = 0x%x,  size = %d,  value = 0x%x\n", barIndex, port, size, value);
-}
-
-uint32_t USBPCIDevice::MMIORead(int barIndex, uint32_t addr, unsigned size) {
-    //log_spew("USBPCIDevice::MMIORead:   bar = %d,  addr = 0x%x,  size = %d\n", barIndex, addr, size);
-
-    // TODO
-	log_warning("USBPCIDevice::MMIORead:  Unimplemented!  bar = %d,  addr = 0x%x,  size = %d\n", barIndex, addr, size);
-
-    return 0;
-}
-
-void USBPCIDevice::MMIOWrite(int barIndex, uint32_t addr, uint32_t value, unsigned size) {
-    //log_spew("USBPCIDevice::MMIOWrite:  bar = %d,  addr = 0x%x,  size = %d,  value = 0x%x\n", barIndex, addr, size, value);
-
-    // TODO
-	log_warning("USBPCIDevice::MMIOWrite: Unimplemented!  bar = %d,  addr = 0x%x,  size = %d,  value = 0x%x\n", barIndex, addr, size, value);
-}
-
 }
