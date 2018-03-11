@@ -484,4 +484,17 @@ void Xbox::Cleanup() {
     }
 }
 
+void Xbox::AddPoller(PollFunc pollFunc, void *data) {
+    m_pollers.push_back(PollerEntry{ pollFunc, data });
+}
+
+void Xbox::RemovePoller(PollFunc pollFunc, void *data) {
+    for (auto it = m_pollers.begin(); it != m_pollers.end(); it++) {
+        if (it->pollFunc == pollFunc && it->data == data) {
+            m_pollers.erase(it);
+            break;
+        }
+    }
+}
+
 }

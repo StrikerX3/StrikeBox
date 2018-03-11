@@ -41,10 +41,10 @@ typedef void (*EventCallback)(void *userData, int event);
  */
 class CharDriver {
 public:
-    virtual void Init() = 0;
+    virtual bool Init() = 0;
     virtual int Write(const uint8_t *buf, int len) = 0;
     virtual void AcceptInput() = 0;
-    virtual void Poll() = 0;
+    virtual int Poll() = 0;
 
     // IOCTLs
     virtual void SetBreakEnable(bool breakEnable) = 0;
@@ -54,7 +54,38 @@ public:
     CanReceiveCallback m_cbCanReceive;
     ReceiveCallback m_cbReceive;
     EventCallback m_cbEvent;
-private:
+    void *m_handler;
+protected:
+    bool m_open;
+
+    int CanReceive() {
+        if (m_cbCanReceive != nullptr  && m_handler != nullptr) {
+            return m_cbCanReceive(m_handler);
+        }
+        return 0;
+    }
+
+    void Receive(const uint8_t *buf, int size) {
+        if (m_cbReceive != nullptr && m_handler != nullptr) {
+            m_cbReceive(m_handler, buf, size);
+        }
+    }
+
+    void Event(int event) {
+        // Keep track if the char device is open
+        switch (event) {
+        case CHR_EVENT_OPENED:
+            m_open = true;
+            break;
+        case CHR_EVENT_CLOSED:
+            m_open = false;
+            break;
+        }
+
+        if (m_cbEvent) {
+            m_cbEvent(m_handler, event);
+        }
+    }
 };
 
 }

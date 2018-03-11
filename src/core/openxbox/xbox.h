@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <vector>
 
 #include "openxbox/cpu.h"
 #include "openxbox/dev.h"
@@ -19,6 +20,7 @@
 #include "openxbox/xbe.h"
 #include "openxbox/thread.h"
 #include "openxbox/settings.h"
+#include "openxbox/poller.h"
 
 #include "openxbox/hw/basic/i8254.h"
 #include "openxbox/hw/basic/i8259.h"
@@ -55,6 +57,21 @@ namespace openxbox {
  * management of the overall emulation flow.
  */
 class Xbox : Emulator {
+public:
+    Xbox(IOpenXBOXCPUModule *cpuModule);
+    ~Xbox();
+    int Initialize(OpenXBOXSettings *settings);
+
+    void InitializePreRun();
+    void Cleanup();
+
+    int Run();
+    int RunCpu();
+    void Stop();
+
+    void AddPoller(PollFunc pollFunc, void *data);
+    void RemovePoller(PollFunc pollFunc, void *data);
+
 protected:
 	// ----- Modules ----------------------------------------------------------
 	IOpenXBOXCPUModule * m_cpuModule;
@@ -100,17 +117,8 @@ protected:
 	// ----- Debugger ---------------------------------------------------------
 	GdbServer *m_gdb;
 
-public:
-	Xbox(IOpenXBOXCPUModule *cpuModule);
-	~Xbox();
-	int Initialize(OpenXBOXSettings *settings);
-
-	void InitializePreRun();
-	void Cleanup();
-
-	int Run();
-	int RunCpu();
-	void Stop();
+private:
+    std::vector<PollerEntry> m_pollers;
 };
 
 }

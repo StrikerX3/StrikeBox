@@ -16,6 +16,11 @@ file(GLOB DIR_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/nv2a/*.cpp
     )
 
+if (WIN32)
+    add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/basic/win32")
+endif (WIN32)
+
+
 set(SOURCES ${SOURCES}
     ${DIR_HEADERS}
     ${DIR_SOURCES}

@@ -2,8 +2,9 @@
 
 namespace openxbox {
 
-void NullCharDriver::Init() {
+bool NullCharDriver::Init() {
     // Nothing to initialize
+    return true;
 }
 
 int NullCharDriver::Write(const uint8_t *buf, int len) {
@@ -26,11 +27,13 @@ void NullCharDriver::AcceptInput() {
     // Nothing to do
 }
 
-void NullCharDriver::Poll() {
+int NullCharDriver::Poll() {
     // Nothing to do
+    return 0;
 }
 
-// IOCTLs
+// ----- IOCTLs ---------------------------------------------------------------
+
 void NullCharDriver::SetBreakEnable(bool breakEnable) {
     // Nothing to do
 }
@@ -38,6 +41,5 @@ void NullCharDriver::SetBreakEnable(bool breakEnable) {
 void NullCharDriver::SetSerialParameters(SerialParams *params) {
     // Nothing to do
 }
-
 
 }

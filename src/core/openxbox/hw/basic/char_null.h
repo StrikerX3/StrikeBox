@@ -8,14 +8,14 @@ namespace openxbox {
 
 class NullCharDriver : public CharDriver {
 public:
-    void Init();
-    int Write(const uint8_t *buf, int len);
-    void AcceptInput();
-    void Poll();
+    bool Init() override;
+    int Write(const uint8_t *buf, int len) override;
+    void AcceptInput() override;
+    int Poll() override;
 
     // IOCTLs
-    void SetBreakEnable(bool breakEnable);
-    void SetSerialParameters(SerialParams *params);
+    void SetBreakEnable(bool breakEnable) override;
+    void SetSerialParameters(SerialParams *params) override;
 };
 
 }
