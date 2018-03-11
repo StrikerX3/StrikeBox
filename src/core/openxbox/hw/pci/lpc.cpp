@@ -20,7 +20,7 @@ void LPCDevice::Reset() {
 }
 
 uint32_t LPCDevice::IORead(int barIndex, uint32_t port, unsigned size) {
-    //log_spew("LPCDevice::IORead:   bar = %d,  port = 0x%x,  size = %d\n", barIndex, port, size);
+    log_spew("LPCDevice::IORead:   bar = %d,  port = 0x%x,  size = %d\n", barIndex, port, size);
 	
 	if (barIndex != 0) {
 		return 0;

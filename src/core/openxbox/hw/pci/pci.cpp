@@ -239,7 +239,7 @@ void PCIDevice::ReadConfig(uint32_t reg, uint8_t *value, uint8_t size) {
 }
 
 void PCIDevice::WriteConfig(uint32_t reg, uint32_t value, uint8_t size) {
-    log_spew("PCIDevice::WriteConfigRegister: register 0x%x, %d-bit\n", reg, size << 3);
+    log_spew("PCIDevice::WriteConfigRegister: register 0x%x, %d-bit, value = 0x%x\n", reg, size << 3, value);
     
 	for (uint8_t i = 0; i < size; value >>= 8, ++i) {
 		uint8_t wmask = m_writeMask[reg + i];

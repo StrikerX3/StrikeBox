@@ -34,8 +34,8 @@ typedef enum {                   // Read                                        
     CPUTemp = 0x09,              // CPU temperature (°C)                        -
     GPUTemp = 0x0A,              // GPU (board?) temperature (°C)               -
     TrayEject = 0x0C,            // -                                           Tray eject (0 = eject; 1 = load)
-    ScratchRegister = 0x0E,      // -                                           Another scratch register? Seems like an error code
-    ReadScratchRegister = 0x0F,  // Reads scratch register written with 0x0E    -
+    ErrorCode = 0x0E,            // -                                           Write error code
+    ReadErrorCode = 0x0F,        // Reads error code written with 0x0E          -
     PowerFanReadback = 0x10,     // -                                           Current power fan speed (0-50)
     InterruptReason = 0x11,      // -                                           Interrupt reason
     Overheated = 0x18,           // Locks up the Xbox in "overheated" state     -

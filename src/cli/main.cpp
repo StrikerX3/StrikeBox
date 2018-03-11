@@ -88,7 +88,7 @@ int main(int argc, const char *argv[]) {
     settings.debug_dumpXBESectionContents = false;
     settings.gdb_enable = false;
     settings.hw_model = DebugKit;
-    settings.hw_sysclock_tickRate = 100.0f;
+    settings.hw_sysclock_tickRate = 1000.0f;
     settings.rom_mcpx = mcpx_path;
     settings.rom_bios = bios_path;
 

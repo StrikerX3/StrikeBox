@@ -9,6 +9,7 @@ HostBridgeDevice::HostBridgeDevice(uint16_t vendorID, uint16_t deviceID, uint8_t
 		/*TODO: subsystemVendorID*/0x00, /*TODO: subsystemID*/0x00)
 {
     Write8(m_configSpace, PCI_INTERRUPT_PIN, 0x1);
+    Write8(m_configSpace, 0x87, 3);
 }
 
 // PCI Device functions

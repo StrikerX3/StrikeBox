@@ -1,5 +1,6 @@
 #include "smc.h"
 #include "led.h"
+#include "openxbox/log.h"
 
 namespace openxbox {
 
@@ -41,14 +42,20 @@ void SMCDevice::Reset() {
 }
 
 void SMCDevice::QuickCommand(bool read) {
+    log_spew("SMCDevice::QuickCommand:  %s\n", (read ? "read" : "write"));
+
     // TODO
 }
 
 uint8_t SMCDevice::ReceiveByte() {
+    log_spew("SMCDevice::ReceiveByte\n");
+
     return 0; // TODO
 }
 
 uint8_t SMCDevice::ReadByte(uint8_t command) {
+    log_spew("SMCDevice::ReadByte:  command = 0x%x\n", command);
+
     switch (command) {
     case SMCRegister::Version:
         // See http://xboxdevwiki.net/PIC#PIC_version_string
@@ -66,8 +73,8 @@ uint8_t SMCDevice::ReadByte(uint8_t command) {
     //case SMCRegister::AVPack:
     //case SMCRegister::CPUTemp:
     //case SMCRegister::GPUTemp:
-    case ReadScratchRegister:
-        return m_buffer[0x0E];
+    case SMCRegister::ReadErrorCode:
+        return m_buffer[SMCRegister::ErrorCode];
     //case SMCRegister::PowerFanReadback:
     //case SMCRegister::InterruptReason:
     //case SMCRegister::Overheated:
@@ -85,18 +92,26 @@ uint8_t SMCDevice::ReadByte(uint8_t command) {
 }
 
 uint16_t SMCDevice::ReadWord(uint8_t command) {
+    log_spew("SMCDevice::ReadWord:  command = 0x%x\n", command);
+
     return 0; // TODO
 }
 
 int SMCDevice::ReadBlock(uint8_t command, uint8_t *data) {
+    log_spew("SMCDevice::ReadBlock:  command = 0x%x\n", command);
+
     return 0; // TODO
 }
 
 void SMCDevice::SendByte(uint8_t data) {
+    log_spew("SMCDevice::SendByte:  data = 0x%x\n", data);
+
     // TODO
 }
 
 void SMCDevice::WriteByte(uint8_t command, uint8_t value) {
+    log_spew("SMCDevice::WriteByte:  command = 0x%x,  value = 0x%x\n", command, value);
+
     switch (command) {
     case SMCRegister::Version:
         // NOTE: MAME Xbox/Chihiro driver doesn't check for zero
@@ -145,10 +160,14 @@ void SMCDevice::WriteByte(uint8_t command, uint8_t value) {
 }
 
 void SMCDevice::WriteWord(uint8_t command, uint16_t value) {
+    log_spew("SMCDevice::WriteWord:  command = 0x%x,  value = 0x%x\n", command, value);
+
     // TODO
 }
 
 void SMCDevice::WriteBlock(uint8_t command, uint8_t* data, int length) {
+    log_spew("SMCDevice::WriteBlock:  command = 0x%x,  length = 0x%x\n", command, length);
+
     // TODO
 }
 
