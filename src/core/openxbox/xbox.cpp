@@ -187,13 +187,17 @@ int Xbox::Initialize(OpenXBOXSettings *settings)
     // Create PIT and PIC
     m_i8259 = new i8259(m_cpu);
     m_i8254 = new i8254(m_i8259, settings->hw_sysclock_tickRate);
-    m_SuperIO = new SuperIO();
     m_CMOS = new CMOS();
+    if (settings->hw_model == DebugKit) {
+        m_SuperIO = new SuperIO();
+    }
     
     m_i8259->Reset();
     m_i8254->Reset();
-    m_SuperIO->Reset();
     m_CMOS->Reset();
+    if (settings->hw_model == DebugKit) {
+        m_SuperIO->Reset();
+    }
 
     // Create busses
     m_PCIBus = new PCIBus();
@@ -254,22 +258,13 @@ int Xbox::Initialize(OpenXBOXSettings *settings)
     m_PCIBus->ConnectDevice(PCI_DEVID(1, PCI_DEVFN(0, 0)), m_NV2A);
 
     // Map I/O ports and MMIO addresses
-    m_ioMapper.MapIODevice(PORT_PIC_MASTER_BASE, PORT_PIC_COUNT, m_i8259);
-    m_ioMapper.MapIODevice(PORT_PIC_SLAVE_BASE, PORT_PIC_COUNT, m_i8259);
-    m_ioMapper.MapIODevice(PORT_PIC_ELCR_BASE, PORT_PIC_COUNT, m_i8259);
-    
-    m_ioMapper.MapIODevice(PORT_PIT_BASE, PORT_PIT_COUNT, m_i8254);
-
-    m_ioMapper.MapIODevice(PORT_PCI_CONFIG_ADDRESS, 1, m_PCIBus);
-    m_ioMapper.MapIODevice(PORT_PCI_CONFIG_DATA, 4, m_PCIBus);
-
-    m_ioMapper.MapIODevice(PORT_SUPERIO_BASE, PORT_SUPERIO_COUNT, m_SuperIO);
-    m_ioMapper.MapIODevice(PORT_SUPERIO_UART_BASE, PORT_SUPERIO_UART_COUNT, m_SuperIO);
-
-    m_ioMapper.MapIODevice(PORT_CMOS_BASE, PORT_CMOS_COUNT, m_CMOS);
-
-    // Add the PCI bus as a dynamic I/O mapper
-    m_ioMapper.AddDevice(m_PCIBus);
+    m_i8259->MapIO(&m_ioMapper);
+    m_i8254->MapIO(&m_ioMapper);
+    m_CMOS->MapIO(&m_ioMapper);
+    m_PCIBus->MapIO(&m_ioMapper);
+    if (settings->hw_model == DebugKit) {
+        m_SuperIO->MapIO(&m_ioMapper);
+    }
 
     // TODO: Handle other SMBUS Addresses, like PIC_ADDRESS, XCALIBUR_ADDRESS
     // Resources:

@@ -6,6 +6,8 @@
 
 namespace openxbox {
 
+class IOMapper;
+
 /*!
  * Abstract base class that represents devices that respond to port-mapped
  * and/or memory-mapped I/O.
@@ -16,6 +18,8 @@ namespace openxbox {
  */
 class IODevice {
 public:
+    virtual bool MapIO(IOMapper *mapper) = 0;
+
     virtual bool IORead(uint32_t port, uint32_t *value, uint8_t size);
     virtual bool IOWrite(uint32_t port, uint32_t value, uint8_t size);
 

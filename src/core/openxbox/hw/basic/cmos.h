@@ -18,6 +18,8 @@ public:
     CMOS();
 	void Reset();
 
+    bool MapIO(IOMapper *mapper);
+
 	bool IORead(uint32_t port, uint32_t *value, uint8_t size) override;
     bool IOWrite(uint32_t port, uint32_t value, uint8_t size) override;
 private:

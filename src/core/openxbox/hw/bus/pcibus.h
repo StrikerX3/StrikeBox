@@ -31,6 +31,8 @@ typedef struct {
 
 class PCIBus : public IODevice {
 public:
+    bool MapIO(IOMapper *mapper);
+    
     void ConnectDevice(uint32_t deviceId, PCIDevice *pDevice);
 
     bool IORead(uint32_t port, uint32_t *value, uint8_t size) override;

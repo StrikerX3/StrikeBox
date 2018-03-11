@@ -20,10 +20,12 @@ public:
     i8254(i8259 *pic, float tickRate = 1000.0f);
     void Reset();
     
-    void Run();
+    bool MapIO(IOMapper *mapper);
 
     bool IORead(uint32_t port, uint32_t *value, uint8_t size) override;
     bool IOWrite(uint32_t port, uint32_t value, uint8_t size) override;
+    
+    void Run();
 private:
     i8259 *m_pic;
     float m_tickRate;

@@ -27,6 +27,12 @@ void i8254::Reset() {
     m_running = false;
 }
 
+bool i8254::MapIO(IOMapper *mapper) {
+    if (!mapper->MapIODevice(PORT_PIT_BASE, PORT_PIT_COUNT, this)) return false;
+
+    return true;
+}
+
 bool i8254::IORead(uint32_t port, uint32_t *value, uint8_t size) {
     *value = 0;
     return true;

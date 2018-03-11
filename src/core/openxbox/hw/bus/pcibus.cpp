@@ -5,6 +5,14 @@
 
 namespace openxbox {
 
+bool PCIBus::MapIO(IOMapper *mapper) {
+    if (!mapper->MapIODevice(PORT_PCI_CONFIG_ADDRESS, 1, this)) return false;
+    if (!mapper->MapIODevice(PORT_PCI_CONFIG_DATA, 4, this)) return false;
+    if (!mapper->AddDevice(this)) return false;
+
+    return true;
+}
+
 void PCIBus::ConnectDevice(uint32_t deviceId, PCIDevice *pDevice) {
     if (m_Devices.find(deviceId) != m_Devices.end()) {
         log_warning("PCIBus: Attempting to connect two devices to the same device address\n");

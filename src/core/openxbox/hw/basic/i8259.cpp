@@ -71,6 +71,14 @@ void i8259::Reset(int pic) {
     UpdateIRQ(pic);
 }
 
+bool i8259::MapIO(IOMapper *mapper) {
+    if (!mapper->MapIODevice(PORT_PIC_MASTER_BASE, PORT_PIC_COUNT, this)) return false;
+    if (!mapper->MapIODevice(PORT_PIC_SLAVE_BASE, PORT_PIC_COUNT, this)) return false;
+    if (!mapper->MapIODevice(PORT_PIC_ELCR_BASE, PORT_PIC_COUNT, this)) return false;
+
+    return true;
+}
+
 void i8259::RaiseIRQ(int index) {
     if (index <= 7) {
         SetIRQ(PIC_MASTER, index, true);
