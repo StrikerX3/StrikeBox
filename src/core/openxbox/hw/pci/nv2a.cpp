@@ -50,6 +50,15 @@ NV2ADevice::NV2ADevice(uint16_t vendorID, uint16_t deviceID, uint8_t revisionID,
 {
 }
 
+NV2ADevice::~NV2ADevice() {
+    m_running = false;
+
+    m_PFIFO.cache1.cache_cond.notify_all();
+
+    m_PFIFO.puller_thread.join();
+    m_VblankThread.join();
+}
+
 // PCI Device functions
 
 void NV2ADevice::Init() {
@@ -67,6 +76,7 @@ void NV2ADevice::Init() {
 
     Reset();
  
+    m_running = true;
     m_PFIFO.puller_thread = std::thread(PFIFO_Puller_Thread, this);
     m_VblankThread = std::thread(VBlankThread, this);
 }
@@ -2287,15 +2297,18 @@ void NV2ADevice::pfifo_run_pusher() {
     }
 }
 
-void* NV2ADevice::PFIFO_Puller_Thread(NV2ADevice *nv2a) {
+void NV2ADevice::PFIFO_Puller_Thread(NV2ADevice *nv2a) {
     Cache1State *state = &nv2a->m_PFIFO.cache1;
-    while (true) {
+    while (nv2a->m_running) {
         // Scope the lock so that it automatically unlocks at tne end of this block
         {
             std::unique_lock<std::mutex> lk(state->mutex);
 
             while (state->cache.empty() || !state->pull_enabled) {
                 state->cache_cond.wait(lk);
+                if (!nv2a->m_running) {
+                    break;
+                }
             }
 
             // Copy cache to working_cache
@@ -2409,7 +2422,7 @@ void NV2ADevice::VBlankThread(NV2ADevice *nv2a) {
     auto nextStop = high_resolution_clock::now();
     auto interval = duration<long long, std::ratio<1, 1000000>>((long long)(1000000.0f / 60.0f));
 
-    while (true) {
+    while (nv2a->m_running) {
         nv2a->m_PCRTC.pendingInterrupts |= NV_PCRTC_INTR_0_VBLANK;
         nv2a->UpdateIRQ();
 

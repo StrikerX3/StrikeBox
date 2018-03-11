@@ -12,10 +12,11 @@ namespace openxbox {
 
 class NV2ADevice : public PCIDevice {
 public:
-    // constructor
 	NV2ADevice(uint16_t vendorID, uint16_t deviceID, uint8_t revisionID,
         uint8_t *pSystemRAM, uint32_t systemRAMSize,
         i8259 *pic);
+    
+    ~NV2ADevice();
 
     // PCI Device functions
     void Init();
@@ -114,7 +115,7 @@ private:
 
     void pfifo_run_pusher();
 
-    static void* PFIFO_Puller_Thread(NV2ADevice* pNV2a);
+    static void PFIFO_Puller_Thread(NV2ADevice* pNV2a);
     static void VBlankThread(NV2ADevice* pNV2A);
 
     void UpdateIRQ();
@@ -138,6 +139,7 @@ private:
 
     VGACommonState m_VGAState;
 
+    bool m_running;
     std::vector<NV2ABlockInfo> m_MemoryRegions;
     std::thread m_VblankThread;
 };

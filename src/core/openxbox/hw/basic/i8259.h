@@ -13,6 +13,11 @@ namespace openxbox {
 #define PORT_PIC_MASTER_ELCR     0x4D0
 #define PORT_PIC_SLAVE_ELCR      0x4D1
 
+#define PORT_PIC_MASTER_BASE     PORT_PIC_MASTER_COMMAND
+#define PORT_PIC_SLAVE_BASE      PORT_PIC_SLAVE_COMMAND
+#define PORT_PIC_ELCR_BASE       PORT_PIC_MASTER_ELCR
+#define PORT_PIC_COUNT           2
+
 #define PIC_MASTER	0
 #define PIC_SLAVE	1
 

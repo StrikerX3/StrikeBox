@@ -22,6 +22,8 @@
 
 #include "openxbox/hw/basic/i8254.h"
 #include "openxbox/hw/basic/i8259.h"
+#include "openxbox/hw/basic/superio.h"
+#include "openxbox/hw/basic/cmos.h"
 
 #include "openxbox/hw/bus/smbus.h"
 #include "openxbox/hw/bus/pcibus.h"
@@ -66,6 +68,8 @@ protected:
 	
     i8254            *m_i8254;
     i8259            *m_i8259;
+    SuperIO          *m_SuperIO;
+    CMOS             *m_CMOS;
 
     SMBus            *m_SMBus;
     SMCDevice        *m_SMC;

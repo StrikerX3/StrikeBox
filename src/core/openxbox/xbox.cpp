@@ -29,12 +29,38 @@ Xbox::Xbox(IOpenXBOXCPUModule *cpuModule)
 /*!
  * Destructor
  */
-Xbox::~Xbox()
-{
+Xbox::~Xbox() {
     if (m_cpu) m_cpuModule->FreeCPU(m_cpu);
     if (m_ram) vfree(m_ram);
     if (m_rom) vfree(m_rom);
     if (m_memRegion) delete m_memRegion;
+
+    if (m_SMC != nullptr) delete m_SMC;
+    if (m_EEPROM != nullptr) delete m_EEPROM;
+    if (m_TVEncoder != nullptr) delete m_TVEncoder;
+    
+    if (m_SMBus != nullptr) delete m_SMBus;
+    
+    if (m_MCPXRAM != nullptr) delete m_MCPXRAM;
+    if (m_LPC != nullptr) delete m_LPC;
+    if (m_USB1 != nullptr) delete m_USB1;
+    if (m_USB2 != nullptr) delete m_USB2;
+    if (m_NVNet != nullptr) delete m_NVNet;
+    if (m_NVAPU != nullptr) delete m_NVAPU;
+    if (m_AC97 != nullptr) delete m_AC97;
+    if (m_IDE != nullptr) delete m_IDE;
+    if (m_NV2A != nullptr) delete m_NV2A;
+    
+    if (m_PCIBus != nullptr) delete m_PCIBus;
+    
+    if (m_HostBridge != nullptr) delete m_HostBridge;
+    if (m_PCIBridge != nullptr) delete m_PCIBridge;
+    if (m_AGPBridge != nullptr) delete m_AGPBridge;
+
+    if (m_CMOS != nullptr) delete m_CMOS;
+    if (m_SuperIO != nullptr) delete m_SuperIO;
+    if (m_i8254 != nullptr) delete m_i8254;
+    if (m_i8259 != nullptr) delete m_i8259;
 }
 
 /*!
@@ -161,9 +187,13 @@ int Xbox::Initialize(OpenXBOXSettings *settings)
     // Create PIT and PIC
     m_i8259 = new i8259(m_cpu);
     m_i8254 = new i8254(m_i8259, settings->hw_sysclock_tickRate);
+    m_SuperIO = new SuperIO();
+    m_CMOS = new CMOS();
     
     m_i8259->Reset();
     m_i8254->Reset();
+    m_SuperIO->Reset();
+    m_CMOS->Reset();
 
     // Create busses
     m_PCIBus = new PCIBus();
@@ -224,14 +254,19 @@ int Xbox::Initialize(OpenXBOXSettings *settings)
     m_PCIBus->ConnectDevice(PCI_DEVID(1, PCI_DEVFN(0, 0)), m_NV2A);
 
     // Map I/O ports and MMIO addresses
-    m_ioMapper.MapIODevice(PORT_PIC_MASTER_COMMAND, 2, m_i8259);
-    m_ioMapper.MapIODevice(PORT_PIC_SLAVE_COMMAND, 2, m_i8259);
-    m_ioMapper.MapIODevice(PORT_PIC_MASTER_ELCR, 2, m_i8259);
+    m_ioMapper.MapIODevice(PORT_PIC_MASTER_BASE, PORT_PIC_COUNT, m_i8259);
+    m_ioMapper.MapIODevice(PORT_PIC_SLAVE_BASE, PORT_PIC_COUNT, m_i8259);
+    m_ioMapper.MapIODevice(PORT_PIC_ELCR_BASE, PORT_PIC_COUNT, m_i8259);
     
-    m_ioMapper.MapIODevice(PORT_PIT_DATA_0, 4, m_i8254);
+    m_ioMapper.MapIODevice(PORT_PIT_BASE, PORT_PIT_COUNT, m_i8254);
 
     m_ioMapper.MapIODevice(PORT_PCI_CONFIG_ADDRESS, 1, m_PCIBus);
     m_ioMapper.MapIODevice(PORT_PCI_CONFIG_DATA, 4, m_PCIBus);
+
+    m_ioMapper.MapIODevice(PORT_SUPERIO_BASE, PORT_SUPERIO_COUNT, m_SuperIO);
+    m_ioMapper.MapIODevice(PORT_SUPERIO_UART_BASE, PORT_SUPERIO_UART_COUNT, m_SuperIO);
+
+    m_ioMapper.MapIODevice(PORT_CMOS_BASE, PORT_CMOS_COUNT, m_CMOS);
 
     // Add the PCI bus as a dynamic I/O mapper
     m_ioMapper.AddDevice(m_PCIBus);

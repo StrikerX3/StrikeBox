@@ -12,6 +12,9 @@ namespace openxbox {
 #define PORT_PIT_DATA_2		0x42
 #define PORT_PIT_COMMAND	0x43
 
+#define PORT_PIT_BASE       PORT_PIT_DATA_0
+#define PORT_PIT_COUNT      (PORT_PIT_COMMAND - PORT_PIT_DATA_0 + 1)
+
 class i8254 : public IODevice {
 public:
     i8254(i8259 *pic, float tickRate = 1000.0f);
