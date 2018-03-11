@@ -30,7 +30,7 @@ private:
 
 template<typename T>
 Fifo<T>::Fifo(uint32_t capacity) {
-    m_data = new uint8_t[capacity];
+    m_data = new T[capacity];
     m_capacity = capacity;
     m_head = 0;
     m_num = 0;
@@ -76,4 +76,3 @@ bool Fifo<T>::Discard() {
 }
 
 }
-
