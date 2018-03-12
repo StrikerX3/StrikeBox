@@ -107,6 +107,8 @@ Serial::Serial(i8259 *pic)
 
     m_baudbase = 115200;
     m_active = false;
+    m_recvFifoITL = 14;
+    m_lastXmitTs = 0;
 
     Reset();
 }
@@ -338,16 +340,16 @@ bool Serial::IOWrite(uint32_t port, uint32_t value, uint8_t size) {
             // Set recv_fifo trigger level
             switch (value & 0xC0) {
             case UART_FCR_ITL_1:
-                m_recvFifoItl = 1;
+                m_recvFifoITL = 1;
                 break;
             case UART_FCR_ITL_2:
-                m_recvFifoItl = 4;
+                m_recvFifoITL = 4;
                 break;
             case UART_FCR_ITL_3:
-                m_recvFifoItl = 8;
+                m_recvFifoITL = 8;
                 break;
             case UART_FCR_ITL_4:
-                m_recvFifoItl = 14;
+                m_recvFifoITL = 14;
                 break;
             }
         }
@@ -449,6 +451,7 @@ void Serial::Transmit() {
     }
     else {
         m_chr->Write(&m_tsr, 1);
+        m_tsrRetry = 0;
     }
     // TODO (instead of the above else block):
     /*else if (m_chr->Write(&m_tsr, 1) != 1) {
@@ -469,6 +472,15 @@ void Serial::Transmit() {
         m_thr_ipending = 1;
         UpdateIRQ();
     }
+
+    log_debug("Serial::Transmit: ");
+    if (m_tsr >= 20) {
+        log_debug("%c", m_tsr);
+    }
+    else {
+        log_debug(".");
+    }
+    log_debug("\n");
 }
 
 int Serial::CanReceive() {
@@ -479,8 +491,8 @@ int Serial::CanReceive() {
             // effect will be to almost always fill the fifo completely before
             // the guest has a chance to respond, effectively overriding the
             // ITL that the guest has set.
-            return (m_recvFifo->Count() <= m_recvFifoItl)
-                ? m_recvFifoItl - m_recvFifo->Count()
+            return (m_recvFifo->Count() <= m_recvFifoITL)
+                ? m_recvFifoITL - m_recvFifo->Count()
                 : 1;
         }
         else {
@@ -508,6 +520,17 @@ void Serial::Receive(const uint8_t *buf, int size) {
         m_rbr = buf[0];
         m_lsr |= UART_LSR_DR;
     }
+
+    log_debug("Serial::Receive: ");
+    for (int i = 0; i < size; i++) {
+        if (buf[i] >= 20) {
+            log_debug("%c", buf[i]);
+        }
+        else {
+            log_debug(".");
+        }
+    }
+    log_debug("\n");
     UpdateIRQ();
 }
 
@@ -543,7 +566,7 @@ void Serial::UpdateIRQ() {
         // in the specification but is observed on existing hardware
         tmp_iir = UART_IIR_CTI;
     }
-    else if ((m_ier & UART_IER_RDI) && (m_lsr & UART_LSR_DR) && (!(m_fcr & UART_FCR_FE) || m_recvFifo->Count() >= m_recvFifoItl)) {
+    else if ((m_ier & UART_IER_RDI) && (m_lsr & UART_LSR_DR) && (!(m_fcr & UART_FCR_FE) || m_recvFifo->Count() >= m_recvFifoITL)) {
         tmp_iir = UART_IIR_RDI;
     }
     else if ((m_ier & UART_IER_THRI) && m_thr_ipending) {

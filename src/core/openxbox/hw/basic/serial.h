@@ -31,6 +31,7 @@ public:
     void Reset();
     
     inline void SetIRQ(uint8_t irq) { m_irq = irq; }
+    inline void SetBaudBase(int baudBase) { m_baudbase = baudBase; }
 
     bool MapIO(IOMapper *mapper);
 
@@ -63,41 +64,41 @@ private:
 
     i8259 *m_pic;
 
-    uint16_t m_divider;
-    uint8_t m_rbr; // receive register
-    uint8_t m_thr; // transmit holding register
-    uint8_t m_tsr; // transmit shift register
-    uint8_t m_ier;
-    uint8_t m_iir; // read only
-    uint8_t m_lcr;
-    uint8_t m_mcr;
-    uint8_t m_lsr; // read only
-    uint8_t m_msr; // read only
-    uint8_t m_scr;
-    uint8_t m_fcr;
+    uint16_t m_divider = 0;
+    uint8_t m_rbr = 0; // receive register
+    uint8_t m_thr = 0; // transmit holding register
+    uint8_t m_tsr = 0; // transmit shift register
+    uint8_t m_ier = 0;
+    uint8_t m_iir = 0; // read only
+    uint8_t m_lcr = 0;
+    uint8_t m_mcr = 0;
+    uint8_t m_lsr = 0; // read only
+    uint8_t m_msr = 0; // read only
+    uint8_t m_scr = 0;
+    uint8_t m_fcr = 0;
     
     // NOTE: this hidden state is necessary for tx irq generation as it can be reset while reading iir
-    int m_thr_ipending;
+    int m_thr_ipending = 0;
     CharDriver *m_chr;
-    bool m_lastBreakEnable;
-    int m_itShift;
-    int m_baudbase;
-    int m_tsrRetry;
+    bool m_lastBreakEnable = false;
+    int m_itShift = 0;
+    int m_baudbase = 0;
+    int m_tsrRetry = 0;
 
-    uint8_t m_irq;
+    uint8_t m_irq = 0;
 
     // Time when the last byte was successfully sent out of the tsr
-    uint64_t m_lastXmitTs;
+    uint64_t m_lastXmitTs = 0;
     Fifo<uint8_t> *m_recvFifo;
     Fifo<uint8_t> *m_xmitFifo;
     // Interrupt trigger level for recv_fifo
-    uint8_t m_recvFifoItl;
+    uint8_t m_recvFifoITL;
 
     InvokeLater *m_fifoTimeoutTimer;
-    int m_timeoutIpending;  // timeout interrupt pending state
+    int m_timeoutIpending = 0;  // timeout interrupt pending state
 
-    uint64_t m_charTransmitTime; // time to transmit a char in ticks
-    int m_pollMsl;
+    uint64_t m_charTransmitTime = 0; // time to transmit a char in ticks
+    int m_pollMsl = 0;
 
     InvokeLater *m_modemStatusPoll;
 };

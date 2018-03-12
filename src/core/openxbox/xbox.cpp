@@ -208,6 +208,7 @@ int Xbox::Initialize(OpenXBOXSettings *settings)
             m_CharDrivers[i]->Init();
         }
         m_SuperIO = new SuperIO(m_i8259, m_CharDrivers);
+        m_SuperIO->Init();
     }
     
     m_i8259->Reset();

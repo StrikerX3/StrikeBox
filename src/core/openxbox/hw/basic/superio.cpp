@@ -19,21 +19,11 @@ SuperIO::SuperIO(i8259 *pic, CharDriver *chrs[SUPERIO_SERIAL_PORT_COUNT]) {
     for (int i = 0; i < SUPERIO_SERIAL_PORT_COUNT; i++) {
         m_serialPorts[i] = new Serial(pic);
         m_serialPorts[i]->Init(chrs[i]);
+        m_serialPorts[i]->SetBaudBase(115200);
     }
 }
 
 void SuperIO::Init() {
-    for (int i = 0; i < SUPERIO_SERIAL_PORT_COUNT; i++) {
-        uint8_t *dev = m_deviceRegs[DEVICE_SERIAL_PORT_1 + i];
-        if (dev[CONFIG_DEVICE_ACTIVATE] && !m_serialPorts[i]->m_active) {
-
-            uint32_t iobase = (dev[CONFIG_DEVICE_BASE_ADDRESS_HIGH] << 8) | dev[CONFIG_DEVICE_BASE_ADDRESS_LOW];
-            uint32_t irq = dev[CONFIG_DEVICE_INTERRUPT];
-
-            m_serialPorts[i]->SetIRQ(irq);
-            m_serialPorts[i]->m_active = true;
-        }
-    }
 }
 
 void SuperIO::Reset() {
@@ -49,7 +39,16 @@ bool SuperIO::MapIO(IOMapper *mapper) {
 }
 
 void SuperIO::UpdateDevices() {
-    // TODO: update serial cores
+    for (int i = 0; i < SUPERIO_SERIAL_PORT_COUNT; i++) {
+        uint8_t *dev = m_deviceRegs[DEVICE_SERIAL_PORT_1 + i];
+        if (dev[CONFIG_DEVICE_ACTIVATE] && !m_serialPorts[i]->m_active) {
+            uint32_t iobase = (dev[CONFIG_DEVICE_BASE_ADDRESS_HIGH] << 8) | dev[CONFIG_DEVICE_BASE_ADDRESS_LOW];
+            uint32_t irq = dev[CONFIG_DEVICE_INTERRUPT];
+
+            m_serialPorts[i]->SetIRQ(irq);
+            m_serialPorts[i]->m_active = true;
+        }
+    }
 }
 
 bool SuperIO::IORead(uint32_t port, uint32_t *value, uint8_t size) {

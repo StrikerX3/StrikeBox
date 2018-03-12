@@ -37,7 +37,7 @@ bool Win32SerialDriver::Init() {
     }
 
     char filename[MAX_PATH];
-    sprintf(filename, "COM%d", m_portNum);
+    sprintf(filename, "\\\\.\\COM%d", m_portNum);
 
     m_hcom = CreateFile(filename, GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, FILE_FLAG_OVERLAPPED, 0);
     if (m_hcom == INVALID_HANDLE_VALUE) {
@@ -135,22 +135,6 @@ void Win32SerialDriver::AcceptInput() {
     // TODO: implement
 }
 
-int Win32SerialDriver::Poll() {
-    while (m_runPoller) {
-        COMSTAT status;
-        DWORD comerr;
-
-        ClearCommError(m_hcom, &comerr, &status);
-        if (status.cbInQue > 0) {
-            m_len = status.cbInQue;
-            ReadPoll();
-            Read();
-        }
-    }
-
-    return 0;
-}
-
 void Win32SerialDriver::Close() {
     if (m_hsend) {
         CloseHandle(m_hsend);
@@ -167,6 +151,25 @@ void Win32SerialDriver::Close() {
     m_runPoller = false;
 
     Event(CHR_EVENT_CLOSED);
+}
+
+int Win32SerialDriver::Poll() {
+    while (m_runPoller) {
+        /*COMSTAT status;
+        DWORD comerr;
+
+        ClearCommError(m_hcom, &comerr, &status);
+        if (status.cbInQue > 0) {
+            m_len = status.cbInQue;
+            ReadPoll();
+            Read();
+        }*/
+        ReadPoll();
+        m_len = m_maxSize;
+        Read();
+    }
+
+    return 0;
 }
 
 int Win32SerialDriver::ReadPoll() {
