@@ -6,67 +6,67 @@
 namespace openxbox {
 
 
-#define UART_LCR_DLAB	0x80	/* Divisor latch access bit */
+#define UART_LCR_DLAB       0x80   /* Divisor latch access bit */
 
-#define UART_IER_MSI	0x08	/* Enable Modem status interrupt */
-#define UART_IER_RLSI	0x04	/* Enable receiver line status interrupt */
-#define UART_IER_THRI	0x02	/* Enable Transmitter holding register int. */
-#define UART_IER_RDI	0x01	/* Enable receiver data interrupt */
+#define UART_IER_MSI        0x08   /* Enable Modem status interrupt */
+#define UART_IER_RLSI       0x04   /* Enable receiver line status interrupt */
+#define UART_IER_THRI       0x02   /* Enable Transmitter holding register int. */
+#define UART_IER_RDI        0x01   /* Enable receiver data interrupt */
 
-#define UART_IIR_NO_INT	0x01	/* No interrupts pending */
-#define UART_IIR_ID	0x06	/* Mask for the interrupt ID */
+#define UART_IIR_NO_INT     0x01   /* No interrupts pending */
+#define UART_IIR_ID         0x06   /* Mask for the interrupt ID */
 
-#define UART_IIR_MSI	0x00	/* Modem status interrupt */
-#define UART_IIR_THRI	0x02	/* Transmitter holding register empty */
-#define UART_IIR_RDI	0x04	/* Receiver data interrupt */
-#define UART_IIR_RLSI	0x06	/* Receiver line status interrupt */
-#define UART_IIR_CTI    0x0C    /* Character Timeout Indication */
+#define UART_IIR_MSI        0x00   /* Modem status interrupt */
+#define UART_IIR_THRI       0x02   /* Transmitter holding register empty */
+#define UART_IIR_RDI        0x04   /* Receiver data interrupt */
+#define UART_IIR_RLSI       0x06   /* Receiver line status interrupt */
+#define UART_IIR_CTI        0x0C   /* Character Timeout Indication */
 
-#define UART_IIR_FENF   0x80    /* Fifo enabled, but not functionning */
-#define UART_IIR_FE     0xC0    /* Fifo enabled */
+#define UART_IIR_FENF       0x80   /* Fifo enabled, but not functionning */
+#define UART_IIR_FE         0xC0   /* Fifo enabled */
 
 /*
  * These are the definitions for the Modem Control Register
  */
-#define UART_MCR_LOOP	0x10	/* Enable loopback test mode */
-#define UART_MCR_OUT2	0x08	/* Out2 complement */
-#define UART_MCR_OUT1	0x04	/* Out1 complement */
-#define UART_MCR_RTS	0x02	/* RTS complement */
-#define UART_MCR_DTR	0x01	/* DTR complement */
+#define UART_MCR_LOOP       0x10   /* Enable loopback test mode */
+#define UART_MCR_OUT2       0x08   /* Out2 complement */
+#define UART_MCR_OUT1       0x04   /* Out1 complement */
+#define UART_MCR_RTS        0x02   /* RTS complement */
+#define UART_MCR_DTR        0x01   /* DTR complement */
 
 /*
  * These are the definitions for the Modem Status Register
  */
-#define UART_MSR_DCD	0x80	/* Data Carrier Detect */
-#define UART_MSR_RI	0x40	/* Ring Indicator */
-#define UART_MSR_DSR	0x20	/* Data Set Ready */
-#define UART_MSR_CTS	0x10	/* Clear to Send */
-#define UART_MSR_DDCD	0x08	/* Delta DCD */
-#define UART_MSR_TERI	0x04	/* Trailing edge ring indicator */
-#define UART_MSR_DDSR	0x02	/* Delta DSR */
-#define UART_MSR_DCTS	0x01	/* Delta CTS */
-#define UART_MSR_ANY_DELTA 0x0F	/* Any of the delta bits! */
+#define UART_MSR_DCD        0x80   /* Data Carrier Detect */
+#define UART_MSR_RI         0x40   /* Ring Indicator */
+#define UART_MSR_DSR        0x20   /* Data Set Ready */
+#define UART_MSR_CTS        0x10   /* Clear to Send */
+#define UART_MSR_DDCD       0x08   /* Delta DCD */
+#define UART_MSR_TERI       0x04   /* Trailing edge ring indicator */
+#define UART_MSR_DDSR       0x02   /* Delta DSR */
+#define UART_MSR_DCTS       0x01   /* Delta CTS */
+#define UART_MSR_ANY_DELTA  0x0F   /* Any of the delta bits! */
 
-#define UART_LSR_TEMT	0x40	/* Transmitter empty */
-#define UART_LSR_THRE	0x20	/* Transmit-hold-register empty */
-#define UART_LSR_BI	0x10	/* Break interrupt indicator */
-#define UART_LSR_FE	0x08	/* Frame error indicator */
-#define UART_LSR_PE	0x04	/* Parity error indicator */
-#define UART_LSR_OE	0x02	/* Overrun error indicator */
-#define UART_LSR_DR	0x01	/* Receiver data ready */
-#define UART_LSR_INT_ANY 0x1E	/* Any of the lsr-interrupt-triggering status bits */
+#define UART_LSR_TEMT       0x40   /* Transmitter empty */
+#define UART_LSR_THRE       0x20   /* Transmit-hold-register empty */
+#define UART_LSR_BI         0x10   /* Break interrupt indicator */
+#define UART_LSR_FE         0x08   /* Frame error indicator */
+#define UART_LSR_PE         0x04   /* Parity error indicator */
+#define UART_LSR_OE         0x02   /* Overrun error indicator */
+#define UART_LSR_DR         0x01   /* Receiver data ready */
+#define UART_LSR_INT_ANY    0x1E   /* Any of the lsr-interrupt-triggering status bits */
 
 /* Interrupt trigger levels. The byte-counts are for 16550A - in newer UARTs the byte-count for each ITL is higher. */
 
-#define UART_FCR_ITL_1      0x00 /* 1 byte ITL */
-#define UART_FCR_ITL_2      0x40 /* 4 bytes ITL */
-#define UART_FCR_ITL_3      0x80 /* 8 bytes ITL */
-#define UART_FCR_ITL_4      0xC0 /* 14 bytes ITL */
+#define UART_FCR_ITL_1      0x00   /* 1 byte ITL */
+#define UART_FCR_ITL_2      0x40   /* 4 bytes ITL */
+#define UART_FCR_ITL_3      0x80   /* 8 bytes ITL */
+#define UART_FCR_ITL_4      0xC0   /* 14 bytes ITL */
 
-#define UART_FCR_DMS        0x08    /* DMA Mode Select */
-#define UART_FCR_XFR        0x04    /* XMIT Fifo Reset */
-#define UART_FCR_RFR        0x02    /* RCVR Fifo Reset */
-#define UART_FCR_FE         0x01    /* FIFO Enable */
+#define UART_FCR_DMS        0x08   /* DMA Mode Select */
+#define UART_FCR_XFR        0x04   /* XMIT Fifo Reset */
+#define UART_FCR_RFR        0x02   /* RCVR Fifo Reset */
+#define UART_FCR_FE         0x01   /* FIFO Enable */
 
 #define MAX_XMIT_RETRY      4
 
@@ -373,19 +373,18 @@ bool Serial::IOWrite(uint32_t port, uint32_t value, uint8_t size) {
     break;
     case 4:
     {
-        int flags;
+        int flags = 0;
         int old_mcr = m_mcr;
         m_mcr = value & 0x1f;
         if (value & UART_MCR_LOOP) {
             break;
         }
 
-        // TODO
-        /*if (m_pollMsl >= 0 && old_mcr != m_mcr) {
-            qemu_chr_fe_ioctl(m_chr, CHR_IOCTL_SERIAL_GET_TIOCM, &flags);
+        if (m_pollMsl >= 0 && old_mcr != m_mcr) {
+            // TODO: qemu_chr_fe_ioctl(m_chr, CHR_IOCTL_SERIAL_GET_TIOCM, &flags);
 
             flags &= ~(CHR_TIOCM_RTS | CHR_TIOCM_DTR);
-
+            
             if (value & UART_MCR_RTS) {
                 flags |= CHR_TIOCM_RTS;
             }
@@ -393,11 +392,12 @@ bool Serial::IOWrite(uint32_t port, uint32_t value, uint8_t size) {
                 flags |= CHR_TIOCM_DTR;
             }
 
-            qemu_chr_fe_ioctl(m_chr, CHR_IOCTL_SERIAL_SET_TIOCM, &flags);
+            // TODO: qemu_chr_fe_ioctl(m_chr, CHR_IOCTL_SERIAL_SET_TIOCM, &flags);
+
             // Update the modem status after a one-character-send wait-time, since there may be a response
             // from the device/computer at the other end of the serial line
             m_modemStatusPoll->Set(std::chrono::high_resolution_clock::now() + std::chrono::nanoseconds(m_charTransmitTime));
-        }*/
+        }
     }
     break;
     case 5:

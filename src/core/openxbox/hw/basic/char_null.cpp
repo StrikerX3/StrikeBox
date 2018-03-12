@@ -9,17 +9,6 @@ bool NullCharDriver::Init() {
 
 int NullCharDriver::Write(const uint8_t *buf, int len) {
     // Discard everything
-
-#ifdef _DEBUG
-    for (int i = 0; i < len; i++) {
-        if (buf[i] >= 0x20) {
-            log_debug("%c", buf[i]);
-        }
-        else {
-            log_debug(".");
-        }
-    }
-#endif
     return 1;
 }
 

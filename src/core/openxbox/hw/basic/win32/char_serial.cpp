@@ -235,7 +235,7 @@ void Win32SerialDriver::SetSerialParameters(SerialParams *params) {
     
     config.BaudRate = params->baudRate / params->divider;
     config.ByteSize = params->dataBits;
-    config.StopBits = params->stopBits;
+    config.StopBits = params->stopBits == 1 ? ONESTOPBIT : TWOSTOPBITS;
     switch (params->parity) {
     case 'E': config.Parity = EVENPARITY; break;
     case 'O': config.Parity = ODDPARITY; break;
