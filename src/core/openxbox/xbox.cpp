@@ -1,14 +1,17 @@
-#include "openxbox/settings.h"
 #include "openxbox/xbox.h"
 #include "openxbox/timer.h"
 #include "openxbox/alloc.h"
 #include "openxbox/debug.h"
+#include "openxbox/settings.h"
 
 #include "openxbox/hw/defs.h"
 #include "openxbox/hw/sm/tvenc.h"
 #include "openxbox/hw/sm/tvenc_conexant.h"
 
 #include "openxbox/hw/basic/char_null.h"
+#ifdef _WIN32
+#include "openxbox/hw/basic/win32/char_serial.h"
+#endif
 
 #include <chrono>
 
@@ -191,9 +194,17 @@ int Xbox::Initialize(OpenXBOXSettings *settings)
     m_i8254 = new i8254(m_i8259, settings->hw_sysclock_tickRate);
     m_CMOS = new CMOS();
     if (settings->hw_model == DebugKit) {
-        m_CharDrivers[0] = new NullCharDriver();
-        m_CharDrivers[1] = new NullCharDriver();
         for (int i = 0; i < SUPERIO_SERIAL_PORT_COUNT; i++) {
+            switch (settings->hw_charDrivers[i].type) {
+            case CHD_Null:
+                m_CharDrivers[i] = new NullCharDriver();
+                break;
+#ifdef _WIN32
+            case CHD_Win32Serial:
+                m_CharDrivers[i] = new Win32SerialDriver(settings->hw_charDrivers[i].params.win32Serial.portNum);
+                break;
+#endif
+            }
             m_CharDrivers[i]->Init();
         }
         m_SuperIO = new SuperIO(m_i8259, m_CharDrivers);
@@ -309,7 +320,7 @@ int Xbox::Run() {
 	Thread *cpuIdleThread = Thread_Create("[HW] CPU", EmuCpuThreadFunc, this);
 
 	// --- Emulator subsystems ------------------------------------------------
-	
+
 	// TODO: start threads to handle other subsystems
 	// - One or more for each piece of hardware
 	//   - NV2A
@@ -481,19 +492,6 @@ void Xbox::Cleanup() {
 
     if (m_settings->gdb_enable) {
         m_gdb->Shutdown();
-    }
-}
-
-void Xbox::AddPoller(PollFunc pollFunc, void *data) {
-    m_pollers.push_back(PollerEntry{ pollFunc, data });
-}
-
-void Xbox::RemovePoller(PollFunc pollFunc, void *data) {
-    for (auto it = m_pollers.begin(); it != m_pollers.end(); it++) {
-        if (it->pollFunc == pollFunc && it->data == data) {
-            m_pollers.erase(it);
-            break;
-        }
     }
 }
 

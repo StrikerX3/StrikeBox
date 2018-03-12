@@ -25,7 +25,8 @@ namespace openxbox {
 #define CHR_IO_OUT  1
 
 struct SerialParams {
-    int speed;
+    int baudRate;
+    int divider;
     int parity;
     int dataBits;
     int stopBits;
@@ -51,9 +52,9 @@ public:
     virtual void SetSerialParameters(SerialParams *params) = 0;
 
     // Callbacks
-    CanReceiveCallback m_cbCanReceive;
-    ReceiveCallback m_cbReceive;
-    EventCallback m_cbEvent;
+    CanReceiveCallback m_cbCanReceive = nullptr;
+    ReceiveCallback m_cbReceive = nullptr;
+    EventCallback m_cbEvent = nullptr;
     void *m_handler;
 protected:
     bool m_open;

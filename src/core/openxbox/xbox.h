@@ -20,7 +20,6 @@
 #include "openxbox/xbe.h"
 #include "openxbox/thread.h"
 #include "openxbox/settings.h"
-#include "openxbox/poller.h"
 
 #include "openxbox/hw/basic/i8254.h"
 #include "openxbox/hw/basic/i8259.h"
@@ -66,14 +65,16 @@ public:
     void Cleanup();
 
     int Run();
-    int RunCpu();
     void Stop();
 
-    void AddPoller(PollFunc pollFunc, void *data);
-    void RemovePoller(PollFunc pollFunc, void *data);
-
 protected:
-	// ----- Modules ----------------------------------------------------------
+    // ----- Thread functions -------------------------------------------------
+    int RunCpu();
+
+    // ----- Friends ----------------------------------------------------------
+    friend uint32_t EmuCpuThreadFunc(void *data);
+
+    // ----- Modules ----------------------------------------------------------
 	IOpenXBOXCPUModule * m_cpuModule;
 
 	// ----- Hardware ---------------------------------------------------------
@@ -116,9 +117,6 @@ protected:
 
 	// ----- Debugger ---------------------------------------------------------
 	GdbServer *m_gdb;
-
-private:
-    std::vector<PollerEntry> m_pollers;
 };
 
 }

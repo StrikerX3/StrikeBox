@@ -9,13 +9,12 @@ namespace openxbox {
 
 #define READ_BUF_LEN 4096
 
-static int PollCallback(void *data) {
+static uint32_t PollCallback(void *data) {
     return ((Win32SerialDriver *)data)->Poll();
 }
 
-Win32SerialDriver::Win32SerialDriver(uint8_t portNum, Emulator *emulator)
+Win32SerialDriver::Win32SerialDriver(uint8_t portNum)
     : m_portNum(portNum)
-    , m_emulator(emulator)
 {
 }
 
@@ -38,7 +37,7 @@ bool Win32SerialDriver::Init() {
     }
 
     char filename[MAX_PATH];
-    sprintf(filename, "\\\\.\\COM%d", m_portNum);
+    sprintf(filename, "COM%d", m_portNum);
 
     m_hcom = CreateFile(filename, GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, FILE_FLAG_OVERLAPPED, 0);
     if (m_hcom == INVALID_HANDLE_VALUE) {
@@ -53,11 +52,17 @@ bool Win32SerialDriver::Init() {
     }
 
     ZeroMemory(&comcfg, sizeof(COMMCONFIG));
+    comcfg.dcb.DCBlength = sizeof(DCB);
     size = sizeof(COMMCONFIG);
     GetDefaultCommConfig(filename, &comcfg, &size);
-    comcfg.dcb.DCBlength = sizeof(DCB);
-    CommConfigDialog(filename, NULL, &comcfg);
 
+    DWORD szConfig;
+    if (!GetCommConfig(m_hcom, &comcfg, &szConfig)) {
+        log_warning("Win32SerialDriver::Init: GetCommConfig failed: %lu\n", GetLastError());
+        goto fail;
+    }
+
+    comcfg.dcb.fBinary = TRUE;
     if (!SetCommState(m_hcom, &comcfg.dcb)) {
         log_warning("Win32SerialDriver::Init: SetCommState failed: %lu\n", GetLastError());
         goto fail;
@@ -78,7 +83,8 @@ bool Win32SerialDriver::Init() {
         log_warning("Win32SerialDriver::Init: ClearCommError failed: %lu\n", GetLastError());
         goto fail;
     }
-    m_emulator->AddPoller(PollCallback, this);
+    m_runPoller = true;
+    m_pollerThread = Thread_Create("[HW] Serial port polling thread", PollCallback, this);
 
     Event(CHR_EVENT_OPENED);
     return true;
@@ -95,10 +101,12 @@ int Win32SerialDriver::Write(const uint8_t *buf, int len1) {
     ZeroMemory(&m_osend, sizeof(m_osend));
     m_osend.hEvent = m_hsend;
     while (len > 0) {
-        if (m_hsend)
+        if (m_hsend) {
             ret = WriteFile(m_hcom, buf, len, &size, &m_osend);
-        else
+        }
+        else {
             ret = WriteFile(m_hcom, buf, len, &size, NULL);
+        }
         if (!ret) {
             err = GetLastError();
             if (err == ERROR_IO_PENDING) {
@@ -128,16 +136,18 @@ void Win32SerialDriver::AcceptInput() {
 }
 
 int Win32SerialDriver::Poll() {
-    COMSTAT status;
-    DWORD comerr;
+    while (m_runPoller) {
+        COMSTAT status;
+        DWORD comerr;
 
-    ClearCommError(m_hcom, &comerr, &status);
-    if (status.cbInQue > 0) {
-        m_len = status.cbInQue;
-        ReadPoll();
-        Read();
-        return 1;
+        ClearCommError(m_hcom, &comerr, &status);
+        if (status.cbInQue > 0) {
+            m_len = status.cbInQue;
+            ReadPoll();
+            Read();
+        }
     }
+
     return 0;
 }
 
@@ -154,7 +164,7 @@ void Win32SerialDriver::Close() {
         CloseHandle(m_hcom);
         m_hcom = NULL;
     }
-    m_emulator->RemovePoller(PollCallback, this);
+    m_runPoller = false;
 
     Event(CHR_EVENT_CLOSED);
 }
@@ -179,6 +189,17 @@ void Win32SerialDriver::DoReadFile() {
     int ret, err;
     uint8_t buf[READ_BUF_LEN];
     DWORD size;
+    DWORD dwEventMask;
+
+    if (!SetCommMask(m_hcom, EV_RXCHAR)) {
+        log_warning("Win32SerialDriver::DoReadFile: SetCommMask failed: %ul\n", GetLastError());
+        return;
+    }
+
+    if (!WaitCommEvent(m_hcom, &dwEventMask, NULL)) {
+        log_warning("Win32SerialDriver::DoReadFile: WaitCommEvent failed: %ul\n", GetLastError());
+        return;
+    }
 
     ZeroMemory(&m_orecv, sizeof(m_orecv));
     m_orecv.hEvent = m_hrecv;
@@ -202,7 +223,30 @@ void Win32SerialDriver::SetBreakEnable(bool breakEnable) {
 }
 
 void Win32SerialDriver::SetSerialParameters(SerialParams *params) {
-    // TODO: implement
+    DCB config;
+    config.DCBlength = sizeof(DCB);
+    if (!GetCommState(m_hcom, &config)) {
+        log_warning("Win32SerialDriver::SetSerialParameters: GetCommState failed: %lu\n", GetLastError());
+        return;
+    }
+    
+    config.BaudRate = params->baudRate / params->divider;
+    config.ByteSize = params->dataBits;
+    config.StopBits = params->stopBits;
+    switch (params->parity) {
+    case 'E': config.Parity = EVENPARITY; break;
+    case 'O': config.Parity = ODDPARITY; break;
+    case 'N': config.Parity = NOPARITY; break;
+    }
+    
+    if (!SetCommState(m_hcom, &config)) {
+        log_warning("Win32SerialDriver::SetSerialParameters: SetCommState failed: %lu\n", GetLastError());
+    }
+    log_debug("Win32SerialDriver::SetSerialParameters: Serial port configuration\n");
+    log_debug("  Baud rate: %u bps\n", config.BaudRate);
+    log_debug("  Byte size: %u bits\n", config.ByteSize);
+    log_debug("  Stop bits: %u\n", config.StopBits);
+    log_debug("  Parity: %c\n", params->parity);
 }
 
 

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../char.h"
-#include "openxbox/emulator.h"
+#include "openxbox/thread.h"
 
 #include <windows.h>
 
@@ -9,7 +9,7 @@ namespace openxbox {
 
 class Win32SerialDriver : public CharDriver {
 public:
-    Win32SerialDriver(uint8_t portNum, Emulator *emulator);
+    Win32SerialDriver(uint8_t portNum);
 
     bool Init() override;
     int Write(const uint8_t *buf, int len) override;
@@ -27,8 +27,6 @@ private:
     void Read();
     void DoReadFile();
 
-    Emulator *m_emulator;
-
     uint8_t m_portNum;
 
     int m_maxSize;
@@ -37,7 +35,10 @@ private:
     BOOL m_fpipe;
     DWORD m_len;
 
-    friend int PollCallback(void *data);
+    bool m_runPoller;
+    Thread *m_pollerThread;
+
+    friend uint32_t PollCallback(void *data);
 };
 
 }

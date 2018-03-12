@@ -4,6 +4,11 @@
 
 namespace openxbox {
 
+enum CharDriverType {
+    CHD_Null,
+    CHD_Win32Serial,
+};
+
 struct OpenXBOXSettings {
     // false: the CPU emulator will execute until interrupted
     // true: the CPU emulator will execute one instruction at a time
@@ -23,6 +28,16 @@ struct OpenXBOXSettings {
 
     // The system clock tick rate
     float hw_sysclock_tickRate = 1000.0f;
+
+    // Character I/O drivers for each of the two emulated serial ports
+    struct {
+        CharDriverType type;
+        union {
+            struct {
+                uint8_t portNum;
+            } win32Serial;
+        } params;
+    } hw_charDrivers[2];
 
     // Path to MCPX ROM file
     const char *rom_mcpx;

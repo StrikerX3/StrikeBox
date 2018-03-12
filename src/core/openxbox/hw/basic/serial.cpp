@@ -105,6 +105,7 @@ Serial::Serial(i8259 *pic)
     m_fifoTimeoutTimer = new InvokeLater(UpdateMSLCB, this);
     m_modemStatusPoll = new InvokeLater(FifoTimeoutInterruptCB, this);
 
+    m_baudbase = 115200;
     m_active = false;
 
     Reset();
@@ -122,7 +123,7 @@ Serial::~Serial() {
 
 bool Serial::Init(CharDriver *chr) {
     if (chr == nullptr) {
-        log_warning("Serial::Init: Null character driver provided\n");
+        log_warning("Serial::Init: No character driver provided\n");
         return false;
     }
 
@@ -131,6 +132,7 @@ bool Serial::Init(CharDriver *chr) {
     m_chr->m_cbCanReceive = CanReceiveCB;
     m_chr->m_cbReceive = ReceiveCB;
     m_chr->m_cbEvent = EventCB;
+    m_chr->m_handler = this;
     
     m_fifoTimeoutTimer->Start();
     m_modemStatusPoll->Start();
@@ -165,6 +167,8 @@ void Serial::Reset() {
 bool Serial::MapIO(IOMapper *mapper) {
     if (!mapper->MapIODevice(PORT_SERIAL_BASE_1, PORT_SERIAL_COUNT_1, this)) return false;
     if (!mapper->MapIODevice(PORT_SERIAL_BASE_2, PORT_SERIAL_COUNT_2, this)) return false;
+    
+    return true;
 }
 
 bool Serial::IORead(uint32_t port, uint32_t *value, uint8_t size) {
@@ -626,9 +630,10 @@ void Serial::UpdateParameters() {
     }
 
     params.dataBits = (m_lcr & 0x03) + 5;
-    params.speed = m_baudbase / m_divider;
+    params.baudRate = m_baudbase;
+    params.divider = m_divider;
     frameSize += params.dataBits + params.stopBits;
-    m_charTransmitTime = (GetNanos() / params.speed) * frameSize;
+    m_charTransmitTime = (GetNanos() / params.baudRate / m_divider) * frameSize;
     m_chr->SetSerialParameters(&params);
 }
 
