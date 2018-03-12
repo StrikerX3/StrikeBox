@@ -158,6 +158,8 @@ int Win32SerialDriver::Poll() {
         COMSTAT status;
         DWORD comerr;
 
+        // TODO: this polling method uses 100% of one CPU core
+        // Also check for race conditions between DoReadFile and Write
         ClearCommError(m_hcom, &comerr, &status);
         if (status.cbInQue > 0) {
             m_len = status.cbInQue;
