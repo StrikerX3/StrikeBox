@@ -449,13 +449,9 @@ void Serial::Transmit() {
         // in loopback mode, say that we just received a char
         Receive(&m_tsr, 1);
     }
-    else {
-        m_chr->Write(&m_tsr, 1);
-        m_tsrRetry = 0;
-    }
-    // TODO (instead of the above else block):
-    /*else if (m_chr->Write(&m_tsr, 1) != 1) {
-        if (m_tsrRetry >= 0 && m_tsrRetry < MAX_XMIT_RETRY && m_chr->AddWatch(CHR_IO_OUT, SerialTransmit, this) > 0) {
+    else if (m_chr->Write(&m_tsr, 1) != 1) {
+        if (m_tsrRetry >= 0 && m_tsrRetry < MAX_XMIT_RETRY) {
+        // TODO: if (m_tsrRetry >= 0 && m_tsrRetry < MAX_XMIT_RETRY && m_chr->AddWatch(CHR_IO_OUT, SerialTransmit, this) > 0) {
             m_tsrRetry++;
             return;
         }
@@ -463,7 +459,7 @@ void Serial::Transmit() {
     }
     else {
         m_tsrRetry = 0;
-    }*/
+    }
 
     m_lastXmitTs = GetNanos();
 
@@ -473,14 +469,16 @@ void Serial::Transmit() {
         UpdateIRQ();
     }
 
-    log_debug("Serial::Transmit: ");
+    if (lastDir != 1) {
+        lastDir = 1;
+        log_debug("\nTransmitted serial data: ");
+    }
     if (m_tsr >= 20) {
         log_debug("%c", m_tsr);
     }
     else {
         log_debug(".");
     }
-    log_debug("\n");
 }
 
 int Serial::CanReceive() {
@@ -521,7 +519,10 @@ void Serial::Receive(const uint8_t *buf, int size) {
         m_lsr |= UART_LSR_DR;
     }
 
-    log_debug("Serial::Receive: ");
+    if (lastDir != 0) {
+        lastDir = 0;
+        log_debug("\nReceived serial data: ");
+    }
     for (int i = 0; i < size; i++) {
         if (buf[i] >= 20) {
             log_debug("%c", buf[i]);
@@ -530,7 +531,6 @@ void Serial::Receive(const uint8_t *buf, int size) {
             log_debug(".");
         }
     }
-    log_debug("\n");
     UpdateIRQ();
 }
 

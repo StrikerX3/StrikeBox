@@ -155,7 +155,7 @@ void Win32SerialDriver::Close() {
 
 int Win32SerialDriver::Poll() {
     while (m_runPoller) {
-        /*COMSTAT status;
+        COMSTAT status;
         DWORD comerr;
 
         ClearCommError(m_hcom, &comerr, &status);
@@ -163,10 +163,10 @@ int Win32SerialDriver::Poll() {
             m_len = status.cbInQue;
             ReadPoll();
             Read();
-        }*/
-        ReadPoll();
+        }
+        /*ReadPoll();
         m_len = m_maxSize;
-        Read();
+        Read();*/
     }
 
     return 0;
@@ -194,7 +194,7 @@ void Win32SerialDriver::DoReadFile() {
     DWORD size;
     DWORD dwEventMask;
 
-    if (!SetCommMask(m_hcom, EV_RXCHAR)) {
+    /*if (!SetCommMask(m_hcom, EV_RXCHAR)) {
         log_warning("Win32SerialDriver::DoReadFile: SetCommMask failed: %ul\n", GetLastError());
         return;
     }
@@ -202,7 +202,7 @@ void Win32SerialDriver::DoReadFile() {
     if (!WaitCommEvent(m_hcom, &dwEventMask, NULL)) {
         log_warning("Win32SerialDriver::DoReadFile: WaitCommEvent failed: %ul\n", GetLastError());
         return;
-    }
+    }*/
 
     ZeroMemory(&m_orecv, sizeof(m_orecv));
     m_orecv.hEvent = m_hrecv;

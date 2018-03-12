@@ -101,6 +101,8 @@ private:
     int m_pollMsl = 0;
 
     InvokeLater *m_modemStatusPoll;
+
+    int lastDir = -1;
 };
 
 }
