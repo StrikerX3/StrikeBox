@@ -85,7 +85,7 @@ void Win32SerialDriver::CommEvent(SerialCommEvent evt) {
     case SCE_RxChar: log_spew("Win32SerialDriver: Received %u characters\n", evt.Char.numChars); break;
     case SCE_Break:
         log_spew("Win32SerialDriver: Break received\n");
-        this->Event(CHR_EVENT_BREAK);
+        Event(CHR_EVENT_BREAK);
         break;
     case SCE_Error:
         log_warning("Win32SerialDriver: Receive error(s): ");

@@ -473,7 +473,7 @@ void Serial::Transmit() {
         lastDir = 1;
         log_debug("\nTransmitted serial data: ");
     }
-    if (m_tsr >= 20) {
+    if (m_tsr >= 0x20) {
         log_debug("%c", m_tsr);
     }
     else {
@@ -513,8 +513,9 @@ void Serial::Receive(const uint8_t *buf, int size) {
         m_fifoTimeoutTimer->Set(std::chrono::high_resolution_clock::now() + std::chrono::nanoseconds(m_charTransmitTime * 4));
     }
     else {
-        if (m_lsr & UART_LSR_DR)
+        if (m_lsr & UART_LSR_DR) {
             m_lsr |= UART_LSR_OE;
+        }
         m_rbr = buf[0];
         m_lsr |= UART_LSR_DR;
     }

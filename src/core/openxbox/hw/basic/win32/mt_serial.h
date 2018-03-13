@@ -96,6 +96,7 @@ private:
         Parity_None,
         StopBits_1
     };
+    std::mutex m_settingsMutex;
 
     struct WriteRequest {
         uint8_t *buf;

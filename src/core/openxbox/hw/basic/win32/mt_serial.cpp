@@ -5,7 +5,7 @@
 
 namespace openxbox {
 
-#define WRITE_QUEUE_SIZE 256
+#define WRITE_QUEUE_SIZE 4096
 
 // ----- Helper functions -----------------------------------------------------
 
@@ -190,6 +190,8 @@ void SerialComm::Stop(bool waitForStop) {
 }
 
 void SerialComm::ApplySettings() {
+    std::lock_guard<std::mutex> lk(m_settingsMutex);
+
     SetEvent(m_hApplySettingsEvent);
 }
 
@@ -469,6 +471,8 @@ void SerialComm::ReaderAndEventsLoop() {
         }
         case WAIT_OBJECT_0 + 2:  // Apply settings
         {
+            std::lock_guard<std::mutex> lk(m_settingsMutex);
+
             // Make a copy of the new settings
             SerialCommSettings newSettings = m_settings;
 
@@ -484,11 +488,11 @@ void SerialComm::ReaderAndEventsLoop() {
                     SendEvent(SerialCommEvent{ SCE_Error_ConfigFailed });
                 }
                 else {
-                    dcb.BaudRate = settings.baudRate;
-                    dcb.ByteSize = settings.byteSize;
-                    dcb.fParity = settings.parity != Parity_None;
-                    dcb.Parity = GetWin32Parity(settings.parity);
-                    dcb.StopBits = GetWin32StopBits(settings.stopBits);
+                    dcb.BaudRate = newSettings.baudRate;
+                    dcb.ByteSize = newSettings.byteSize;
+                    dcb.fParity = newSettings.parity != Parity_None;
+                    dcb.Parity = GetWin32Parity(newSettings.parity);
+                    dcb.StopBits = GetWin32StopBits(newSettings.stopBits);
 
                     if (!SetCommState(m_hComm, &dcb)) {
                         SendEvent(SerialCommEvent{ SCE_Error_ConfigFailed });
