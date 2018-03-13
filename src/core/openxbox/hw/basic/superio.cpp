@@ -5,6 +5,11 @@
 
 namespace openxbox {
 
+const static uint32_t kSerialPortIOBases[] = {
+    PORT_SERIAL_BASE_1,
+    PORT_SERIAL_BASE_2
+};
+
 SuperIO::SuperIO(i8259 *pic, CharDriver *chrs[SUPERIO_SERIAL_PORT_COUNT]) {
     memset(m_configRegs, 0, sizeof(m_configRegs));
     memset(m_deviceRegs, 0, sizeof(m_deviceRegs));
@@ -17,7 +22,7 @@ SuperIO::SuperIO(i8259 *pic, CharDriver *chrs[SUPERIO_SERIAL_PORT_COUNT]) {
 
     // Initialize serial ports
     for (int i = 0; i < SUPERIO_SERIAL_PORT_COUNT; i++) {
-        m_serialPorts[i] = new Serial(pic);
+        m_serialPorts[i] = new Serial(pic, kSerialPortIOBases[i]);
         m_serialPorts[i]->Init(chrs[i]);
         m_serialPorts[i]->SetBaudBase(115200);
     }

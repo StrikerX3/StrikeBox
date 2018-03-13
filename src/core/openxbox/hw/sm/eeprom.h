@@ -4,6 +4,8 @@
 
 namespace openxbox {
 
+#define EEPROM_SIZE 256
+
 class EEPROMDevice : public SMDevice {
 public:
     // SMDevice functions
@@ -22,9 +24,9 @@ public:
     void WriteBlock(uint8_t command, uint8_t* data, int length);
 
     // EEPROMDevice function
-    void SetEEPROM(uint8_t* pEEPROM) { m_pEEPROM = pEEPROM; };
+    void SetEEPROM(const uint8_t* pEEPROM) { memcpy(m_pEEPROM, pEEPROM, EEPROM_SIZE); };
 private:
-    uint8_t *m_pEEPROM;
+    uint8_t m_pEEPROM[EEPROM_SIZE];
 };
 
 }

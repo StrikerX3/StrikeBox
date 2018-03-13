@@ -16,11 +16,6 @@ void NullCharDriver::AcceptInput() {
     // Nothing to do
 }
 
-int NullCharDriver::Poll() {
-    // Nothing to do
-    return 0;
-}
-
 // ----- IOCTLs ---------------------------------------------------------------
 
 void NullCharDriver::SetBreakEnable(bool breakEnable) {

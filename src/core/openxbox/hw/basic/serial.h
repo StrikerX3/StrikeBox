@@ -15,16 +15,14 @@ namespace openxbox {
 #define UART_FIFO_LENGTH 16
 
 #define PORT_SERIAL_BASE_1   0x3F8
-#define PORT_SERIAL_END_1    0x3FF
-#define PORT_SERIAL_COUNT_1  (PORT_SERIAL_END_1 - PORT_SERIAL_BASE_1 + 1)
-
 #define PORT_SERIAL_BASE_2   0x2F8
-#define PORT_SERIAL_END_2    0x2FF
-#define PORT_SERIAL_COUNT_2  (PORT_SERIAL_END_2 - PORT_SERIAL_BASE_2 + 1)
+
+#define PORT_SERIAL_COUNT    7
+
 
 class Serial : public IODevice {
 public:
-    Serial(i8259 *pic);
+    Serial(i8259 *pic, uint32_t ioBase);
     ~Serial();
 
     bool Init(CharDriver *chr);
@@ -63,6 +61,7 @@ private:
     static void FifoTimeoutInterruptCB(void *userData);
 
     i8259 *m_pic;
+    uint32_t m_ioBase;
 
     uint16_t m_divider = 0;
     uint8_t m_rbr = 0; // receive register

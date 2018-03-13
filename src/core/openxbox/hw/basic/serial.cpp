@@ -96,8 +96,9 @@ void Serial::FifoTimeoutInterruptCB(void *userData) {
     ((Serial *)userData)->FifoTimeoutInterrupt();
 }
 
-Serial::Serial(i8259 *pic)
+Serial::Serial(i8259 *pic, uint32_t ioBase)
     : m_pic(pic)
+    , m_ioBase(ioBase)
 {
     m_recvFifo = new Fifo<uint8_t>(UART_FIFO_LENGTH);
     m_xmitFifo = new Fifo<uint8_t>(UART_FIFO_LENGTH);
@@ -167,8 +168,7 @@ void Serial::Reset() {
 }
 
 bool Serial::MapIO(IOMapper *mapper) {
-    if (!mapper->MapIODevice(PORT_SERIAL_BASE_1, PORT_SERIAL_COUNT_1, this)) return false;
-    if (!mapper->MapIODevice(PORT_SERIAL_BASE_2, PORT_SERIAL_COUNT_2, this)) return false;
+    if (!mapper->MapIODevice(m_ioBase, PORT_SERIAL_COUNT, this)) return false;
     
     return true;
 }
