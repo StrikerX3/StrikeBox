@@ -140,7 +140,9 @@ void SMCDevice::WriteByte(uint8_t command, uint8_t value) {
             return;
         }
     // TODO: case SMCRegister::TrayEject:
-    // TODO: case SMCRegister::ScratchRegister:
+    case SMCRegister::ErrorCode:
+        log_warning("SMCDevice::WriteByte: Wrote error code 0x%x\n", value);
+        break;
     // TODO: case SMCRegister::ResetOnEject:
     // TODO: case SMCRegister::InterruptEnable:
     case SMCRegister::Scratch:

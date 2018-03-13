@@ -498,6 +498,8 @@ void SerialComm::ReaderAndEventsLoop() {
 
             // Copy new settings to current settings
             settings = newSettings;
+            ResetEvent(m_hApplySettingsEvent);
+            break;
         }
         case WAIT_OBJECT_0 + 3:  // Stop request
         {
