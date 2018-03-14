@@ -410,7 +410,7 @@ void i8259::UpdateIRQ(int pic) {
 
     // If this was the master PIC, trigger the IRQ
     if (pic == PIC_MASTER && m_InterruptOutput[PIC_MASTER]) {
-        m_cpu->Interrupt(0x30 + GetCurrentIRQ());
+        m_cpu->Interrupt(GetCurrentIRQ());
     }
 }
 

@@ -67,7 +67,7 @@ void NV2ADevice::Init() {
 	// TODO: check if this is correct
 	RegisterBAR(2, 64 * 1024 * 1024, PCI_BAR_TYPE_MEMORY); // 0xF8000000 - 0xFBFFFFFF
 
-    Write8(m_configSpace, PCI_INTERRUPT_PIN, 1);
+    Write8(m_configSpace, PCI_INTERRUPT_PIN, 3);
 
     m_PRAMDAC.core_clock_coeff = 0x00011c01; /* 189MHz...? */
     m_PRAMDAC.core_clock_freq = 189000000;
