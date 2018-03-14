@@ -17,8 +17,8 @@ namespace openxbox {
 // The kernel image is decrypted and extracted at physical address 0x10000 and
 // manually mapped to virtual address 0x80010000.
 
-// FIXME: Get these from a real xbox
-#define XBOX_RAM_SIZE  MiB(64)  // TODO: 128 MiB systems
-#define XBOX_ROM_SIZE  MiB(16)
+#define XBOX_RAM_SIZE_RETAIL  MiB(64)
+#define XBOX_RAM_SIZE_DEBUG   MiB(128)
+#define XBOX_ROM_AREA_SIZE    MiB(16)
 
 }

@@ -117,26 +117,27 @@ int Xbox::Initialize(OpenXBOXSettings *settings)
     // ----- RAM --------------------------------------------------------------
 
     // Create RAM region
-    log_debug("Allocating RAM (%d MiB)\n", XBOX_RAM_SIZE >> 20);
-    m_ram = (char *)valloc(XBOX_RAM_SIZE);
+    m_ramSize = settings->hw_model == DebugKit ? XBOX_RAM_SIZE_DEBUG : XBOX_RAM_SIZE_RETAIL;
+    log_debug("Allocating RAM (%d MiB)\n", m_ramSize >> 20);
+    m_ram = (char *)valloc(m_ramSize);
     assert(m_ram != NULL);
-    memset(m_ram, 0, XBOX_RAM_SIZE);
+    memset(m_ram, 0, m_ramSize);
 
     // Map RAM at address 0x00000000
-    rgn = new MemoryRegion(MEM_REGION_RAM, 0x00000000, XBOX_RAM_SIZE, m_ram);
+    rgn = new MemoryRegion(MEM_REGION_RAM, 0x00000000, m_ramSize, m_ram);
     assert(rgn != NULL);
     m_memRegion->AddSubRegion(rgn);
 
     // ----- ROM --------------------------------------------------------------
 
     // Create ROM region
-    log_debug("Allocating ROM (%d MiB)\n", XBOX_ROM_SIZE >> 20);
-    m_rom = (char *)valloc(XBOX_ROM_SIZE);
+    log_debug("Allocating ROM (%d MiB)\n", XBOX_ROM_AREA_SIZE >> 20);
+    m_rom = (char *)valloc(XBOX_ROM_AREA_SIZE);
     assert(m_rom != NULL);
-    memset(m_rom, 0, XBOX_ROM_SIZE);
+    memset(m_rom, 0, XBOX_ROM_AREA_SIZE);
 
     // Map ROM to address 0xFF000000
-    rgn = new MemoryRegion(MEM_REGION_ROM, 0xFF000000, XBOX_ROM_SIZE, m_rom);
+    rgn = new MemoryRegion(MEM_REGION_ROM, 0xFF000000, XBOX_ROM_AREA_SIZE, m_rom);
     assert(rgn != NULL);
     m_memRegion->AddSubRegion(rgn);
 
@@ -271,7 +272,7 @@ int Xbox::Initialize(OpenXBOXSettings *settings)
 	m_PCIBridge = new PCIBridgeDevice(PCI_VENDOR_ID_NVIDIA, 0x01B8, 0xD2);
 	m_IDE = new IDEDevice(PCI_VENDOR_ID_NVIDIA, 0x01BC, 0xD2);
 	m_AGPBridge = new AGPBridgeDevice(PCI_VENDOR_ID_NVIDIA, 0x01B7, 0xA1);
-    m_NV2A = new NV2ADevice(PCI_VENDOR_ID_NVIDIA, 0x02A0, 0xA1, (uint8_t*)m_ram, XBOX_RAM_SIZE, m_i8259);
+    m_NV2A = new NV2ADevice(PCI_VENDOR_ID_NVIDIA, 0x02A0, 0xA1, (uint8_t*)m_ram, m_ramSize, m_i8259);
 
     // Connect devices to SMBus
     m_SMBus->ConnectDevice(kSMBusAddress_SystemMicroController, m_SMC); // W 0x20 R 0x21

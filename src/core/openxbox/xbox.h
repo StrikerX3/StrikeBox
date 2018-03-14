@@ -79,6 +79,7 @@ protected:
 
 	// ----- Hardware ---------------------------------------------------------
 	Cpu              *m_cpu;
+    uint32_t          m_ramSize;
 	char             *m_ram;
 	char             *m_rom;
 	MemoryRegion     *m_memRegion;
