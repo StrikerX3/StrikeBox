@@ -91,6 +91,7 @@ int main(int argc, const char *argv[]) {
     settings.hw_sysclock_tickRate = 1000.0f;
     settings.hw_charDrivers[0].type = CHD_Win32Serial;
     settings.hw_charDrivers[0].params.win32Serial.portNum = 5;
+    //settings.hw_charDrivers[0].type = CHD_Null;
     settings.hw_charDrivers[1].type = CHD_Null;
     settings.rom_mcpx = mcpx_path;
     settings.rom_bios = bios_path;

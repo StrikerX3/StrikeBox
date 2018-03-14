@@ -10,7 +10,16 @@ namespace openxbox {
 #define READ_BUF_LEN 4096
 
 void Win32SerialDriver::ReaderFunc(void *userData, uint8_t *buf, uint32_t len) {
-    ((Win32SerialDriver *)userData)->Receive(buf, len);
+    auto driver = ((Win32SerialDriver *)userData);
+    while (len > 0) {
+        int lenRecv = min(driver->CanReceive(), len);
+        if (lenRecv == 0) {
+            continue;
+        }
+        driver->Receive(buf, lenRecv);
+        len -= lenRecv;
+        buf += lenRecv;
+    }
 }
 
 void Win32SerialDriver::EventFunc(void *userData, SerialCommEvent evt) {

@@ -59,7 +59,7 @@ protected:
     bool m_open;
 
     int CanReceive() {
-        if (m_cbCanReceive != nullptr  && m_handler != nullptr) {
+        if (m_cbCanReceive != nullptr && m_handler != nullptr) {
             return m_cbCanReceive(m_handler);
         }
         return 0;
