@@ -198,6 +198,7 @@ bool Serial::IORead(uint32_t port, uint32_t *value, uint8_t size) {
             else {
                 *value = m_rbr;
                 m_lsr &= ~(UART_LSR_DR | UART_LSR_BI);
+#if 0
                 if (lastDir != 0) {
                     lastDir = 0;
                     log_debug("\nReceived serial data: ");
@@ -210,6 +211,7 @@ bool Serial::IORead(uint32_t port, uint32_t *value, uint8_t size) {
                         log_debug(".");
                     }
                 }
+#endif
             }
             UpdateIRQ();
             if (!(m_mcr & UART_MCR_LOOP)) {
@@ -470,6 +472,7 @@ void Serial::Transmit() {
         m_tsrRetry = 0;
     }
     else {
+#if 0
         if (lastDir != 1) {
             lastDir = 1;
             log_debug("\nTransmitted serial data: ");
@@ -480,6 +483,7 @@ void Serial::Transmit() {
         else {
             log_debug(".");
         }
+#endif
         m_tsrRetry = 0;
     }
 
