@@ -31,10 +31,10 @@ add_library(core STATIC
 # Use precompiled headers to speed up compilation
 add_precompiled_header(core openxbox/pch.h FORCEINCLUDE SOURCE_CXX "${CMAKE_CURRENT_SOURCE_DIR}/openxbox/pch.cpp")
 
-target_include_directories(core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${ZYDIS_INCLUDE_DIR})
 
 # Include OpenXBOX module interfaces
-target_link_libraries(core common cpu-module)
+target_link_libraries(core common cpu-module ${ZYDIS_LIBRARY_RELEASE})
 
 # Make the Debug and RelWithDebInfo targets use Program Database for Edit and Continue for easier debugging
 vs_use_edit_and_continue()

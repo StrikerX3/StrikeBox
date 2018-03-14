@@ -1,4 +1,5 @@
 #include "debug.h"
+#include <Zydis/Zydis.h>
 
 namespace openxbox {
 
