@@ -200,11 +200,11 @@ void SerialComm::ApplySettings() {
 
 void SerialComm::Write(const uint8_t *buf, uint32_t len) {
     // Wait until the write queue is not full
-    while (m_writeRequests.size() >= WRITE_QUEUE_SIZE) {
+    /*while (m_writeRequests.size() >= WRITE_QUEUE_SIZE) {
         std::unique_lock<std::mutex> lkQueueFull(m_writeQueueFullMutex);
         m_writeQueueFullCond.wait(lkQueueFull, [&]() -> bool { return m_writeRequests.size() < WRITE_QUEUE_SIZE; });
-    }
-
+    }*/
+    
     std::lock_guard<std::mutex> lk(m_writeReqMutex);
 
     // Make a copy of the write request buffer
@@ -213,6 +213,18 @@ void SerialComm::Write(const uint8_t *buf, uint32_t len) {
 
     // Enqueue the write request
     m_writeRequests.push_back(WriteRequest{ bufCopy, len });
+    
+    // Discard oldest entry if the queue is full
+    if (m_writeRequests.size() >= WRITE_QUEUE_SIZE) { // TODO: make this configurable
+        uint8_t *frontBuf = m_writeRequests.front().buf;
+
+        // Only discard if it is not the poison pill
+        if (frontBuf != nullptr) {
+            m_writeRequests.pop_front();
+            delete[] frontBuf;
+            // TODO: notify buffer overrun
+        }
+    }
 
     // Signal the write request event
     SetEvent(m_hWriteReqEvent);
@@ -581,8 +593,8 @@ void SerialComm::WriterLoop() {
                     available = true;
 
                     // Notify that the queue is no longer full
-                    std::unique_lock<std::mutex> lkQueueFull(m_writeQueueFullMutex);
-                    m_writeQueueFullCond.notify_one();
+                    /*std::unique_lock<std::mutex> lkQueueFull(m_writeQueueFullMutex);
+                    m_writeQueueFullCond.notify_one();*/
                 }
             }
 

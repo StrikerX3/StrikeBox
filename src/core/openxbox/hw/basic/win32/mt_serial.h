@@ -118,8 +118,8 @@ private:
     std::mutex m_syncWriteMutex;
     std::mutex m_writeReqMutex;
     std::deque<WriteRequest> m_writeRequests;
-    std::mutex m_writeQueueFullMutex;
-    std::condition_variable m_writeQueueFullCond;
+   /* std::mutex m_writeQueueFullMutex;
+    std::condition_variable m_writeQueueFullCond;*/
     std::mutex m_writeQueueEmptyMutex;
     std::condition_variable m_writeQueueEmptyCond;
 
