@@ -189,7 +189,7 @@ void DisassembleCPUMemory(Cpu* cpu, uint32_t address, uint32_t size, bool physic
 		offset += instruction.length;
 	}
 
-	delete mem;
+	delete[] mem;
 }
 
 }
