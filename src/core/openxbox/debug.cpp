@@ -122,12 +122,14 @@ void DumpCPUMemory(Cpu *cpu, uint32_t address, uint32_t size, bool physical) {
 	if (physical) {
 		if (cpu->MemRead(address, size, mem)) {
 			log_debug("<invalid address>\n\n");
+			delete[] mem;
 			return;
 		}
 	}
 	else {
 		if (cpu->VMemRead(address, size, mem)) {
 			log_debug("<invalid address>\n\n");
+			delete[] mem;
 			return;
 		}
 	}
@@ -146,6 +148,7 @@ void DumpCPUMemory(Cpu *cpu, uint32_t address, uint32_t size, bool physical) {
 	}
 	if (size & 0xF) { log_debug("\n"); }
 	log_debug("\n");
+
 	delete[] mem;
 }
 
@@ -155,12 +158,15 @@ void DisassembleCPUMemory(Cpu* cpu, uint32_t address, uint32_t size, bool physic
 	if (physical) {
 		if (cpu->MemRead(address, size, mem)) {
 			log_debug("<invalid address>\n\n");
+			delete[] mem;
 			return;
 		}
 	}
 	else {
 		if (cpu->VMemRead(address, size, mem)) {
 			log_debug("<invalid address\n\n");
+			delete[] mem;
+			return;
 		}
 	}
 
