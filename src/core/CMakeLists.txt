@@ -34,7 +34,8 @@ add_precompiled_header(core openxbox/pch.h FORCEINCLUDE SOURCE_CXX "${CMAKE_CURR
 target_include_directories(core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${ZYDIS_INCLUDE_DIR})
 
 # Include OpenXBOX module interfaces
-target_link_libraries(core common cpu-module ${ZYDIS_LIBRARY_RELEASE})
+add_definitions(-DZYDIS_STATIC_DEFINE)
+target_link_libraries(core common cpu-module ${ZYDIS_LIBRARY})
 
 # Make the Debug and RelWithDebInfo targets use Program Database for Edit and Continue for easier debugging
 vs_use_edit_and_continue()

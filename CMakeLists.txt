@@ -11,11 +11,11 @@ if(MSVC)
 	if("${CMAKE_GENERATOR}" MATCHES "(Win64|IA64)")
 		set(BUILD_PLATFORM win64)
 		set(ZYDIS_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/extern/zydis-2.0.0/include")
-		set(ZYDIS_LIBRARY_RELEASE "${CMAKE_SOURCE_DIR}/extern/zydis-2.0.0/lib/Zydis.lib")
+		set(ZYDIS_LIBRARY "${CMAKE_SOURCE_DIR}/extern/zydis-2.0.0/lib/Zydis.lib")
 	else()
 		set(BUILD_PLATFORM win32)
 		set(ZYDIS_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/extern/zydis-2.0.0/include")
-		set(ZYDIS_LIBRARY_RELEASE "${CMAKE_SOURCE_DIR}/extern/zydis-2.0.0/lib/Zydis32.lib")
+		set(ZYDIS_LIBRARY "${CMAKE_SOURCE_DIR}/extern/zydis-2.0.0/lib/Zydis32.lib")
 	endif()
 
 	# Use folders and set the startup project
