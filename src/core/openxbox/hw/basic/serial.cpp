@@ -470,6 +470,16 @@ void Serial::Transmit() {
         m_tsrRetry = 0;
     }
     else {
+        if (lastDir != 1) {
+            lastDir = 1;
+            log_debug("\nTransmitted serial data: ");
+        }
+        if (m_tsr >= 0x20) {
+            log_debug("%c", m_tsr);
+        }
+        else {
+            log_debug(".");
+        }
         m_tsrRetry = 0;
     }
 
@@ -479,17 +489,6 @@ void Serial::Transmit() {
         m_lsr |= UART_LSR_TEMT;
         m_thr_ipending = 1;
         UpdateIRQ();
-    }
-
-    if (lastDir != 1) {
-        lastDir = 1;
-        log_debug("\nTransmitted serial data: ");
-    }
-    if (m_tsr >= 0x20) {
-        log_debug("%c", m_tsr);
-    }
-    else {
-        log_debug(".");
     }
 }
 

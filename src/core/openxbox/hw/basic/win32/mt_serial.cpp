@@ -108,6 +108,9 @@ bool SerialComm::Start() {
     dcb.fParity = settings.parity != Parity_None;
     dcb.Parity = GetWin32Parity(settings.parity);
     dcb.StopBits = GetWin32StopBits(settings.stopBits);
+    dcb.fBinary = TRUE;
+    dcb.fInX = FALSE;
+    dcb.fOutX = FALSE;
 
     if (!SetCommState(m_hComm, &dcb)) {
         CloseHandle(m_hComm);
