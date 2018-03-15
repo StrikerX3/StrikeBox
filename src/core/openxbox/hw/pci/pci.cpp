@@ -135,7 +135,7 @@ bool PCIDevice::GetIOBar(uint32_t port, uint8_t* barIndex, uint32_t *baseAddress
 		uint32_t barAddr = bar->IO.address << 2;
         if (port >= barAddr && port < barAddr + m_BARSizes[i]) {
             *barIndex = i;
-            *baseAddress = bar->IO.address;
+            *baseAddress = barAddr;
             return true;
         }
     }
@@ -183,7 +183,7 @@ bool PCIDevice::GetMMIOBar(uint32_t addr, uint8_t* barIndex, uint32_t *baseAddre
 		uint32_t barAddr = bar->Memory.address << 4;
         if (addr >= barAddr && addr < barAddr + m_BARSizes[i]) {
             *barIndex = i;
-            *baseAddress = bar->Memory.address;
+            *baseAddress = barAddr;
             return true;
         }
     }
