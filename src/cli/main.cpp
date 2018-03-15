@@ -37,15 +37,32 @@ int main(int argc, const char *argv[]) {
     const char *mcpx_path;
     const char *bios_path;
     const char *xbe_path;
-    const char *usage = "usage: %s <mcpx> <bios> <xbe>\n";
+	const char *model;
+	bool is_debug;
+    const char *usage = "usage: %s <mcpx> <bios> <xbe> <model>\n";
 
-    if (argc < 4) {
+    if (argc < 5) {
         printf(usage, basename((char*)argv[0]));
         return 1;
     }
     mcpx_path = argv[1];
     bios_path = argv[2];
     xbe_path = argv[3];
+	model = argv[4];
+
+	if (strcmp(model, "debug") == 0) {
+		is_debug = true;
+		printf("Emulating debug console.\n");
+	}
+	else if (strcmp(model, "retail") == 0) {
+		is_debug = false;
+		printf("Emulating retail console.\n");
+	}
+	else {
+		printf("Invalid model specified.\n");
+		printf(usage, basename((char*)argv[0]));
+		return 1;
+	}
 
 	// Locate and instantiate modules
 	ModuleRepository moduleRepo;
@@ -87,7 +104,7 @@ int main(int argc, const char *argv[]) {
     settings.debug_dumpPageTables = false;
     settings.debug_dumpXBESectionContents = false;
     settings.gdb_enable = false;
-    settings.hw_model = DebugKit;
+    settings.hw_model = is_debug ? DebugKit : Revision1_0;
     settings.hw_sysclock_tickRate = 1000.0f;
     settings.hw_charDrivers[0].type = CHD_Win32Serial;
     settings.hw_charDrivers[0].params.win32Serial.portNum = 5;
