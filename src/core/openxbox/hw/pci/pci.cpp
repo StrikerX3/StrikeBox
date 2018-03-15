@@ -234,13 +234,10 @@ bool PCIDevice::RegisterBAR(int index, uint32_t size, uint32_t type) {
 }
 
 void PCIDevice::ReadConfig(uint32_t reg, uint8_t *value, uint8_t size) {
-    log_spew("PCIDevice::ReadConfigRegister:  register 0x%x, %d-bit\n", reg, size << 3);
     memcpy(value, &m_configSpace[reg], size);
 }
 
 void PCIDevice::WriteConfig(uint32_t reg, uint32_t value, uint8_t size) {
-    log_spew("PCIDevice::WriteConfigRegister: register 0x%x, %d-bit, value = 0x%x\n", reg, size << 3, value);
-    
 	for (uint8_t i = 0; i < size; value >>= 8, ++i) {
 		uint8_t wmask = m_writeMask[reg + i];
 		uint8_t w1cmask = m_write1ToClearMask[reg + i];
@@ -254,21 +251,21 @@ void PCIDevice::WriteConfig(uint32_t reg, uint32_t value, uint8_t size) {
 }
 
 void PCIDevice::PCIIORead(int barIndex, uint32_t port, uint32_t *value, uint8_t size) {
-    log_spew("PCIDevice::PCIIORead:  bar = %d,  port = 0x%x,  size = %d\n", barIndex, port, size);
+    log_spew("PCIDevice::PCIIORead:  bar = %d,  port = 0x%x,  size = %u\n", barIndex, port, size);
     *value = 0;
 }
 
 void PCIDevice::PCIIOWrite(int barIndex, uint32_t port, uint32_t value, uint8_t size) {
-    log_spew("PCIDevice::PCIIOWrite: bar = %d,  port = 0x%x,  value = 0x%x,  size = %d\n", barIndex, port, value, size);
+    log_spew("PCIDevice::PCIIOWrite: bar = %d,  port = 0x%x,  value = 0x%x,  size = %u\n", barIndex, port, value, size);
 }
 
 void PCIDevice::PCIMMIORead(int barIndex, uint32_t addr, uint32_t *value, uint8_t size) {
-    log_spew("PCIDevice::PCIMMIORead:  bar = %d,  address = 0x%x,  size = %d\n", barIndex, addr, size);
+    log_spew("PCIDevice::PCIMMIORead:  bar = %d,  address = 0x%x,  size = %u\n", barIndex, addr, size);
     *value = 0;
 }
 
 void PCIDevice::PCIMMIOWrite(int barIndex, uint32_t addr, uint32_t value, uint8_t size) {
-    log_spew("PCIDevice::PCIMMIOWrite: bar = %d,  address = 0x%x,  value = 0x%x,  size = %d\n", barIndex, addr, value, size);
+    log_spew("PCIDevice::PCIMMIOWrite: bar = %d,  address = 0x%x,  value = 0x%x,  size = %u\n", barIndex, addr, value, size);
 }
 
 }

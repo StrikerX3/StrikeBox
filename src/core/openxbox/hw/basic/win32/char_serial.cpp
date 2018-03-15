@@ -90,6 +90,7 @@ void Win32SerialDriver::SetSerialParameters(SerialParams *params) {
 // ----- Processors -----------------------------------------------------------
 
 void Win32SerialDriver::CommEvent(SerialCommEvent evt) {
+#if 0
     switch (evt.type) {
     case SCE_RxChar: log_spew("Win32SerialDriver: Received %u characters\n", evt.Char.numChars); break;
     case SCE_Break:
@@ -120,6 +121,11 @@ void Win32SerialDriver::CommEvent(SerialCommEvent evt) {
     case SCE_Error_ConfigFailed: log_warning("Win32SerialDriver: Configuration failed\n"); break;
     case SCE_Error_Unspecified: log_warning("Win32SerialDriver: Unspecified error\n"); break;
     }
+#else
+    if (evt.type == SCE_Break) {
+        Event(CHR_EVENT_BREAK);
+    }
+#endif
 }
 
 }

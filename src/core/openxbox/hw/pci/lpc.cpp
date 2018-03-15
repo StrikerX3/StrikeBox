@@ -20,10 +20,10 @@ void LPCDevice::Reset() {
 }
 
 void LPCDevice::PCIIORead(int barIndex, uint32_t port, uint32_t *value, uint8_t size) {
-    log_spew("LPCDevice::PCIIORead:   bar = %d,  port = 0x%x,  size = %d\n", barIndex, port, size);
+    log_spew("LPCDevice::PCIIORead:   bar = %d,  port = 0x%x,  size = %u\n", barIndex, port, size);
 	
 	if (barIndex != 0) {
-        log_spew("LPCDevice::PCIIORead:   Unhandled BAR access: %d,  port = 0x%x,  size = %d\n", barIndex, port, size);
+        log_spew("LPCDevice::PCIIORead:   Unhandled BAR access: %d,  port = 0x%x,  size = %u\n", barIndex, port, size);
         *value = 0;
         return;
 	}
@@ -50,14 +50,14 @@ void LPCDevice::PCIIORead(int barIndex, uint32_t port, uint32_t *value, uint8_t 
 	}
 	}
 
-	log_warning("LPCDevice::PCIIORead:  Unimplemented!  bar = %d,  port = 0x%x,  size = %d\n", barIndex, port, size);
+	log_warning("LPCDevice::PCIIORead:  Unimplemented!  bar = %d,  port = 0x%x,  size = %u\n", barIndex, port, size);
 }
 
 void LPCDevice::PCIIOWrite(int barIndex, uint32_t port, uint32_t value, uint8_t size) {
-	//log_spew("LPCDevice::PCIIOWrite:  bar = %d,  port = 0x%x,  size = %d,  value = 0x%x\n", barIndex, port, size, value);
+	//log_spew("LPCDevice::PCIIOWrite:  bar = %d,  port = 0x%x,  size = %u,  value = 0x%x\n", barIndex, port, size, value);
 
     // TODO
-	log_warning("LPCDevice::PCIIOWrite: Unimplemented!  bar = %d,  port = 0x%x,  size = %d,  value = 0x%x\n", barIndex, port, size, value);
+	log_warning("LPCDevice::PCIIOWrite: Unimplemented!  bar = %d,  port = 0x%x,  size = %u,  value = 0x%x\n", barIndex, port, size, value);
 }
 
 }

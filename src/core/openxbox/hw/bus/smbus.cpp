@@ -96,8 +96,10 @@ void SMBus::ExecuteTransaction() {
 }
 
 void SMBus::PCIIORead(int barIndex, uint32_t port, uint32_t *value, uint8_t size) {
+    log_spew("SMBus::PCIIORead:   bar = %d,  port = 0x%x,  size = %u\n", barIndex, port, size);
+
     if (barIndex != 1) {
-        log_debug("SMBus::PCIIORead:  unimplemented access to bar %d:  port = 0x%x,  size = %d\n", barIndex, port, size);
+        log_debug("SMBus::PCIIORead:  unimplemented access to bar %d:  port = 0x%x,  size = %u\n", barIndex, port, size);
         *value = 0;
         return;
     }
@@ -134,15 +136,17 @@ void SMBus::PCIIORead(int barIndex, uint32_t port, uint32_t *value, uint8_t size
         }
         break;
     default:
-        log_debug("SMBus::PCIIOWrite: Unhandled read!   bar = %d,  port = 0x%x,  size = %d\n", barIndex, port, size);
+        log_debug("SMBus::PCIIOWrite: Unhandled read!   bar = %d,  port = 0x%x,  size = %u\n", barIndex, port, size);
         *value = 0;
         break;
     }
 }
 
 void SMBus::PCIIOWrite(int barIndex, uint32_t port, uint32_t value, uint8_t size) {
+    log_spew("SMBus::PCIIOWrite:  bar = %d,  port = 0x%x,  size = %u,  value = 0x%x\n", barIndex, port, size, value);
+    
     if (barIndex != 1) {
-        log_debug("SMBus::PCIIOWrite: unimplemented access to bar %d:  port = 0x%x,  size = %d,  value = 0x%x\n", barIndex, port, size, value);
+        log_debug("SMBus::PCIIOWrite: unimplemented access to bar %d:  port = 0x%x,  size = %u,  value = 0x%x\n", barIndex, port, size, value);
         return;
     }
 
@@ -209,7 +213,7 @@ void SMBus::PCIIOWrite(int barIndex, uint32_t port, uint32_t value, uint8_t size
         }
         break;
     default:
-        log_debug("SMBus::PCIIOWrite: Unhandled write!  bar = %d,  port = 0x%x,  value = 0x%x,  size = %d\n", barIndex, port, value, size);
+        log_debug("SMBus::PCIIOWrite: Unhandled write!  bar = %d,  port = 0x%x,  value = 0x%x,  size = %u\n", barIndex, port, value, size);
         break;
     }
 }

@@ -90,8 +90,6 @@ bool IOMapper::LookupDevice(std::map<uint32_t, MappedDevice>& iomap, uint32_t ad
 }
 
 bool IOMapper::IORead(uint32_t addr, uint32_t *value, uint8_t size) {
-    log_spew("IOMapper::IORead:   address = 0x%x,  size = %d\n", addr, size);
-
     // Try looking up a device mapped to the specified port first
     IODevice *dev;
     if (LookupDevice(m_mappedIODevices, addr, &dev)) {
@@ -106,14 +104,12 @@ bool IOMapper::IORead(uint32_t addr, uint32_t *value, uint8_t size) {
         }
     }
 
-    log_warning("IOMapper::IORead:   Unhandled I/O!  address = 0x%x,  size = %d,  read\n", addr, size);
+    log_warning("IOMapper::IORead:   Unhandled I/O!  address = 0x%x,  size = %u,  read\n", addr, size);
     *value = 0;
     return false;
 }
 
 bool IOMapper::IOWrite(uint32_t addr, uint32_t value, uint8_t size) {
-    log_spew("IOMapper::IOWrite:  address = 0x%x,  size = %d,  value = 0x%x\n", addr, size, value);
-
     // Try looking up a device mapped to the specified port first
     IODevice *dev;
     if (LookupDevice(m_mappedIODevices, addr, &dev)) {
@@ -128,15 +124,13 @@ bool IOMapper::IOWrite(uint32_t addr, uint32_t value, uint8_t size) {
         }
     }
 
-    log_warning("IOMapper::IOWrite:  Unhandled I/O!  address = 0x%x,  size = %d,  write 0x%x\n", addr, size, value);
+    log_warning("IOMapper::IOWrite:  Unhandled I/O!  address = 0x%x,  size = %u,  write 0x%x\n", addr, size, value);
     return false;
 }
 
 bool IOMapper::MMIORead(uint32_t addr, uint32_t *value, uint8_t size) {
-    log_spew("IOMapper::MMIORead:   address = 0x%x,  size = %d\n", addr, size);
-
     if ((addr & (size - 1)) != 0) {
-        log_warning("IOMapper::MMIORead:   Unaligned MMIO read!   address = 0x%x,  size = %d\n", addr, size);
+        log_warning("IOMapper::MMIORead:   Unaligned MMIO read!   address = 0x%x,  size = %u\n", addr, size);
         return false;
     }
 
@@ -154,16 +148,14 @@ bool IOMapper::MMIORead(uint32_t addr, uint32_t *value, uint8_t size) {
         }
     }
 
-    log_warning("IOMapper::MMIORead:   Unhandled MMIO!  address = 0x%x,  size = %d,  read\n", addr, size);
+    log_warning("IOMapper::MMIORead:   Unhandled MMIO!  address = 0x%x,  size = %u,  read\n", addr, size);
     *value = 0;
     return false;
 }
 
 bool IOMapper::MMIOWrite(uint32_t addr, uint32_t value, uint8_t size) {
-    log_spew("IOMapper::MMIOWrite:  address = 0x%x,  size = %d,  value = 0x%x\n", addr, size, value);
-
     if ((addr & (size - 1)) != 0) {
-        log_warning("IOMapper::MMIOWrite:  Unaligned MMIO write!  address = 0x%x,  size = %d,  value = 0x%x\n", addr, size, value);
+        log_warning("IOMapper::MMIOWrite:  Unaligned MMIO write!  address = 0x%x,  size = %u,  value = 0x%x\n", addr, size, value);
         return false;
     }
 
@@ -181,7 +173,7 @@ bool IOMapper::MMIOWrite(uint32_t addr, uint32_t value, uint8_t size) {
         }
     }
 
-    log_warning("IOMapper::MMIOWrite:  Unhandled MMIO!  address = 0x%x,  size = %d,  write 0x%x\n", addr, size, value);
+    log_warning("IOMapper::MMIOWrite:  Unhandled MMIO!  address = 0x%x,  size = %u,  write 0x%x\n", addr, size, value);
     return false;
 }
 
