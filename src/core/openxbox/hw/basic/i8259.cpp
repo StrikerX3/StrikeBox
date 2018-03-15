@@ -67,6 +67,7 @@ void i8259::Reset(int pic) {
     m_RotateOnAutoEOI[pic] = false;
     m_IsSpecialFullyNestedMode[pic] = false;
     m_Is4ByteInit[pic] = false;
+    m_InterruptOutput[pic] = false;
 
     UpdateIRQ(pic);
 }
