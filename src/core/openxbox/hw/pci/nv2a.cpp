@@ -17,17 +17,13 @@ static inline int ffs(int i) {
 
 namespace openxbox {
 
-static inline int GET_MASK(int v, int mask) {
-    return (((v) & (mask)) >> (ffs(mask) - 1));
-};
+#define GET_MASK(v, mask) (((v) & (mask)) >> (ffs(mask)-1))
 
-static inline int SET_MASK(int v, int mask, int val) {
-    const unsigned int __val = (val);
-    const unsigned int __mask = (mask);
-
-    (v) &= ~(__mask);
-    return (v) |= ((__val) << (ffs(__mask) - 1)) & (__mask);
-}
+#define SET_MASK(v, mask, val) \
+    do { \
+        (v) &= ~(mask); \
+        (v) |= ((val) << (ffs(mask)-1)) & (mask); \
+    } while (0)
 
 static inline uint32_t ldl_le_p(const void *p) {
     return *(uint32_t*)p;
@@ -68,6 +64,9 @@ void NV2ADevice::Init() {
 	RegisterBAR(2, 64 * 1024 * 1024, PCI_BAR_TYPE_MEMORY); // 0xF8000000 - 0xFBFFFFFF
 
     Write8(m_configSpace, PCI_INTERRUPT_PIN, 3);
+
+    m_PCRTC.pendingInterrupts = 0;
+    m_PCRTC.enabledInterrupts = 0;
 
     m_PRAMDAC.core_clock_coeff = 0x00011c01; /* 189MHz...? */
     m_PRAMDAC.core_clock_freq = 189000000;
@@ -125,44 +124,50 @@ const NV2ABlockInfo* NV2ADevice::FindBlock(uint32_t addr) {
 
     return nullptr;
 }
-uint32_t NV2ADevice::IORead(int barIndex, uint32_t port, unsigned size) {
-	log_warning("NV2ADevice::IORead:  Unexpected I/O read!   bar = %d,  port = 0x%x,  size = %d\n", barIndex, port, size);
-    return 0;
+
+void NV2ADevice::PCIIORead(int barIndex, uint32_t port, uint32_t *value, uint8_t size) {
+	log_warning("NV2ADevice::IORead:  Unexpected I/O read!   bar = %d,  port = 0x%x,  size = %u\n", barIndex, port, size);
+    *value = 0;
 }
 
-void NV2ADevice::IOWrite(int barIndex, uint32_t port, uint32_t value, unsigned size) {
-	log_warning("NV2ADevice::IOWrite: Unexpected I/O write!  bar = %d,  port = 0x%x,  size = %d,  value = 0x%x\n", barIndex, port, size, value);
+void NV2ADevice::PCIIOWrite(int barIndex, uint32_t port, uint32_t value, uint8_t size) {
+	log_warning("NV2ADevice::IOWrite: Unexpected I/O write!  bar = %d,  port = 0x%x,  size = %u,  value = 0x%x\n", barIndex, port, size, value);
 }
 
-uint32_t NV2ADevice::MMIORead(int barIndex, uint32_t addr, unsigned size) {
-    log_spew("NV2ADevice::MMIORead:   bar = %d,  addr = 0x%x,  size = %d\n", barIndex, addr, size);
+void NV2ADevice::PCIMMIORead(int barIndex, uint32_t addr, uint32_t *value, uint8_t size) {
+    log_spew("NV2ADevice::MMIORead:   bar = %d,  addr = 0x%x,  size = %u\n", barIndex, addr, size);
 
     if (barIndex == 1) {
         switch (size) {
         case 1:
-            return m_VRAM[addr];
+            *value = m_VRAM[addr];
+            return;
         case 2:
-            return *(uint16_t*)(&m_VRAM[addr]);
+            *value = *(uint16_t*)(&m_VRAM[addr]);
+            return;
         case 4:
-            return *(uint32_t*)(&m_VRAM[addr]);
+            *value = *(uint32_t*)(&m_VRAM[addr]);
+            return;
         }
 
-        log_warning("NV2ADevice::MMIORead:  Unimplemented framebuffer read!  addr = 0x%x,  size = %d\n", addr, size);
-        return 0;
+        log_warning("NV2ADevice::MMIORead:  Unexpected framebuffer read size!  addr = 0x%x,  size = %u\n", addr, size);
+        *value = 0;
+        return;
     }
 
     auto memoryBlock = FindBlock(addr);
     if (memoryBlock != nullptr) {
-        return memoryBlock->read(this, addr - memoryBlock->offset, size);
+        memoryBlock->read(this, addr - memoryBlock->offset, value, size);
+        return;
     }
 
-	log_warning("NV2ADevice::MMIORead:  Unimplemented!  bar = %d,  addr = 0x%x,  size = %d\n", barIndex, addr, size);
+	log_warning("NV2ADevice::MMIORead:  Unimplemented!  bar = %d,  addr = 0x%x,  size = %u\n", barIndex, addr, size);
 
-    return 0;
+    *value = 0;
 }
 
-void NV2ADevice::MMIOWrite(int barIndex, uint32_t addr, uint32_t value, unsigned size) {
-    log_spew("NV2ADevice::MMIOWrite:  bar = %d,  addr = 0x%x,  size = %d,  value = 0x%x\n", barIndex, addr, size, value);
+void NV2ADevice::PCIMMIOWrite(int barIndex, uint32_t addr, uint32_t value, uint8_t size) {
+    log_spew("NV2ADevice::MMIOWrite:  bar = %d,  addr = 0x%x,  size = %u,  value = 0x%x\n", barIndex, addr, size, value);
 
     if (barIndex == 1) {
         switch (size) {
@@ -177,7 +182,7 @@ void NV2ADevice::MMIOWrite(int barIndex, uint32_t addr, uint32_t value, unsigned
             return;
         }
 
-        log_warning("NV2ADevice::MMIOWrite: Unimplemented framebuffer write!  addr = 0x%x,  size = %d,  value = 0x%x\n", addr, size, value);
+        log_warning("NV2ADevice::MMIOWrite: Unimplemented framebuffer write!  addr = 0x%x,  size = %u,  value = 0x%x\n", addr, size, value);
     }
 
     // Currently we only support 32-bit accesses
@@ -187,27 +192,30 @@ void NV2ADevice::MMIOWrite(int barIndex, uint32_t addr, uint32_t value, unsigned
         return;
     }
 
-	log_warning("NV2ADevice::MMIOWrite: Unimplemented!  bar = %d,  addr = 0x%x,  size = %d,  value = 0x%x\n", barIndex, addr, size, value);
+	log_warning("NV2ADevice::MMIOWrite: Unimplemented!  bar = %d,  addr = 0x%x,  size = %u,  value = 0x%x\n", barIndex, addr, size, value);
 }
 
 // ----- NV2A I/O -------------------------------------------------------------
 
-uint32_t NV2ADevice::PMCRead(NV2ADevice *nv2a, uint32_t addr, unsigned size) {
+void NV2ADevice::PMCRead(NV2ADevice *nv2a, uint32_t addr, uint32_t *value, uint8_t size) {
     switch (addr) {
     case NV_PMC_BOOT_0:
         // NV2ADevice, A02, Revision 0
-        return 0x02A000A2;
+        *value = 0x02A000A2;
+        return;
     case NV_PMC_INTR_0:
-        return nv2a->m_PMC.pendingInterrupts;
+        *value = nv2a->m_PMC.pendingInterrupts;
+        return;
     case NV_PMC_INTR_EN_0:
-        return nv2a->m_PMC.enabledInterrupts;
+        *value = nv2a->m_PMC.enabledInterrupts;
+        return;
     }
 
-    log_warning("NV2ADevice::PMCRead:  Unknown NV2A read!   addr = 0x%x,  size = %d\n", addr, size);
-    return 0;
+    log_warning("NV2ADevice::PMCRead:  Unknown NV2A read!   addr = 0x%x,  size = %u\n", addr, size);
+    *value = 0;
 }
 
-void NV2ADevice::PMCWrite(NV2ADevice *nv2a, uint32_t addr, uint32_t value, unsigned size) {
+void NV2ADevice::PMCWrite(NV2ADevice *nv2a, uint32_t addr, uint32_t value, uint8_t size) {
     assert(size == 4);
 
     switch (addr) {
@@ -220,30 +228,34 @@ void NV2ADevice::PMCWrite(NV2ADevice *nv2a, uint32_t addr, uint32_t value, unsig
         nv2a->UpdateIRQ();
         break;
     default:
-        log_warning("NV2ADevice::PMCWrite: Unknown NV2A PMC write!  addr = 0x%x,  size = %d,  value = 0x%x\n", addr, size, value);
+        log_warning("NV2ADevice::PMCWrite: Unknown NV2A PMC write!  addr = 0x%x,  size = %u,  value = 0x%x\n", addr, size, value);
         break;
     }
 }
 
-uint32_t NV2ADevice::PBUSRead(NV2ADevice *nv2a, uint32_t addr, unsigned size) {
+void NV2ADevice::PBUSRead(NV2ADevice *nv2a, uint32_t addr, uint32_t *value, uint8_t size) {
     assert(size == 4);
 
     switch (addr) {
     case NV_PBUS_PCI_NV_0:
-        return PCI_VENDOR_ID_NVIDIA;
+        *value = PCI_VENDOR_ID_NVIDIA;
+        return;
 
     case NV_PBUS_PCI_NV_1:
-        return 1; // NV_PBUS_PCI_NV_1_IO_SPACE_ENABLED
+        *value = 1; // NV_PBUS_PCI_NV_1_IO_SPACE_ENABLED
+        return;
 
     case NV_PBUS_PCI_NV_2:
-        return(0x02 << 24) | 161; // PCI_CLASS_DISPLAY_3D (0x02) Rev 161 (0xA1)
+        *value = (0x02 << 24) | 161; // PCI_CLASS_DISPLAY_3D (0x02) Rev 161 (0xA1)
+        return;
     }
 
-    log_warning("NV2ADevice::PBUSRead:  Unknown NV2A PBUS read!   addr = 0x%x,  size = %d\n", addr, size);
-    return 0;
+    log_warning("NV2ADevice::PBUSRead:  Unknown NV2A PBUS read!   addr = 0x%x,  size = %u\n", addr, size);
+    *value = 0;
+    return;
 }
 
-void NV2ADevice::PBUSWrite(NV2ADevice *nv2a, uint32_t addr, uint32_t value, unsigned size) {
+void NV2ADevice::PBUSWrite(NV2ADevice *nv2a, uint32_t addr, uint32_t value, uint8_t size) {
     switch (addr) {
     case NV_PBUS_PCI_NV_1:
         nv2a->Write16(nv2a->m_configSpace, PCI_COMMAND, value);
@@ -252,114 +264,110 @@ void NV2ADevice::PBUSWrite(NV2ADevice *nv2a, uint32_t addr, uint32_t value, unsi
         break;
     }
 
-    log_warning("NV2ADevice::PBUSWrite: Unknown NV2A PBUS write!  addr = 0x%x,  size = %d,  value = 0x%x\n", addr, size, value);
+    log_warning("NV2ADevice::PBUSWrite: Unknown NV2A PBUS write!  addr = 0x%x,  size = %u,  value = 0x%x\n", addr, size, value);
 }
 
-uint32_t NV2ADevice::PFIFORead(NV2ADevice *nv2a, uint32_t addr, unsigned size) {
+void NV2ADevice::PFIFORead(NV2ADevice *nv2a, uint32_t addr, uint32_t *value, uint8_t size) {
     // TODO: Acknowledge the size.
     //assert(size == 4);
 
-    uint32_t result = 0;
-
     switch (addr) {
     case NV_PFIFO_RAMHT:
-        result = 0x03000100; // = NV_PFIFO_RAMHT_SIZE_4K | NV_PFIFO_RAMHT_BASE_ADDRESS(NumberOfPaddingBytes >> 12) | NV_PFIFO_RAMHT_SEARCH_128
+        *value = 0x03000100; // = NV_PFIFO_RAMHT_SIZE_4K | NV_PFIFO_RAMHT_BASE_ADDRESS(NumberOfPaddingBytes >> 12) | NV_PFIFO_RAMHT_SEARCH_128
         break;
     case NV_PFIFO_RAMFC:
-        result = 0x00890110; // = ? | NV_PFIFO_RAMFC_SIZE_2K | ?
+        *value = 0x00890110; // = ? | NV_PFIFO_RAMFC_SIZE_2K | ?
         break;
     case NV_PFIFO_INTR_0:
-        result = nv2a->m_PFIFO.pending_interrupts;
+        *value = nv2a->m_PFIFO.pending_interrupts;
         break;
     case NV_PFIFO_INTR_EN_0:
-        result = nv2a->m_PFIFO.enabled_interrupts;
+        *value = nv2a->m_PFIFO.enabled_interrupts;
         break;
     case NV_PFIFO_RUNOUT_STATUS:
-        result = NV_PFIFO_RUNOUT_STATUS_LOW_MARK; /* low mark empty */
+        *value = NV_PFIFO_RUNOUT_STATUS_LOW_MARK; /* low mark empty */
         break;
     case NV_PFIFO_CACHE1_PUSH0:
-        result = nv2a->m_PFIFO.cache1.push_enabled;
+        *value = nv2a->m_PFIFO.cache1.push_enabled;
         break;
     case NV_PFIFO_CACHE1_PUSH1:
-        SET_MASK(result, NV_PFIFO_CACHE1_PUSH1_CHID, nv2a->m_PFIFO.cache1.channel_id);
-        SET_MASK(result, NV_PFIFO_CACHE1_PUSH1_MODE, nv2a->m_PFIFO.cache1.mode);
+        SET_MASK(*value, NV_PFIFO_CACHE1_PUSH1_CHID, nv2a->m_PFIFO.cache1.channel_id);
+        SET_MASK(*value, NV_PFIFO_CACHE1_PUSH1_MODE, nv2a->m_PFIFO.cache1.mode);
         break;
     case NV_PFIFO_CACHE1_STATUS:
     {
         std::lock_guard<std::mutex> lk(nv2a->m_PFIFO.cache1.mutex);
 
         if (nv2a->m_PFIFO.cache1.cache.empty()) {
-            result |= NV_PFIFO_CACHE1_STATUS_LOW_MARK; /* low mark empty */
+            *value |= NV_PFIFO_CACHE1_STATUS_LOW_MARK; /* low mark empty */
         }
 
     }	break;
     case NV_PFIFO_CACHE1_DMA_PUSH:
-        SET_MASK(result, NV_PFIFO_CACHE1_DMA_PUSH_ACCESS,
+        SET_MASK(*value, NV_PFIFO_CACHE1_DMA_PUSH_ACCESS,
             nv2a->m_PFIFO.cache1.dma_push_enabled);
-        SET_MASK(result, NV_PFIFO_CACHE1_DMA_PUSH_STATUS,
+        SET_MASK(*value, NV_PFIFO_CACHE1_DMA_PUSH_STATUS,
             nv2a->m_PFIFO.cache1.dma_push_suspended);
-        SET_MASK(result, NV_PFIFO_CACHE1_DMA_PUSH_BUFFER, 1); /* buffer emoty */
+        SET_MASK(*value, NV_PFIFO_CACHE1_DMA_PUSH_BUFFER, 1); /* buffer emoty */
         break;
     case NV_PFIFO_CACHE1_DMA_STATE:
-        SET_MASK(result, NV_PFIFO_CACHE1_DMA_STATE_METHOD_TYPE,
+        SET_MASK(*value, NV_PFIFO_CACHE1_DMA_STATE_METHOD_TYPE,
             nv2a->m_PFIFO.cache1.method_nonincreasing);
-        SET_MASK(result, NV_PFIFO_CACHE1_DMA_STATE_METHOD,
+        SET_MASK(*value, NV_PFIFO_CACHE1_DMA_STATE_METHOD,
             nv2a->m_PFIFO.cache1.method >> 2);
-        SET_MASK(result, NV_PFIFO_CACHE1_DMA_STATE_SUBCHANNEL,
+        SET_MASK(*value, NV_PFIFO_CACHE1_DMA_STATE_SUBCHANNEL,
             nv2a->m_PFIFO.cache1.subchannel);
-        SET_MASK(result, NV_PFIFO_CACHE1_DMA_STATE_METHOD_COUNT,
+        SET_MASK(*value, NV_PFIFO_CACHE1_DMA_STATE_METHOD_COUNT,
             nv2a->m_PFIFO.cache1.method_count);
-        SET_MASK(result, NV_PFIFO_CACHE1_DMA_STATE_ERROR,
+        SET_MASK(*value, NV_PFIFO_CACHE1_DMA_STATE_ERROR,
             nv2a->m_PFIFO.cache1.error);
         break;
     case NV_PFIFO_CACHE1_DMA_INSTANCE:
-        SET_MASK(result, NV_PFIFO_CACHE1_DMA_INSTANCE_ADDRESS,
+        SET_MASK(*value, NV_PFIFO_CACHE1_DMA_INSTANCE_ADDRESS,
             nv2a->m_PFIFO.cache1.dma_instance >> 4);
         break;
     case NV_PFIFO_CACHE1_DMA_PUT:
-        result = nv2a->m_User.channel_control[nv2a->m_PFIFO.cache1.channel_id].dma_put;
+        *value = nv2a->m_User.channel_control[nv2a->m_PFIFO.cache1.channel_id].dma_put;
         break;
     case NV_PFIFO_CACHE1_DMA_GET:
-        result = nv2a->m_User.channel_control[nv2a->m_PFIFO.cache1.channel_id].dma_get;
+        *value = nv2a->m_User.channel_control[nv2a->m_PFIFO.cache1.channel_id].dma_get;
         break;
     case NV_PFIFO_CACHE1_DMA_SUBROUTINE:
-        result = nv2a->m_PFIFO.cache1.subroutine_return
+        *value = nv2a->m_PFIFO.cache1.subroutine_return
             | nv2a->m_PFIFO.cache1.subroutine_active;
         break;
     case NV_PFIFO_CACHE1_PULL0:
     {
         std::lock_guard<std::mutex> lk(nv2a->m_PFIFO.cache1.mutex);
-        result = nv2a->m_PFIFO.cache1.pull_enabled;
+        *value = nv2a->m_PFIFO.cache1.pull_enabled;
     } break;
     case NV_PFIFO_CACHE1_ENGINE:
     {
         std::lock_guard<std::mutex> lk(nv2a->m_PFIFO.cache1.mutex);
         for (int i = 0; i < NV2A_NUM_SUBCHANNELS; i++) {
-            result |= nv2a->m_PFIFO.cache1.bound_engines[i] << (i * 2);
+            *value |= nv2a->m_PFIFO.cache1.bound_engines[i] << (i * 2);
         }
 
     }	break;
     case NV_PFIFO_CACHE1_DMA_DCOUNT:
-        result = nv2a->m_PFIFO.cache1.dcount;
+        *value = nv2a->m_PFIFO.cache1.dcount;
         break;
     case NV_PFIFO_CACHE1_DMA_GET_JMP_SHADOW:
-        result = nv2a->m_PFIFO.cache1.get_jmp_shadow;
+        *value = nv2a->m_PFIFO.cache1.get_jmp_shadow;
         break;
     case NV_PFIFO_CACHE1_DMA_RSVD_SHADOW:
-        result = nv2a->m_PFIFO.cache1.rsvd_shadow;
+        *value = nv2a->m_PFIFO.cache1.rsvd_shadow;
         break;
     case NV_PFIFO_CACHE1_DMA_DATA_SHADOW:
-        result = nv2a->m_PFIFO.cache1.data_shadow;
+        *value = nv2a->m_PFIFO.cache1.data_shadow;
         break;
     default:
-        result = nv2a->m_PFIFO.regs[addr];
+        *value = nv2a->m_PFIFO.regs[addr];
         break;
     }
-
-    return result;
 }
 
-void NV2ADevice::PFIFOWrite(NV2ADevice *nv2a, uint32_t addr, uint32_t value, unsigned size) {
+void NV2ADevice::PFIFOWrite(NV2ADevice *nv2a, uint32_t addr, uint32_t value, uint8_t size) {
     assert(size == 4);
 
     switch (addr) {
@@ -450,31 +458,28 @@ void NV2ADevice::PFIFOWrite(NV2ADevice *nv2a, uint32_t addr, uint32_t value, uns
     }
 }
 
-uint32_t NV2ADevice::PRMARead(NV2ADevice *nv2a, uint32_t addr, unsigned size) {
-    log_warning("NV2ADevice::PRMARead:  Unknown NV2A PRMA read!   addr = 0x%x,  size = %d\n", addr, size);
-    return 0;
+void NV2ADevice::PRMARead(NV2ADevice *nv2a, uint32_t addr, uint32_t *value, uint8_t size) {
+    log_warning("NV2ADevice::PRMARead:  Unknown NV2A PRMA read!   addr = 0x%x,  size = %u\n", addr, size);
+    *value = 0;
 }
 
-void NV2ADevice::PRMAWrite(NV2ADevice *nv2a, uint32_t addr, uint32_t value, unsigned size) {
+void NV2ADevice::PRMAWrite(NV2ADevice *nv2a, uint32_t addr, uint32_t value, uint8_t size) {
     log_warning("NV2ADevice::PRMAWrite: Unknown NV2A PRMA write!  addr = 0x%x,  size: %d,  value: 0x%x\n", addr, size, value);
 }
 
-uint32_t NV2ADevice::PVIDEORead(NV2ADevice *nv2a, uint32_t addr, unsigned size) {
-    uint32_t result = 0;
-
+void NV2ADevice::PVIDEORead(NV2ADevice *nv2a, uint32_t addr, uint32_t *value, uint8_t size) {
     switch (addr) {
     case NV_PVIDEO_STOP:
-        result = 0;
+        *value = 0;
         break;
 
     default:
-        result = nv2a->m_PVIDEO.regs[addr];
+        *value = nv2a->m_PVIDEO.regs[addr];
         break;
     }
-    return result;
 }
 
-void NV2ADevice::PVIDEOWrite(NV2ADevice *nv2a, uint32_t addr, uint32_t value, unsigned size) {
+void NV2ADevice::PVIDEOWrite(NV2ADevice *nv2a, uint32_t addr, uint32_t value, uint8_t size) {
     switch (addr) {
     case NV_PVIDEO_BUFFER:
         nv2a->m_PVIDEO.regs[addr] = value;
@@ -513,37 +518,33 @@ uint32_t NV2ADevice::ptimer_get_clock() {
     return muldiv64(time, m_PRAMDAC.core_clock_freq * m_PTIMER.numerator, CLOCKS_PER_SEC * m_PTIMER.denominator);
 }
 
-uint32_t NV2ADevice::PTIMERRead(NV2ADevice *nv2a, uint32_t addr, unsigned size) {
-    uint32_t result = 0;
-
+void NV2ADevice::PTIMERRead(NV2ADevice *nv2a, uint32_t addr, uint32_t *value, uint8_t size) {
     switch (addr) {
     case NV_PTIMER_INTR_0:
-        result = nv2a->m_PTIMER.pending_interrupts;
+        *value = nv2a->m_PTIMER.pending_interrupts;
         break;
     case NV_PTIMER_INTR_EN_0:
-        result = nv2a->m_PTIMER.enabled_interrupts;
+        *value = nv2a->m_PTIMER.enabled_interrupts;
         break;
     case NV_PTIMER_NUMERATOR:
-        result = nv2a->m_PTIMER.numerator;
+        *value = nv2a->m_PTIMER.numerator;
         break;
     case NV_PTIMER_DENOMINATOR:
-        result = nv2a->m_PTIMER.denominator;
+        *value = nv2a->m_PTIMER.denominator;
         break;
     case NV_PTIMER_TIME_0:
-        result = (nv2a->ptimer_get_clock() & 0x7ffffff) << 5;
+        *value = (nv2a->ptimer_get_clock() & 0x7ffffff) << 5;
         break;
     case NV_PTIMER_TIME_1:
-        result = (nv2a->ptimer_get_clock() >> 27) & 0x1fffffff;
+        *value = (nv2a->ptimer_get_clock() >> 27) & 0x1fffffff;
         break;
     default:
-        result = 0;
+        *value = 0;
         break;
     }
-
-    return result;
 }
 
-void NV2ADevice::PTIMERWrite(NV2ADevice *nv2a, uint32_t addr, uint32_t value, unsigned size) {
+void NV2ADevice::PTIMERWrite(NV2ADevice *nv2a, uint32_t addr, uint32_t value, uint8_t size) {
     switch (addr) {
     case NV_PTIMER_INTR_0:
         nv2a->m_PTIMER.pending_interrupts &= ~value;
@@ -567,140 +568,138 @@ void NV2ADevice::PTIMERWrite(NV2ADevice *nv2a, uint32_t addr, uint32_t value, un
     }
 }
 
-uint32_t NV2ADevice::PCOUNTERRead(NV2ADevice *nv2a, uint32_t addr, unsigned size) {
-    log_warning("NV2ADevice::PCOUNTERRead:  Unknown NV2A PCOUNTER read!   addr = 0x%x,  size = %d\n", addr, size);
-    return 0;
+void NV2ADevice::PCOUNTERRead(NV2ADevice *nv2a, uint32_t addr, uint32_t *value, uint8_t size) {
+    log_warning("NV2ADevice::PCOUNTERRead:  Unknown NV2A PCOUNTER read!   addr = 0x%x,  size = %u\n", addr, size);
+    *value = 0;
 }
 
-void NV2ADevice::PCOUNTERWrite(NV2ADevice *nv2a, uint32_t addr, uint32_t value, unsigned size) {
+void NV2ADevice::PCOUNTERWrite(NV2ADevice *nv2a, uint32_t addr, uint32_t value, uint8_t size) {
     log_warning("NV2ADevice::PCOUNTERWrite: Unknown NV2A PCOUNTER write!  addr = 0x%x,  size: %d,  value: 0x%x\n", addr, size, value);
 }
 
-uint32_t NV2ADevice::PVPERead(NV2ADevice *nv2a, uint32_t addr, unsigned size) {
-    log_warning("NV2ADevice::PVPERead:  Unknown NV2A PVPE read!   addr = 0x%x,  size = %d\n", addr, size);
-    return 0;
+void NV2ADevice::PVPERead(NV2ADevice *nv2a, uint32_t addr, uint32_t *value, uint8_t size) {
+    log_warning("NV2ADevice::PVPERead:  Unknown NV2A PVPE read!   addr = 0x%x,  size = %u\n", addr, size);
+    *value = 0;
 }
 
-void NV2ADevice::PVPEWrite(NV2ADevice *nv2a, uint32_t addr, uint32_t value, unsigned size) {
+void NV2ADevice::PVPEWrite(NV2ADevice *nv2a, uint32_t addr, uint32_t value, uint8_t size) {
     log_warning("NV2ADevice::PVPEWrite: Unknown NV2A PVPE write!  addr = 0x%x,  size: %d,  value: 0x%x\n", addr, size, value);
 }
 
-uint32_t NV2ADevice::PTVRead(NV2ADevice *nv2a, uint32_t addr, unsigned size) {
-    log_warning("NV2ADevice::PTVRead:  Unknown NV2A PTV read!   addr = 0x%x,  size = %d\n", addr, size);
-    return 0;
+void NV2ADevice::PTVRead(NV2ADevice *nv2a, uint32_t addr, uint32_t *value, uint8_t size) {
+    log_warning("NV2ADevice::PTVRead:  Unknown NV2A PTV read!   addr = 0x%x,  size = %u\n", addr, size);
+    *value = 0;
 }
 
-void NV2ADevice::PTVWrite(NV2ADevice *nv2a, uint32_t addr, uint32_t value, unsigned size) {
+void NV2ADevice::PTVWrite(NV2ADevice *nv2a, uint32_t addr, uint32_t value, uint8_t size) {
     log_warning("NV2ADevice::PTVWrite: Unknown NV2A PTV write!  addr = 0x%x,  size: %d,  value: 0x%x\n", addr, size, value);
 }
 
-uint32_t NV2ADevice::PRMFBRead(NV2ADevice *nv2a, uint32_t addr, unsigned size) {
-    log_warning("NV2ADevice::PRMFBRead:  Unknown NV2A PRMFB read!   addr = 0x%x,  size = %d\n", addr, size);
-    return 0;
+void NV2ADevice::PRMFBRead(NV2ADevice *nv2a, uint32_t addr, uint32_t *value, uint8_t size) {
+    log_warning("NV2ADevice::PRMFBRead:  Unknown NV2A PRMFB read!   addr = 0x%x,  size = %u\n", addr, size);
+    *value = 0;
 }
 
-void NV2ADevice::PRMFBWrite(NV2ADevice *nv2a, uint32_t addr, uint32_t value, unsigned size) {
+void NV2ADevice::PRMFBWrite(NV2ADevice *nv2a, uint32_t addr, uint32_t value, uint8_t size) {
     log_warning("NV2ADevice::PRMFBWrite: Unknown NV2A PRMFB write!  addr = 0x%x,  size: %d,  value: 0x%x\n", addr, size, value);
 }
 
-uint32_t NV2ADevice::PRMVIORead(NV2ADevice *nv2a, uint32_t addr, unsigned size) {
-    log_warning("NV2ADevice::PRMVIORead:  Unknown NV2A PRMVIO read!   addr = 0x%x,  size = %d\n", addr, size);
-    return 0;
+void NV2ADevice::PRMVIORead(NV2ADevice *nv2a, uint32_t addr, uint32_t *value, uint8_t size) {
+    log_warning("NV2ADevice::PRMVIORead:  Unknown NV2A PRMVIO read!   addr = 0x%x,  size = %u\n", addr, size);
+    *value = 0;
 }
 
-void NV2ADevice::PRMVIOWrite(NV2ADevice *nv2a, uint32_t addr, uint32_t value, unsigned size) {
+void NV2ADevice::PRMVIOWrite(NV2ADevice *nv2a, uint32_t addr, uint32_t value, uint8_t size) {
     log_warning("NV2ADevice::PRMVIOWrite: Unknown NV2A PRMVIO write!  addr = 0x%x,  size: %d,  value: 0x%x\n", addr, size, value);
 }
 
-uint32_t NV2ADevice::PFBRead(NV2ADevice *nv2a, uint32_t addr, unsigned size) {
+void NV2ADevice::PFBRead(NV2ADevice *nv2a, uint32_t addr, uint32_t *value, uint8_t size) {
     assert(size == 4);
 
     switch (addr) {
     case NV_PFB_CFG0:
-        return 3; // 3 memory partitions
+        *value = 3; // 3 memory partitions
+        break;
     case NV_PFB_CSTATUS:
-        return nv2a->m_systemRAMSize;
+        *value = nv2a->m_systemRAMSize;
+        break;
     case NV_PFB_WBC:
-        return 0;
+        *value = 0;
+        break;
     default:
-        return nv2a->m_PFB.registers[addr];
+        *value = nv2a->m_PFB.registers[addr];
+        break;
     }
-
-    return 0;
 }
 
-void NV2ADevice::PFBWrite(NV2ADevice *nv2a, uint32_t addr, uint32_t value, unsigned size) {
+void NV2ADevice::PFBWrite(NV2ADevice *nv2a, uint32_t addr, uint32_t value, uint8_t size) {
     assert(size == 4);
     nv2a->m_PFB.registers[addr] = value;
 }
 
-uint32_t NV2ADevice::PSTRAPSRead(NV2ADevice *nv2a, uint32_t addr, unsigned size) {
-    log_warning("NV2ADevice::PSTRAPSRead:  Unknown NV2A PSTRAPS read!   addr = 0x%x,  size = %d\n", addr, size);
-    return 0;
+void NV2ADevice::PSTRAPSRead(NV2ADevice *nv2a, uint32_t addr, uint32_t *value, uint8_t size) {
+    log_warning("NV2ADevice::PSTRAPSRead:  Unknown NV2A PSTRAPS read!   addr = 0x%x,  size = %u\n", addr, size);
+    *value = 0;
 }
 
-void NV2ADevice::PSTRAPSWrite(NV2ADevice *nv2a, uint32_t addr, uint32_t value, unsigned size) {
+void NV2ADevice::PSTRAPSWrite(NV2ADevice *nv2a, uint32_t addr, uint32_t value, uint8_t size) {
     log_warning("NV2ADevice::PSTRAPSWrite: Unknown NV2A PSTRAPS write!  addr = 0x%x,  size: %d,  value: 0x%x\n", addr, size, value);
 }
 
-uint32_t NV2ADevice::PGRAPHRead(NV2ADevice *nv2a, uint32_t addr, unsigned size) {
+void NV2ADevice::PGRAPHRead(NV2ADevice *nv2a, uint32_t addr, uint32_t *value, uint8_t size) {
     assert(size == 4);
 
     std::lock_guard<std::mutex> lk(nv2a->m_PGRAPH.mutex);
 
-    uint32_t result = 0;
-
     switch (addr) {
     case NV_PGRAPH_INTR:
-        result = nv2a->m_PGRAPH.pending_interrupts;
+        *value = nv2a->m_PGRAPH.pending_interrupts;
         break;
 
     case NV_PGRAPH_INTR_EN:
-        result = nv2a->m_PGRAPH.enabled_interrupts;
+        *value = nv2a->m_PGRAPH.enabled_interrupts;
         break;
 
     case NV_PGRAPH_NSOURCE:
-        result = nv2a->m_PGRAPH.notify_source;
+        *value = nv2a->m_PGRAPH.notify_source;
         break;
 
     case NV_PGRAPH_CTX_USER:
-        SET_MASK(result, NV_PGRAPH_CTX_USER_CHANNEL_3D, nv2a->m_PGRAPH.context[nv2a->m_PGRAPH.channel_id].channel_3d);
-        SET_MASK(result, NV_PGRAPH_CTX_USER_CHANNEL_3D_VALID, 1);
-        SET_MASK(result, NV_PGRAPH_CTX_USER_SUBCH, nv2a->m_PGRAPH.context[nv2a->m_PGRAPH.channel_id].subchannel << 13);
-        SET_MASK(result, NV_PGRAPH_CTX_USER_CHID, nv2a->m_PGRAPH.channel_id);
+        SET_MASK(*value, NV_PGRAPH_CTX_USER_CHANNEL_3D, nv2a->m_PGRAPH.context[nv2a->m_PGRAPH.channel_id].channel_3d);
+        SET_MASK(*value, NV_PGRAPH_CTX_USER_CHANNEL_3D_VALID, 1);
+        SET_MASK(*value, NV_PGRAPH_CTX_USER_SUBCH, nv2a->m_PGRAPH.context[nv2a->m_PGRAPH.channel_id].subchannel << 13);
+        SET_MASK(*value, NV_PGRAPH_CTX_USER_CHID, nv2a->m_PGRAPH.channel_id);
         break;
 
     case NV_PGRAPH_TRAPPED_ADDR:
-        SET_MASK(result, NV_PGRAPH_TRAPPED_ADDR_CHID, nv2a->m_PGRAPH.trapped_channel_id);
-        SET_MASK(result, NV_PGRAPH_TRAPPED_ADDR_SUBCH, nv2a->m_PGRAPH.trapped_subchannel);
-        SET_MASK(result, NV_PGRAPH_TRAPPED_ADDR_MTHD, nv2a->m_PGRAPH.trapped_method);
+        SET_MASK(*value, NV_PGRAPH_TRAPPED_ADDR_CHID, nv2a->m_PGRAPH.trapped_channel_id);
+        SET_MASK(*value, NV_PGRAPH_TRAPPED_ADDR_SUBCH, nv2a->m_PGRAPH.trapped_subchannel);
+        SET_MASK(*value, NV_PGRAPH_TRAPPED_ADDR_MTHD, nv2a->m_PGRAPH.trapped_method);
         break;
 
     case NV_PGRAPH_TRAPPED_DATA_LOW:
-        result = nv2a->m_PGRAPH.trapped_data[0];
+        *value = nv2a->m_PGRAPH.trapped_data[0];
         break;
 
     case NV_PGRAPH_FIFO:
-        SET_MASK(result, NV_PGRAPH_FIFO_ACCESS, nv2a->m_PGRAPH.fifo_access);
+        SET_MASK(*value, NV_PGRAPH_FIFO_ACCESS, nv2a->m_PGRAPH.fifo_access);
         break;
 
     case NV_PGRAPH_CHANNEL_CTX_TABLE:
-        result = nv2a->m_PGRAPH.context_table >> 4;
+        *value = nv2a->m_PGRAPH.context_table >> 4;
         break;
 
     case NV_PGRAPH_CHANNEL_CTX_POINTER:
-        result = nv2a->m_PGRAPH.context_address >> 4;
+        *value = nv2a->m_PGRAPH.context_address >> 4;
         break;
 
     default:
-        result = nv2a->m_PGRAPH.regs[addr];
+        *value = nv2a->m_PGRAPH.regs[addr];
         break;
     }
-
-    return result;
 }
 
-void NV2ADevice::PGRAPHWrite(NV2ADevice *nv2a, uint32_t addr, uint32_t value, unsigned size) {
+void NV2ADevice::PGRAPHWrite(NV2ADevice *nv2a, uint32_t addr, uint32_t value, uint8_t size) {
     std::lock_guard<std::mutex> lk(nv2a->m_PGRAPH.mutex);
 
     switch (addr) {
@@ -767,23 +766,24 @@ void NV2ADevice::PGRAPHWrite(NV2ADevice *nv2a, uint32_t addr, uint32_t value, un
     }
 }
 
-uint32_t NV2ADevice::PCRTCRead(NV2ADevice *nv2a, uint32_t addr, unsigned size) {
+void NV2ADevice::PCRTCRead(NV2ADevice *nv2a, uint32_t addr, uint32_t *value, uint8_t size) {
     switch (addr) {
     case NV_PCRTC_INTR_0:
-        return nv2a->m_PCRTC.pendingInterrupts;
+        *value = nv2a->m_PCRTC.pendingInterrupts;
         break;
     case NV_PCRTC_INTR_EN_0:
-        return nv2a->m_PCRTC.enabledInterrupts;
+        *value = nv2a->m_PCRTC.enabledInterrupts;
         break;
     case NV_PCRTC_START:
-        return nv2a->m_PCRTC.start;
+        *value = nv2a->m_PCRTC.start;
         break;
     default:
-        return 0;
+        *value = 0;
+        break;
     }
 }
 
-void NV2ADevice::PCRTCWrite(NV2ADevice *nv2a, uint32_t addr, uint32_t value, unsigned size) {
+void NV2ADevice::PCRTCWrite(NV2ADevice *nv2a, uint32_t addr, uint32_t value, uint8_t size) {
     switch (addr) {
     case NV_PCRTC_INTR_0:
         nv2a->m_PCRTC.pendingInterrupts &= ~value;
@@ -803,37 +803,33 @@ void NV2ADevice::PCRTCWrite(NV2ADevice *nv2a, uint32_t addr, uint32_t value, uns
 
 }
 
-uint32_t NV2ADevice::PRMCIORead(NV2ADevice *nv2a, uint32_t addr, unsigned size) {
-    uint32_t result = 0;
-
+void NV2ADevice::PRMCIORead(NV2ADevice *nv2a, uint32_t addr, uint32_t *value, uint8_t size) {
     switch (addr) {
     case VGA_CRT_IM:
     case VGA_CRT_IC:
-        result = nv2a->m_PRMCIO.cr_index;
+        *value = nv2a->m_PRMCIO.cr_index;
         break;
 
     case VGA_IS1_RC:
     case VGA_IS1_RM:
         // Toggle the retrace bit to fool polling. QEMU does the same.
-        result = nv2a->m_VGAState.st01;
+        *value = nv2a->m_VGAState.st01;
         nv2a->m_VGAState.st01 ^= 1 << 3;
         break;
 
     case VGA_CRT_DM:
     case VGA_CRT_DC:
-        result = nv2a->m_PRMCIO.cr[nv2a->m_PRMCIO.cr_index];
+        *value = nv2a->m_PRMCIO.cr[nv2a->m_PRMCIO.cr_index];
 
-        log_debug("vga: read CR%x = 0x%02x\n", nv2a->m_PRMCIO.cr_index, result);
+        log_debug("vga: read CR%x = 0x%02x\n", nv2a->m_PRMCIO.cr_index, *value);
         break;
     default:
-        log_warning("NV2ADevice::PRMCIORead:  Unknown NV2A PRMCIO read!   addr = 0x%x,  size = %d\n", addr, size);
+        log_warning("NV2ADevice::PRMCIORead:  Unknown NV2A PRMCIO read!   addr = 0x%x,  size = %u\n", addr, size);
         break;
     }
-
-    return result;
 }
 
-void NV2ADevice::PRMCIOWrite(NV2ADevice *nv2a, uint32_t addr, uint32_t value, unsigned size) {
+void NV2ADevice::PRMCIOWrite(NV2ADevice *nv2a, uint32_t addr, uint32_t value, uint8_t size) {
     switch (addr) {
     case VGA_CRT_IM:
     case VGA_CRT_IC:
@@ -879,29 +875,32 @@ void NV2ADevice::PRMCIOWrite(NV2ADevice *nv2a, uint32_t addr, uint32_t value, un
     }
 }
 
-uint32_t NV2ADevice::PRAMDACRead(NV2ADevice *nv2a, uint32_t addr, unsigned size) {
+void NV2ADevice::PRAMDACRead(NV2ADevice *nv2a, uint32_t addr, uint32_t *value, uint8_t size) {
     switch (addr) {
     case NV_PRAMDAC_NVPLL_COEFF:
-        return nv2a->m_PRAMDAC.core_clock_coeff;
+        *value = nv2a->m_PRAMDAC.core_clock_coeff;
+        break;
     case NV_PRAMDAC_MPLL_COEFF:
-        return nv2a->m_PRAMDAC.memory_clock_coeff;
+        *value = nv2a->m_PRAMDAC.memory_clock_coeff;
+        break;
     case NV_PRAMDAC_VPLL_COEFF:
-        return nv2a->m_PRAMDAC.video_clock_coeff;
+        *value = nv2a->m_PRAMDAC.video_clock_coeff;
+        break;
     case NV_PRAMDAC_PLL_TEST_COUNTER:
         /* emulated PLLs locked instantly? */
-        return NV_PRAMDAC_PLL_TEST_COUNTER_VPLL2_LOCK
+        *value = NV_PRAMDAC_PLL_TEST_COUNTER_VPLL2_LOCK
             | NV_PRAMDAC_PLL_TEST_COUNTER_NVPLL_LOCK
             | NV_PRAMDAC_PLL_TEST_COUNTER_MPLL_LOCK
             | NV_PRAMDAC_PLL_TEST_COUNTER_VPLL_LOCK;
+        break;
     default:
-        log_warning("NV2ADevice::PRAMDACRead:  Unknown NV2A PRAMDAC read!   addr = 0x%x,  size = %d\n", addr, size);
-        return 0;
+        log_warning("NV2ADevice::PRAMDACRead:  Unknown NV2A PRAMDAC read!   addr = 0x%x,  size = %u\n", addr, size);
+        *value = 0;
+        break;
     }
-
-    return 0;
 }
 
-void NV2ADevice::PRAMDACWrite(NV2ADevice *nv2a, uint32_t addr, uint32_t value, unsigned size) {
+void NV2ADevice::PRAMDACWrite(NV2ADevice *nv2a, uint32_t addr, uint32_t value, uint8_t size) {
     switch (addr) {
     case NV_PRAMDAC_NVPLL_COEFF:
         uint32_t m, n, p;
@@ -932,31 +931,35 @@ void NV2ADevice::PRAMDACWrite(NV2ADevice *nv2a, uint32_t addr, uint32_t value, u
     }
 }
 
-uint32_t NV2ADevice::PRMDIORead(NV2ADevice *nv2a, uint32_t addr, unsigned size) {
-    log_warning("NV2ADevice::PRMDIORead:  Unknown NV2A PRMDIO read!   addr = 0x%x,  size = %d\n", addr, size);
-    return 0;
+void NV2ADevice::PRMDIORead(NV2ADevice *nv2a, uint32_t addr, uint32_t *value, uint8_t size) {
+    log_warning("NV2ADevice::PRMDIORead:  Unknown NV2A PRMDIO read!   addr = 0x%x,  size = %u\n", addr, size);
+    *value = 0;
 }
 
-void NV2ADevice::PRMDIOWrite(NV2ADevice *nv2a, uint32_t addr, uint32_t value, unsigned size) {
+void NV2ADevice::PRMDIOWrite(NV2ADevice *nv2a, uint32_t addr, uint32_t value, uint8_t size) {
     log_warning("NV2ADevice::PRMDIOWrite: Unknown NV2A PRMDIO write!  addr = 0x%x,  size: %d,  value: 0x%x\n", addr, size, value);
 }
 
-uint32_t NV2ADevice::PRAMINRead(NV2ADevice *nv2a, uint32_t addr, unsigned size) {
+void NV2ADevice::PRAMINRead(NV2ADevice *nv2a, uint32_t addr, uint32_t *value, uint8_t size) {
     void* ptr = (uint8_t*)nv2a->m_pRAMIN + addr;
 
     switch (size) {
     case 1:
-        return *((uint8_t*)ptr);
+        *value = *((uint8_t*)ptr);
+        break;
     case 2:
-        return *((uint16_t*)ptr);
+        *value = *((uint16_t*)ptr);
+        break;
     case 4:
-        return *((uint32_t*)ptr);
+        *value = *((uint32_t*)ptr);
+        break;
+    default:
+        *value = 0;
+        break;
     }
-
-    return 0;
 }
 
-void NV2ADevice::PRAMINWrite(NV2ADevice *nv2a, uint32_t addr, uint32_t value, unsigned size) {
+void NV2ADevice::PRAMINWrite(NV2ADevice *nv2a, uint32_t addr, uint32_t value, uint8_t size) {
     void* ptr = (uint8_t*)nv2a->m_pRAMIN + addr;
 
     switch (size) {
@@ -972,7 +975,7 @@ void NV2ADevice::PRAMINWrite(NV2ADevice *nv2a, uint32_t addr, uint32_t value, un
     }
 }
 
-uint32_t NV2ADevice::USERRead(NV2ADevice *nv2a, uint32_t addr, unsigned size) {
+void NV2ADevice::USERRead(NV2ADevice *nv2a, uint32_t addr, uint32_t *value, uint8_t size) {
     assert(size == 4);
 
     unsigned int channel_id = addr >> 16;
@@ -986,29 +989,25 @@ uint32_t NV2ADevice::USERRead(NV2ADevice *nv2a, uint32_t addr, unsigned size) {
         assert(false);
     }
 
-    uint32_t result = 0;
-
     /* DMA Mode */
     addr &= 0xFFFF;
     switch (addr) {
     case NV_USER_DMA_PUT:
-        result = control->dma_put;
+        *value = control->dma_put;
         break;
     case NV_USER_DMA_GET:
-        result = control->dma_get;
+        *value = control->dma_get;
         break;
     case NV_USER_REF:
-        result = control->ref;
+        *value = control->ref;
         break;
     default:
-        log_warning("NV2ADevice::USERRead:  Unknown NV2A USER read!   addr = 0x%x,  size = %d\n", addr, size);
+        log_warning("NV2ADevice::USERRead:  Unknown NV2A USER read!   addr = 0x%x,  size = %u\n", addr, size);
         break;
     }
-
-    return result;
 }
 
-void NV2ADevice::USERWrite(NV2ADevice *nv2a, uint32_t addr, uint32_t value, unsigned size) {
+void NV2ADevice::USERWrite(NV2ADevice *nv2a, uint32_t addr, uint32_t value, uint8_t size) {
     assert(size == 4);
 
     unsigned int channel_id = addr >> 16;
@@ -2423,8 +2422,11 @@ void NV2ADevice::VBlankThread(NV2ADevice *nv2a) {
     auto interval = duration<long long, std::ratio<1, 1000000>>((long long)(1000000.0f / 60.0f));
 
     while (nv2a->m_running) {
-        nv2a->m_PCRTC.pendingInterrupts |= NV_PCRTC_INTR_0_VBLANK;
-        nv2a->UpdateIRQ();
+        // TODO: wait for a condition variable instead of checking like this
+        if (nv2a->m_PCRTC.enabledInterrupts & NV_PCRTC_INTR_0_VBLANK) {
+            nv2a->m_PCRTC.pendingInterrupts |= NV_PCRTC_INTR_0_VBLANK;
+            nv2a->UpdateIRQ();
+        }
 
         nextStop += interval;
         std::this_thread::sleep_until(nextStop);

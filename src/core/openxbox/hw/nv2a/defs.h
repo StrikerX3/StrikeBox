@@ -131,8 +131,8 @@ typedef struct RAMHTEntry {
 typedef struct {
     uint32_t offset;
     uint32_t size;
-    uint32_t(*read)(NV2ADevice* nv2a, uint32_t addr, unsigned size);
-    void(*write)(NV2ADevice* nv2a, uint32_t addr, uint32_t value, unsigned size);
+    void (*read)(NV2ADevice* nv2a, uint32_t addr, uint32_t *value, uint8_t size);
+    void (*write)(NV2ADevice* nv2a, uint32_t addr, uint32_t value, uint8_t size);
 } NV2ABlockInfo;
 
 typedef struct {

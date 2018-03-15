@@ -22,73 +22,73 @@ public:
     void Init();
     void Reset();
 
-    uint32_t IORead(int barIndex, uint32_t port, unsigned size);
-    void IOWrite(int barIndex, uint32_t port, uint32_t value, unsigned size);
-    uint32_t MMIORead(int barIndex, uint32_t addr, unsigned size);
-    void MMIOWrite(int barIndex, uint32_t addr, uint32_t value, unsigned size);
+    void PCIIORead(int barIndex, uint32_t port, uint32_t *value, uint8_t size) override;
+    void PCIIOWrite(int barIndex, uint32_t port, uint32_t value, uint8_t size) override;
+    void PCIMMIORead(int barIndex, uint32_t addr, uint32_t *value, uint8_t size) override;
+    void PCIMMIOWrite(int barIndex, uint32_t addr, uint32_t value, uint8_t size) override;
 
 private:
     const NV2ABlockInfo* FindBlock(uint32_t addr);
 
-    static uint32_t PMCRead(NV2ADevice* pNV2A, uint32_t addr, unsigned size);
-    static void PMCWrite(NV2ADevice* pNV2A, uint32_t addr, uint32_t value, unsigned size);
+    static void PMCRead(NV2ADevice* pNV2A, uint32_t addr, uint32_t *value, uint8_t size);
+    static void PMCWrite(NV2ADevice* pNV2A, uint32_t addr, uint32_t value, uint8_t size);
 
-    static uint32_t PBUSRead(NV2ADevice* pNV2A, uint32_t addr, unsigned size);
-    static void PBUSWrite(NV2ADevice* pNV2A, uint32_t addr, uint32_t value, unsigned size);
+    static void PBUSRead(NV2ADevice* pNV2A, uint32_t addr, uint32_t *value, uint8_t size);
+    static void PBUSWrite(NV2ADevice* pNV2A, uint32_t addr, uint32_t value, uint8_t size);
 
-    static uint32_t PFIFORead(NV2ADevice* pNV2A, uint32_t addr, unsigned size);
-    static void PFIFOWrite(NV2ADevice* pNV2A, uint32_t addr, uint32_t value, unsigned size);
+    static void PFIFORead(NV2ADevice* pNV2A, uint32_t addr, uint32_t *value, uint8_t size);
+    static void PFIFOWrite(NV2ADevice* pNV2A, uint32_t addr, uint32_t value, uint8_t size);
 
-    static uint32_t PRMARead(NV2ADevice* pNV2A, uint32_t addr, unsigned size);
-    static void PRMAWrite(NV2ADevice* pNV2A, uint32_t addr, uint32_t value, unsigned size);
+    static void PRMARead(NV2ADevice* pNV2A, uint32_t addr, uint32_t *value, uint8_t size);
+    static void PRMAWrite(NV2ADevice* pNV2A, uint32_t addr, uint32_t value, uint8_t size);
 
-    static uint32_t PVIDEORead(NV2ADevice* pNV2A, uint32_t addr, unsigned size);
-    static void PVIDEOWrite(NV2ADevice* pNV2A, uint32_t addr, uint32_t value, unsigned size);
+    static void PVIDEORead(NV2ADevice* pNV2A, uint32_t addr, uint32_t *value, uint8_t size);
+    static void PVIDEOWrite(NV2ADevice* pNV2A, uint32_t addr, uint32_t value, uint8_t size);
 
-    static uint32_t PTIMERRead(NV2ADevice* pNV2A, uint32_t addr, unsigned size);
-    static void PTIMERWrite(NV2ADevice* pNV2A, uint32_t addr, uint32_t value, unsigned size);
+    static void PTIMERRead(NV2ADevice* pNV2A, uint32_t addr, uint32_t *value, uint8_t size);
+    static void PTIMERWrite(NV2ADevice* pNV2A, uint32_t addr, uint32_t value, uint8_t size);
 
-    static uint32_t PCOUNTERRead(NV2ADevice* pNV2A, uint32_t addr, unsigned size);
-    static void PCOUNTERWrite(NV2ADevice* pNV2A, uint32_t addr, uint32_t value, unsigned size);
+    static void PCOUNTERRead(NV2ADevice* pNV2A, uint32_t addr, uint32_t *value, uint8_t size);
+    static void PCOUNTERWrite(NV2ADevice* pNV2A, uint32_t addr, uint32_t value, uint8_t size);
 
-    static uint32_t PVPERead(NV2ADevice* pNV2A, uint32_t addr, unsigned size);
-    static void PVPEWrite(NV2ADevice* pNV2A, uint32_t addr, uint32_t value, unsigned size);
+    static void PVPERead(NV2ADevice* pNV2A, uint32_t addr, uint32_t *value, uint8_t size);
+    static void PVPEWrite(NV2ADevice* pNV2A, uint32_t addr, uint32_t value, uint8_t size);
 
-    static uint32_t PTVRead(NV2ADevice* pNV2A, uint32_t addr, unsigned size);
-    static void PTVWrite(NV2ADevice* pNV2A, uint32_t addr, uint32_t value, unsigned size);
+    static void PTVRead(NV2ADevice* pNV2A, uint32_t addr, uint32_t *value, uint8_t size);
+    static void PTVWrite(NV2ADevice* pNV2A, uint32_t addr, uint32_t value, uint8_t size);
 
-    static uint32_t PRMFBRead(NV2ADevice* pNV2A, uint32_t addr, unsigned size);
-    static void PRMFBWrite(NV2ADevice* pNV2A, uint32_t addr, uint32_t value, unsigned size);
+    static void PRMFBRead(NV2ADevice* pNV2A, uint32_t addr, uint32_t *value, uint8_t size);
+    static void PRMFBWrite(NV2ADevice* pNV2A, uint32_t addr, uint32_t value, uint8_t size);
 
-    static uint32_t PRMVIORead(NV2ADevice* pNV2A, uint32_t addr, unsigned size);
-    static void PRMVIOWrite(NV2ADevice* pNV2A, uint32_t addr, uint32_t value, unsigned size);
+    static void PRMVIORead(NV2ADevice* pNV2A, uint32_t addr, uint32_t *value, uint8_t size);
+    static void PRMVIOWrite(NV2ADevice* pNV2A, uint32_t addr, uint32_t value, uint8_t size);
 
-    static uint32_t PFBRead(NV2ADevice* pNV2A, uint32_t addr, unsigned size);
-    static void PFBWrite(NV2ADevice* pNV2A, uint32_t addr, uint32_t value, unsigned size);
+    static void PFBRead(NV2ADevice* pNV2A, uint32_t addr, uint32_t *value, uint8_t size);
+    static void PFBWrite(NV2ADevice* pNV2A, uint32_t addr, uint32_t value, uint8_t size);
 
-    static uint32_t PSTRAPSRead(NV2ADevice* pNV2A, uint32_t addr, unsigned size);
-    static void PSTRAPSWrite(NV2ADevice* pNV2A, uint32_t addr, uint32_t value, unsigned size);
+    static void PSTRAPSRead(NV2ADevice* pNV2A, uint32_t addr, uint32_t *value, uint8_t size);
+    static void PSTRAPSWrite(NV2ADevice* pNV2A, uint32_t addr, uint32_t value, uint8_t size);
 
-    static uint32_t PGRAPHRead(NV2ADevice* pNV2A, uint32_t addr, unsigned size);
-    static void PGRAPHWrite(NV2ADevice* pNV2A, uint32_t addr, uint32_t value, unsigned size);
+    static void PGRAPHRead(NV2ADevice* pNV2A, uint32_t addr, uint32_t *value, uint8_t size);
+    static void PGRAPHWrite(NV2ADevice* pNV2A, uint32_t addr, uint32_t value, uint8_t size);
 
-    static uint32_t PCRTCRead(NV2ADevice* pNV2A, uint32_t addr, unsigned size);
-    static void PCRTCWrite(NV2ADevice* pNV2A, uint32_t addr, uint32_t value, unsigned size);
+    static void PCRTCRead(NV2ADevice* pNV2A, uint32_t addr, uint32_t *value, uint8_t size);
+    static void PCRTCWrite(NV2ADevice* pNV2A, uint32_t addr, uint32_t value, uint8_t size);
 
-    static uint32_t PRMCIORead(NV2ADevice* pNV2A, uint32_t addr, unsigned size);
-    static void PRMCIOWrite(NV2ADevice* pNV2A, uint32_t addr, uint32_t value, unsigned size);
+    static void PRMCIORead(NV2ADevice* pNV2A, uint32_t addr, uint32_t *value, uint8_t size);
+    static void PRMCIOWrite(NV2ADevice* pNV2A, uint32_t addr, uint32_t value, uint8_t size);
 
-    static uint32_t PRAMDACRead(NV2ADevice* pNV2A, uint32_t addr, unsigned size);
-    static void PRAMDACWrite(NV2ADevice* pNV2A, uint32_t addr, uint32_t value, unsigned size);
+    static void PRAMDACRead(NV2ADevice* pNV2A, uint32_t addr, uint32_t *value, uint8_t size);
+    static void PRAMDACWrite(NV2ADevice* pNV2A, uint32_t addr, uint32_t value, uint8_t size);
 
-    static uint32_t PRMDIORead(NV2ADevice* pNV2A, uint32_t addr, unsigned size);
-    static void PRMDIOWrite(NV2ADevice* pNV2A, uint32_t addr, uint32_t value, unsigned size);
+    static void PRMDIORead(NV2ADevice* pNV2A, uint32_t addr, uint32_t *value, uint8_t size);
+    static void PRMDIOWrite(NV2ADevice* pNV2A, uint32_t addr, uint32_t value, uint8_t size);
 
-    static uint32_t PRAMINRead(NV2ADevice* pNV2A, uint32_t addr, unsigned size);
-    static void PRAMINWrite(NV2ADevice* pNV2A, uint32_t addr, uint32_t value, unsigned size);
+    static void PRAMINRead(NV2ADevice* pNV2A, uint32_t addr, uint32_t *value, uint8_t size);
+    static void PRAMINWrite(NV2ADevice* pNV2A, uint32_t addr, uint32_t value, uint8_t size);
 
-    static uint32_t USERRead(NV2ADevice* pNV2A, uint32_t addr, unsigned size);
-    static void USERWrite(NV2ADevice* pNV2A, uint32_t addr, uint32_t value, unsigned size);
+    static void USERRead(NV2ADevice* pNV2A, uint32_t addr, uint32_t *value, uint8_t size);
+    static void USERWrite(NV2ADevice* pNV2A, uint32_t addr, uint32_t value, uint8_t size);
 
     uint32_t ramht_hash(uint32_t handle);
     RAMHTEntry ramht_lookup(uint32_t handle);
