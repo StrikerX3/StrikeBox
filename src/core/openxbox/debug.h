@@ -20,4 +20,9 @@ void DumpCPUStack(Cpu *cpu, int32_t offsetStart = -0x20, int32_t offsetEnd = 0x1
  */
 void DumpCPUMemory(Cpu *cpu, uint32_t address, uint32_t size, bool physical);
 
+/*!
+* Disassemble memory region
+*/
+void DisassembleCPUMemory(Cpu *cpu, uint32_t address, uint32_t size, bool physical);
+
 }

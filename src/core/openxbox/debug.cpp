@@ -1,4 +1,5 @@
 #include "debug.h"
+#include <Zydis/Zydis.h>
 
 namespace openxbox {
 
@@ -121,12 +122,14 @@ void DumpCPUMemory(Cpu *cpu, uint32_t address, uint32_t size, bool physical) {
 	if (physical) {
 		if (cpu->MemRead(address, size, mem)) {
 			log_debug("<invalid address>\n\n");
+			delete[] mem;
 			return;
 		}
 	}
 	else {
 		if (cpu->VMemRead(address, size, mem)) {
 			log_debug("<invalid address>\n\n");
+			delete[] mem;
 			return;
 		}
 	}
@@ -145,6 +148,53 @@ void DumpCPUMemory(Cpu *cpu, uint32_t address, uint32_t size, bool physical) {
 	}
 	if (size & 0xF) { log_debug("\n"); }
 	log_debug("\n");
+
+	delete[] mem;
+}
+
+void DisassembleCPUMemory(Cpu* cpu, uint32_t address, uint32_t size, bool physical) {
+	log_debug("%s memory disassembly at 0x%08x:\n", (physical ? "Physical" : "Virtual"), address);
+	char *mem = new char[size];
+	if (physical) {
+		if (cpu->MemRead(address, size, mem)) {
+			log_debug("<invalid address>\n\n");
+			delete[] mem;
+			return;
+		}
+	}
+	else {
+		if (cpu->VMemRead(address, size, mem)) {
+			log_debug("<invalid address\n\n");
+			delete[] mem;
+			return;
+		}
+	}
+
+	ZydisDecoder decoder;
+	ZydisDecoderInit(&decoder,
+		ZYDIS_MACHINE_MODE_LEGACY_32,
+		ZYDIS_ADDRESS_WIDTH_32);
+
+	ZydisFormatter formatter;
+	ZydisFormatterInit(&formatter, ZYDIS_FORMATTER_STYLE_INTEL);
+
+	uint32_t offset = 0;
+	ZydisDecodedInstruction instruction;
+
+	while (offset < size) {
+		if (ZYDIS_SUCCESS(ZydisDecoderDecodeBuffer(
+			&decoder, (char*)mem + offset, ((sizeof(char) * size) - offset),
+			(address + offset), &instruction
+		))) {
+			char buffer[256];
+			ZydisFormatterFormatInstruction(
+				&formatter, &instruction, buffer, sizeof(buffer)
+			);
+			log_debug("%08x  %s\n", (address + offset), buffer);
+		}
+		offset += instruction.length;
+	}
+
 	delete[] mem;
 }
 
