@@ -28,6 +28,14 @@ SuperIO::SuperIO(i8259 *pic, CharDriver *chrs[SUPERIO_SERIAL_PORT_COUNT]) {
     }
 }
 
+SuperIO::~SuperIO() {
+    // Shutdown serial ports
+    for (int i = 0; i < SUPERIO_SERIAL_PORT_COUNT; i++) {
+        m_serialPorts[i]->Stop();
+        delete m_serialPorts[i];
+    }
+}
+
 void SuperIO::Init() {
 }
 

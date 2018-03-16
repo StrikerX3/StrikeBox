@@ -1,7 +1,11 @@
+#ifdef _WIN32
+
 #include "mt_serial.h"
 
 #include <cstdio>
 #include <thread>
+
+#include "openxbox/thread.h"
 
 namespace openxbox {
 
@@ -237,10 +241,18 @@ void SerialComm::Write(const uint8_t *buf, uint32_t len) {
 }
 
 void SerialComm::ReaderAndEventsThreadProc(SerialComm *instance) {
+    char threadName[27];
+    sprintf(threadName, "[HW] COM%u Reader/Events", instance->m_portNum);
+    Thread_SetName(threadName);
+
     instance->ReaderAndEventsLoop();
 }
 
 void SerialComm::WriterThreadProc(SerialComm *instance) {
+    char threadName[20];
+    sprintf(threadName, "[HW] COM%u Writer", instance->m_portNum);
+    Thread_SetName(threadName);
+
     instance->WriterLoop();
 }
 
@@ -678,3 +690,5 @@ void SerialComm::WriterLoop() {
 }
 
 }
+
+#endif // _WIN32

@@ -1,5 +1,6 @@
 #include "nv2a.h"
 #include "openxbox/log.h"
+#include "openxbox/thread.h"
 
 #include <cassert>
 #include <cstring>
@@ -2297,6 +2298,8 @@ void NV2ADevice::pfifo_run_pusher() {
 }
 
 void NV2ADevice::PFIFO_Puller_Thread(NV2ADevice *nv2a) {
+    Thread_SetName("[HW] NV2A PFIFO Puller");
+
     Cache1State *state = &nv2a->m_PFIFO.cache1;
     while (nv2a->m_running) {
         // Scope the lock so that it automatically unlocks at tne end of this block
@@ -2417,6 +2420,8 @@ void NV2ADevice::UpdateIRQ() {
 }
 
 void NV2ADevice::VBlankThread(NV2ADevice *nv2a) {
+    Thread_SetName("[HW] NV2A VBlank");
+
     using namespace std::chrono;
     auto nextStop = high_resolution_clock::now();
     auto interval = duration<long long, std::ratio<1, 1000000>>((long long)(1000000.0f / 60.0f));

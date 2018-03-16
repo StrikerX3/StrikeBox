@@ -54,6 +54,7 @@ const static uint8_t kDefaultEEPROM[] = {
 
 // CPU emulation thread function
 static uint32_t EmuCpuThreadFunc(void *data) {
+    Thread_SetName("[HW] CPU");
     Xbox *xbox = (Xbox *)data;
     return xbox->RunCpu();
 }
@@ -355,19 +356,14 @@ void Xbox::InitializePreRun() {
 int Xbox::Run() {
 	m_should_run = true;
 
-	// --- CPU emulation ------------------------------------------------------
-
 	// Start CPU emulation on a new thread
-	Thread *cpuIdleThread = Thread_Create("[HW] CPU", EmuCpuThreadFunc, this);
+    uint32_t result;
+    std::thread cpuIdleThread([&] { result = EmuCpuThreadFunc(this); });
 
-	// --- Emulator subsystems ------------------------------------------------
+    // Wait for the thread to exit
+	cpuIdleThread.join();
 
-	// TODO: start threads to handle other subsystems
-	// - One or more for each piece of hardware
-	//   - NV2A
-	//   - MCPX (multiple components)
-
-	return Thread_Join(cpuIdleThread);
+    return result;
 }
 
 /*!
@@ -380,7 +376,7 @@ int Xbox::RunCpu()
 	struct CpuExitInfo *exit_info;
 
 	if (!m_should_run) {
-		Thread_Exit(-1);
+        return -1;
 	}
 
 	while (m_should_run) {

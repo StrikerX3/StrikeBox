@@ -118,10 +118,10 @@ Serial::~Serial() {
     m_fifoTimeoutTimer->Stop();
     m_modemStatusPoll->Stop();
 
-    delete m_recvFifo;
-    delete m_xmitFifo;
     delete m_fifoTimeoutTimer;
     delete m_modemStatusPoll;
+    delete m_recvFifo;
+    delete m_xmitFifo;
 }
 
 bool Serial::Init(CharDriver *chr) {
@@ -165,6 +165,10 @@ void Serial::Reset() {
 
     m_thr_ipending = 0;
     m_lastBreakEnable = 0;
+}
+
+void Serial::Stop() {
+    m_chr->Stop();
 }
 
 bool Serial::MapIO(IOMapper *mapper) {

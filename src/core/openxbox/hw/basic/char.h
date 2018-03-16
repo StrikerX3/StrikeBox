@@ -45,6 +45,7 @@ public:
     virtual bool Init() = 0;
     virtual int Write(const uint8_t *buf, int len) = 0;
     virtual void AcceptInput() = 0;
+    virtual void Stop() = 0;
 
     // IOCTLs
     virtual void SetBreakEnable(bool breakEnable) = 0;

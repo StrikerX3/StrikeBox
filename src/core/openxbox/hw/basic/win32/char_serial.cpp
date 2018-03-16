@@ -1,3 +1,5 @@
+#ifdef _WIN32
+
 #include "char_serial.h"
 
 namespace openxbox {
@@ -52,6 +54,10 @@ int Win32SerialDriver::Write(const uint8_t *buf, int len) {
 
 void Win32SerialDriver::AcceptInput() {
     // TODO: implement
+}
+
+void Win32SerialDriver::Stop() {
+    Close();
 }
 
 void Win32SerialDriver::Close() {
@@ -129,3 +135,5 @@ void Win32SerialDriver::CommEvent(SerialCommEvent evt) {
 }
 
 }
+
+#endif // _WIN32

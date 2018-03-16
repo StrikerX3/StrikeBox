@@ -3,6 +3,7 @@
 
 #include "openxbox/core.h"
 #include "openxbox/settings.h"
+#include "openxbox/thread.h"
 
 // Debugging stuff
 #define DUMP_XBE_INFO 0
@@ -27,6 +28,8 @@ char *basename(char *path)
  * Program entry point
  */
 int main(int argc, const char *argv[]) {
+    openxbox::Thread_SetName("[Core] Main Thread");
+
 	using namespace openxbox;
 
 	auto info = GetOpenXBOXInfo();

@@ -27,6 +27,7 @@ public:
 
     bool Init(CharDriver *chr);
     void Reset();
+    void Stop();
     
     inline void SetIRQ(uint8_t irq) { m_irq = irq; }
     inline void SetBaudBase(int baudBase) { m_baudbase = baudBase; }

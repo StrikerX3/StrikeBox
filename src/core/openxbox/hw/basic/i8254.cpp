@@ -11,6 +11,7 @@ namespace openxbox {
 
 // i8254 timer thread function
 static uint32_t i8254ThreadFunc(void *data) {
+    Thread_SetName("[HW] i8254");
     i8254 *pit = (i8254 *)data;
     pit->Run();
     return 0;
@@ -21,6 +22,11 @@ i8254::i8254(i8259 *pic, float tickRate)
     , m_tickRate(tickRate)
     , m_running(false)
 {
+}
+
+i8254::~i8254() {
+    m_running = false;
+    m_timerThread.join();
 }
 
 void i8254::Reset() {
@@ -45,7 +51,7 @@ bool i8254::IOWrite(uint32_t port, uint32_t value, uint8_t size) {
     // start operating, and then simply issue IRQ 0 in a timer thread.
     if (value == 0x34) {
         m_running = true;
-        Thread_Create("[HW] i8254", i8254ThreadFunc, this);
+        m_timerThread = std::thread(i8254ThreadFunc, this);
     }
     return true;
 }

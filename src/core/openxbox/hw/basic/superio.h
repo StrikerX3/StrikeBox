@@ -44,6 +44,7 @@ namespace openxbox {
 class SuperIO : public IODevice {
 public:
     SuperIO(i8259 *pic, CharDriver *chrs[SUPERIO_SERIAL_PORT_COUNT]);
+    ~SuperIO();
 
     void Init();
 	void Reset();
