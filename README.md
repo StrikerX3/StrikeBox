@@ -26,34 +26,6 @@ You will need to specify a CPU module for OpenXBOX to run. The CMake option
 `CPU_MODULE` gives you a choice of default modules bundled with OpenXBOX that
 can be used for development and release builds.
 
-*(Note: The majority of the recent work has been done on Windows with Visual
-Studio, so it's likely that this doesn't work on other platforms. If that's the
-case, feel free to fix it and submit a pull request!)*
-
-### macOS
-You'll need CMake 3.1 or later and [HAXM](https://software.intel.com/en-us/articles/intel-hardware-accelerated-execution-manager-intel-haxm).
-This should work anywhere with a bit of work. 
-
-```
-$ brew install cmake
-$ mkdir build; cd build
-$ cmake .. -DCPU_MODULE=haxm && make
-$ ./openxbox executable.xbe
-```
-
-### Linux
-You'll need CMake 3.1 or later.
-[KVM](https://www.kernel.org/doc/Documentation/virtual/kvm/api.txt) support is
-planned but not implemented yet.
-
-```
-$ sudo apt-get install cmake
-$ mkdir build; cd build
-$ cmake .. && make
-$ cd src/cli
-$ ./openxbox-cli <path-to-MCPX-ROM> <path-to-BIOS-ROM> <path-to-XBE> [debug|retail]
-```
-
 ### Windows
 You'll need CMake 3.8 or later, [Visual Studio Community 2017](https://www.visualstudio.com/downloads/)
 and [HAXM](https://software.intel.com/en-us/articles/intel-hardware-accelerated-execution-manager-intel-haxm).
@@ -65,6 +37,22 @@ and [HAXM](https://software.intel.com/en-us/articles/intel-hardware-accelerated-
 ```
 The .sln file will be generated in the build folder, ready to build.
 
+### Linux
+You'll need CMake 3.1 or later. [KVM](https://www.linux-kvm.org/page/Main_Page)
+support is planned but not implemented yet.
+
+```
+$ sudo apt-get install cmake
+$ mkdir build; cd build
+$ cmake .. && make
+$ cd src/cli
+$ ./openxbox-cli <path-to-MCPX-ROM> <path-to-BIOS-ROM> <path-to-XBE> [debug|retail]
+```
+
+### macOS
+macOS is currently unsupported. Feel free to submit a pull request to add
+support for this platform!
+
 Project Structure
 -----------------
 OpenXBOX is split into multiple modules:
@@ -75,8 +63,9 @@ This is a static library meant to be used by front-end engines.
 - `common`: common code shared across all modules.
 - `module-common`: contains common definitions and types for OpenXBOX modules.
 - `cpu-module`: defines the interface and basic types for CPU modules.
-- `cpu-haxm-module`: CPU module implementation using [HAXM](https://github.com/intel/haxm).
- 
+- `cpu-module-haxm`: Windows-only CPU module implementation using [HAXM](https://github.com/intel/haxm).
+- `cpu-module-kvm`: Linux-only CPU module implementation using [KVM](https://www.kernel.org/doc/Documentation/virtual/kvm/api.txt)
+
 Debugging Guest Code
 --------------------
 The guest can be debugged using the GDB debugger. Once enabled, the emulator
@@ -84,3 +73,9 @@ will open a TCP socket upon startup and wait for the GDB debugger to connect.
 Once connected, you can examine the CPU state, set breakpoints, single-step
 instructions, etc. A sample .gdbinit file is provided with useful GDB default
 settings to be loaded when you start GDB in this directory.
+
+Alternatively, on Windows, you can perform kernel debugging of the virtual Xbox
+by creating a linked pair of virtual null-modem serial ports with [com0com](http://com0com.sourceforge.net/).
+Use a Debug BIOS ROM and attach one side of the pair to the first Super I/O
+serial port, then connect [WinDbg or KD](https://docs.microsoft.com/en-us/windows-hardware/drivers/debugger/)
+to the other side to begin kernel debugging.
