@@ -11,7 +11,7 @@ namespace openxbox {
 #define LOG_LEVEL_DEBUG   (5)
 #define LOG_LEVEL_SPEW    (6)
 
-#define LOG_LEVEL LOG_LEVEL_SPEW
+#define LOG_LEVEL LOG_LEVEL_DEBUG
 
 #if 1
 #define log_fatal(...)   log_print(LOG_LEVEL_FATAL,   __VA_ARGS__)

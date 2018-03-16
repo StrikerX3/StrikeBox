@@ -6,7 +6,7 @@ namespace openxbox {
 
 enum CharDriverType {
     CHD_Null,
-    CHD_Win32Serial,
+    CHD_HostSerialPort,
 };
 
 struct OpenXBOXSettings {
@@ -35,7 +35,7 @@ struct OpenXBOXSettings {
         union {
             struct {
                 uint8_t portNum;
-            } win32Serial;
+            } hostSerialPort;
         } params;
     } hw_charDrivers[2];
 
