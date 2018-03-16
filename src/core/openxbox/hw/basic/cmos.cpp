@@ -8,6 +8,9 @@ namespace openxbox {
 CMOS::CMOS() {
 }
 
+CMOS::~CMOS() {
+}
+
 void CMOS::Reset() {
 }
 

@@ -160,6 +160,15 @@ function(add_precompiled_header _target _input)
     set(_pch_flags_file "${_pch_binary_dir}/compile_flags.rsp")
     export_all_flags("${_pch_flags_file}")
     set(_compiler_FLAGS "@${_pch_flags_file}")
+    if(CMAKE_CXX_STANDARD STREQUAL 11)
+        set(_compiler_FLAGS "${_compiler_FLAGS}" "-std=c++11")
+    endif()
+    if(CMAKE_CXX_STANDARD STREQUAL 14)
+        set(_compiler_FLAGS "${_compiler_FLAGS}" "-std=c++14")
+    endif()
+    if(CMAKE_CXX_STANDARD STREQUAL 17)
+        set(_compiler_FLAGS "${_compiler_FLAGS}" "-std=c++17")
+    endif()
     add_custom_command(
       OUTPUT "${_pchfile}"
       COMMAND "${CMAKE_COMMAND}" -E copy "${_pch_header}" "${_pchfile}"

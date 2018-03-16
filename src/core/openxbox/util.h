@@ -3,7 +3,6 @@
 #include <stdint.h>
 #include <string>
 #include <cctype>
-#include <intrin.h>
 
 namespace openxbox {
 
@@ -47,3 +46,4 @@ inline bool ends_with(ci_wstring const &value, ci_wstring const &ending) {
 }
 
 }
+

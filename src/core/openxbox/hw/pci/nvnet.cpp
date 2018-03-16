@@ -247,7 +247,7 @@ struct RingDesc {
     uint16_t flags;
 };
 
-char* EmuNVNet_GetRegisterName(uint32_t addr) {
+const char* EmuNVNet_GetRegisterName(uint32_t addr) {
     switch (addr) {
     case NvRegIrqStatus:             return "NvRegIrqStatus";
     case NvRegIrqMask:               return "NvRegIrqMask";
@@ -294,7 +294,7 @@ char* EmuNVNet_GetRegisterName(uint32_t addr) {
     }
 }
 
-char* EmuNVNet_GetMiiRegisterName(uint8_t reg) {
+const char* EmuNVNet_GetMiiRegisterName(uint8_t reg) {
     switch (reg) {
     case MII_PHYSID1:   return "MII_PHYSID1";
     case MII_PHYSID2:   return "MII_PHYSID2";
@@ -455,9 +455,12 @@ void EmuNVNet_Write(uint32_t addr, uint32_t value, int size) {
 /* NVNetDevice */
 
 NVNetDevice::NVNetDevice(uint16_t vendorID, uint16_t deviceID, uint8_t revisionID)
-	: PCIDevice(PCI_HEADER_TYPE_NORMAL, vendorID, deviceID, revisionID,
-		0x02, 0x00, 0x00) // Ethernet controller
+    : PCIDevice(PCI_HEADER_TYPE_NORMAL, vendorID, deviceID, revisionID,
+        0x02, 0x00, 0x00) // Ethernet controller
 {
+}
+
+NVNetDevice::~NVNetDevice() {
 }
 
 // PCI Device functions

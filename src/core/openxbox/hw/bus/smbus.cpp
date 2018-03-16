@@ -8,7 +8,10 @@ SMBus::SMBus(i8259 *pic)
 		0x0c, 0x05, 0x00) // SMBus
     , m_pic(pic)
 {
-	m_Status = 0;
+    m_Status = 0;
+}
+
+SMBus::~SMBus() {
 }
 
 void SMBus::Init() {

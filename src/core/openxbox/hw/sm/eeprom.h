@@ -8,6 +8,8 @@ namespace openxbox {
 
 class EEPROMDevice : public SMDevice {
 public:
+    virtual ~EEPROMDevice();
+
     // SMDevice functions
     void Init();
     void Reset();

@@ -4,8 +4,11 @@
 namespace openxbox {
 
 AGPBridgeDevice::AGPBridgeDevice(uint16_t vendorID, uint16_t deviceID, uint8_t revisionID)
-	: PCIBridgeDevice(vendorID, deviceID, revisionID)
+    : PCIBridgeDevice(vendorID, deviceID, revisionID)
 {
+}
+
+AGPBridgeDevice::~AGPBridgeDevice() {
 }
 
 // PCI Device functions

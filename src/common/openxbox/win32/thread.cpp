@@ -3,8 +3,6 @@
 #include "openxbox/thread.h"
 
 #include <Windows.h>
-#include <map>
-#include <cassert>
 
 namespace openxbox {
 
@@ -19,7 +17,7 @@ typedef struct tagTHREADNAME_INFO {
 } THREADNAME_INFO;
 #pragma pack(pop)
 
-void Thread_SetName(char *threadName) {
+void Thread_SetName(const char *threadName) {
     THREADNAME_INFO info;
     info.dwType = 0x1000;
     info.szName = threadName;

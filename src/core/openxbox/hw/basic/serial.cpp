@@ -195,7 +195,9 @@ bool Serial::IORead(uint32_t port, uint32_t *value, uint8_t size) {
                     m_lsr &= ~(UART_LSR_DR | UART_LSR_BI);
                 }
                 else {
-                    m_fifoTimeoutTimer->Set(std::chrono::high_resolution_clock::now() + std::chrono::nanoseconds(m_charTransmitTime * 4));
+                    auto now = std::chrono::high_resolution_clock::now();
+                    auto target = now + std::chrono::nanoseconds(m_charTransmitTime * 4);
+                    m_fifoTimeoutTimer->Set(target);
                 }
                 m_timeoutIpending = 0;
             }
@@ -414,7 +416,9 @@ bool Serial::IOWrite(uint32_t port, uint32_t value, uint8_t size) {
 
             // Update the modem status after a one-character-send wait-time, since there may be a response
             // from the device/computer at the other end of the serial line
-            m_modemStatusPoll->Set(std::chrono::high_resolution_clock::now() + std::chrono::nanoseconds(m_charTransmitTime));
+            auto now = std::chrono::high_resolution_clock::now();
+            auto target = now + std::chrono::nanoseconds(m_charTransmitTime);
+            m_modemStatusPoll->Set(target);
         }
     }
     break;
@@ -529,7 +533,9 @@ void Serial::Receive(const uint8_t *buf, int size) {
         }
         m_lsr |= UART_LSR_DR;
         // Call the timeout receive callback in 4 char transmit time
-        m_fifoTimeoutTimer->Set(std::chrono::high_resolution_clock::now() + std::chrono::nanoseconds(m_charTransmitTime * 4));
+        auto now = std::chrono::high_resolution_clock::now();
+        auto target = now + std::chrono::nanoseconds(m_charTransmitTime * 4);
+        m_fifoTimeoutTimer->Set(target);
     }
     else {
         if (m_lsr & UART_LSR_DR) {
@@ -595,8 +601,8 @@ void Serial::UpdateIRQ() {
 }
 
 void Serial::UpdateMSL() {
-    uint8_t omsr;
-    int flags;
+    //uint8_t omsr;
+    //int flags;
 
     m_modemStatusPoll->Cancel();
 

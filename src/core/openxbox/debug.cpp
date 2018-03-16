@@ -60,8 +60,7 @@ static void parseCR4Flags(uint32_t flags, char *str) {
 void DumpCPURegisters(Cpu *cpu) {
 	char temp[128];
 	uint32_t value;
-	const char *blank = "                ";
-
+	
 	log_debug("CPU registers:\n");
 	cpu->RegRead(REG_CS, &value); log_debug(" CS = %04x  ", value);
 	cpu->RegRead(REG_EIP, &value); log_debug("EIP = %08x  ", value);

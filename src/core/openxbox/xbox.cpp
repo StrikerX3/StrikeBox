@@ -53,7 +53,7 @@ const static uint8_t kDefaultEEPROM[] = {
 };
 
 // CPU emulation thread function
-static uint32_t EmuCpuThreadFunc(void *data) {
+uint32_t Xbox::EmuCpuThreadFunc(void *data) {
     Thread_SetName("[HW] CPU");
     Xbox *xbox = (Xbox *)data;
     return xbox->RunCpu();
@@ -144,13 +144,12 @@ int Xbox::Initialize(OpenXBOXSettings *settings)
 
     // Load ROM files
     FILE *fp;
-    errno_t e;
     long sz;
 
     // Load MCPX ROM
     log_debug("Loading MCPX ROM %s...", settings->rom_mcpx);
-    e = fopen_s(&fp, settings->rom_mcpx, "rb");
-    if (e) {
+    fp = fopen(settings->rom_mcpx, "rb");
+    if (fp == NULL) {
         log_debug("file %s could not be opened\n", settings->rom_mcpx);
         return 1;
     }
@@ -162,14 +161,14 @@ int Xbox::Initialize(OpenXBOXSettings *settings)
         return 2;
     }
     char *mcpx = new char[sz];
-    fread_s(mcpx, sz, 1, sz, fp);
+    fread(mcpx, 1, sz, fp);
     fclose(fp);
     log_debug("OK\n");
 
     // Load BIOS ROM
     log_debug("Loading BIOS ROM %s...", settings->rom_bios);
-    e = fopen_s(&fp, settings->rom_bios, "rb");
-    if (e) {
+    fp = fopen(settings->rom_bios, "rb");
+    if (fp == NULL) {
         log_debug("file %s could not be opened\n", settings->rom_bios);
         return 1;
     }
@@ -181,7 +180,7 @@ int Xbox::Initialize(OpenXBOXSettings *settings)
         return 3;
     }
     char *bios = new char[sz];
-    fread_s(bios, sz, 1, sz, fp);
+    fread(bios, 1, sz, fp);
     fclose(fp);
     log_debug("OK (%d KiB)\n", sz >> 10);
 
@@ -236,11 +235,13 @@ int Xbox::Initialize(OpenXBOXSettings *settings)
             case CHD_Null:
                 m_CharDrivers[i] = new NullCharDriver();
                 break;
-#ifdef _WIN32
             case CHD_HostSerialPort:
-                m_CharDrivers[i] = new Win32SerialDriver(settings->hw_charDrivers[i].params.hostSerialPort.portNum);
-                break;
+#ifdef _WIN32
+                m_CharDrivers[i] = new Win32SerialDriver(settings->hw_charDrivers[i].params.win32Serial.portNum);
+#else
+                m_CharDrivers[i] = new NullCharDriver(); // TODO: LinuxSerialDriver
 #endif
+                break;
             }
             m_CharDrivers[i]->Init();
         }
@@ -262,17 +263,17 @@ int Xbox::Initialize(OpenXBOXSettings *settings)
     // Create devices
     m_SMC = new SMCDevice(smcRevision);
     m_EEPROM = new EEPROMDevice();
-	m_HostBridge = new HostBridgeDevice(PCI_VENDOR_ID_NVIDIA, 0x02A5, 0xA1);
+    m_HostBridge = new HostBridgeDevice(PCI_VENDOR_ID_NVIDIA, 0x02A5, 0xA1);
     m_MCPXRAM = new MCPXRAMDevice(PCI_VENDOR_ID_NVIDIA, 0x02A6, 0xA1, mcpxRevision);
     m_LPC = new LPCDevice(PCI_VENDOR_ID_NVIDIA, 0x01B2, 0xD4);
-	m_USB1 = new USBPCIDevice(PCI_VENDOR_ID_NVIDIA, 0x02A5, 0xA1);
-	m_USB2 = new USBPCIDevice(PCI_VENDOR_ID_NVIDIA, 0x02A5, 0xA1);
+    m_USB1 = new USBPCIDevice(PCI_VENDOR_ID_NVIDIA, 0x02A5, 0xA1);
+    m_USB2 = new USBPCIDevice(PCI_VENDOR_ID_NVIDIA, 0x02A5, 0xA1);
     m_NVNet = new NVNetDevice(PCI_VENDOR_ID_NVIDIA, 0x01C3, 0xD2);
-	m_NVAPU = new NVAPUDevice(PCI_VENDOR_ID_NVIDIA, 0x01B0, 0xD2);
-	m_AC97 = new AC97Device(PCI_VENDOR_ID_NVIDIA, 0x01B1, 0xD2);
-	m_PCIBridge = new PCIBridgeDevice(PCI_VENDOR_ID_NVIDIA, 0x01B8, 0xD2);
-	m_IDE = new IDEDevice(PCI_VENDOR_ID_NVIDIA, 0x01BC, 0xD2);
-	m_AGPBridge = new AGPBridgeDevice(PCI_VENDOR_ID_NVIDIA, 0x01B7, 0xA1);
+    m_NVAPU = new NVAPUDevice(PCI_VENDOR_ID_NVIDIA, 0x01B0, 0xD2);
+    m_AC97 = new AC97Device(PCI_VENDOR_ID_NVIDIA, 0x01B1, 0xD2);
+    m_PCIBridge = new PCIBridgeDevice(PCI_VENDOR_ID_NVIDIA, 0x01B8, 0xD2);
+    m_IDE = new IDEDevice(PCI_VENDOR_ID_NVIDIA, 0x01BC, 0xD2);
+    m_AGPBridge = new AGPBridgeDevice(PCI_VENDOR_ID_NVIDIA, 0x01B7, 0xA1);
     m_NV2A = new NV2ADevice(PCI_VENDOR_ID_NVIDIA, 0x02A0, 0xA1, (uint8_t*)m_ram, m_ramSize, m_i8259);
 
     // Connect devices to SMBus
@@ -354,14 +355,14 @@ void Xbox::InitializePreRun() {
 }
 
 int Xbox::Run() {
-	m_should_run = true;
+    m_should_run = true;
 
-	// Start CPU emulation on a new thread
+    // Start CPU emulation on a new thread
     uint32_t result;
     std::thread cpuIdleThread([&] { result = EmuCpuThreadFunc(this); });
 
     // Wait for the thread to exit
-	cpuIdleThread.join();
+    cpuIdleThread.join();
 
     return result;
 }
@@ -371,16 +372,16 @@ int Xbox::Run() {
  */
 int Xbox::RunCpu()
 {
-	Timer t;
-	int result;
-	struct CpuExitInfo *exit_info;
+    Timer t;
+    int result;
+    struct CpuExitInfo *exit_info;
 
-	if (!m_should_run) {
+    if (!m_should_run) {
         return -1;
-	}
+    }
 
-	while (m_should_run) {
-		// Run CPU emulation
+    while (m_should_run) {
+        // Run CPU emulation
 #if 0
 #ifdef _DEBUG
         t.Start();
@@ -395,27 +396,27 @@ int Xbox::RunCpu()
 #if 0
 #ifdef _DEBUG
         t.Stop();
-		log_debug("CPU Executed for %lld ms\n", t.GetMillisecondsElapsed());
+        log_debug("CPU Executed for %lld ms\n", t.GetMillisecondsElapsed());
 #endif
 #endif
 
-		// Handle result
-		if (result != 0) {
-			log_error("Error occurred!\n");
-			if (LOG_LEVEL >= LOG_LEVEL_DEBUG) {
-				uint32_t eip;
-				m_cpu->RegRead(REG_EIP, &eip);
-				DumpCPURegisters(m_cpu);
-				DumpCPUStack(m_cpu);
-				DumpCPUMemory(m_cpu, eip, 0x40, true);
-				DumpCPUMemory(m_cpu, eip, 0x40, false);
-				DisassembleCPUMemory(m_cpu, eip, 0x40, true);
-				DisassembleCPUMemory(m_cpu, eip, 0x40, false);
-			}
-			// Stop emulation
-			Stop();
-			break;
-		}
+        // Handle result
+        if (result != 0) {
+            log_error("Error occurred!\n");
+            if (LOG_LEVEL >= LOG_LEVEL_DEBUG) {
+                uint32_t eip;
+                m_cpu->RegRead(REG_EIP, &eip);
+                DumpCPURegisters(m_cpu);
+                DumpCPUStack(m_cpu);
+                DumpCPUMemory(m_cpu, eip, 0x40, true);
+                DumpCPUMemory(m_cpu, eip, 0x40, false);
+                DisassembleCPUMemory(m_cpu, eip, 0x40, true);
+                DisassembleCPUMemory(m_cpu, eip, 0x40, false);
+            }
+            // Stop emulation
+            Stop();
+            break;
+        }
 
 #if 0
 #ifdef _DEBUG
@@ -426,42 +427,43 @@ int Xbox::RunCpu()
 #endif
 #endif
 
-		// Handle reason for the CPU to exit
-		exit_info = m_cpu->GetExitInfo();
-		switch (exit_info->reason) {
+        // Handle reason for the CPU to exit
+        exit_info = m_cpu->GetExitInfo();
+        switch (exit_info->reason) {
         case CPU_EXIT_HLT:      log_info("CPU halted\n");          Stop(); break;
         case CPU_EXIT_SHUTDOWN: log_info("VM is shutting down\n"); Stop(); break;
-		}
-	}
+        default: break;
+        }
+    }
 
-	return result;
+    return result;
 }
 
 void Xbox::Stop() {
-	if (m_i8254 != nullptr) {
+    if (m_i8254 != nullptr) {
         m_i8254->Reset();
-	}
-	m_should_run = false;
+    }
+    m_should_run = false;
 }
 
 void Xbox::Cleanup() {
-	if (LOG_LEVEL >= LOG_LEVEL_DEBUG) {
-		log_debug("CPU state at the end of execution:\n");
-		uint32_t eip;
-		m_cpu->RegRead(REG_EIP, &eip);
-		DumpCPURegisters(m_cpu);
-		DumpCPUStack(m_cpu);
-		DumpCPUMemory(m_cpu, eip, 0x80, true);
-		DumpCPUMemory(m_cpu, eip, 0x80, false);
-		DisassembleCPUMemory(m_cpu, eip, 0x80, true);
-		DisassembleCPUMemory(m_cpu, eip, 0x80, false);
+    if (LOG_LEVEL >= LOG_LEVEL_DEBUG) {
+        log_debug("CPU state at the end of execution:\n");
+        uint32_t eip;
+        m_cpu->RegRead(REG_EIP, &eip);
+        DumpCPURegisters(m_cpu);
+        DumpCPUStack(m_cpu);
+        DumpCPUMemory(m_cpu, eip, 0x80, true);
+        DumpCPUMemory(m_cpu, eip, 0x80, false);
+        DisassembleCPUMemory(m_cpu, eip, 0x80, true);
+        DisassembleCPUMemory(m_cpu, eip, 0x80, false);
 
-		auto skippedInterrupts = m_cpu->GetSkippedInterrupts();
-		for (uint8_t i = 0; i < 0x40; i++) {
-			if (skippedInterrupts[i] > 0) {
-				log_warning("Interrupt vector 0x%02x: %d interrupt requests were skipped\n", i, skippedInterrupts[i]);
-			}
-		}
+        auto skippedInterrupts = m_cpu->GetSkippedInterrupts();
+        for (uint8_t i = 0; i < 0x40; i++) {
+            if (skippedInterrupts[i] > 0) {
+                log_warning("Interrupt vector 0x%02x: %d interrupt requests were skipped\n", i, skippedInterrupts[i]);
+            }
+        }
 
         if (m_settings->debug_dumpPageTables) {
             uint32_t cr0;
@@ -529,7 +531,7 @@ void Xbox::Cleanup() {
                 }
             }
         }
-	}
+    }
 
     if (m_settings->gdb_enable) {
         m_gdb->Shutdown();

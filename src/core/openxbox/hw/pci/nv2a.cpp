@@ -1133,14 +1133,16 @@ void NV2ADevice::pgraph_wait_fifo_access() {
 
 void NV2ADevice::load_graphics_object(uint32_t instance_address, GraphicsObject *obj) {
     uint8_t *obj_ptr;
-    uint32_t switch1, switch2, switch3;
+    uint32_t switch1;
+    //uint32_t switch2;
+    //uint32_t switch3;
 
     assert(instance_address < NV_PRAMIN_SIZE);
     obj_ptr = (uint8_t*)(m_pRAMIN + instance_address);
 
     switch1 = ldl_le_p((uint32_t*)obj_ptr);
-    switch2 = ldl_le_p((uint32_t*)(obj_ptr + 4));
-    switch3 = ldl_le_p((uint32_t*)(obj_ptr + 8));
+    //switch2 = ldl_le_p((uint32_t*)(obj_ptr + 4));
+    //switch3 = ldl_le_p((uint32_t*)(obj_ptr + 8));
 
     obj->graphics_class = switch1 & NV_PGRAPH_CTX_SWITCH1_GRCLASS;
 
@@ -1287,7 +1289,7 @@ void NV2ADevice::pgraph_method_log(unsigned int subchannel, unsigned int graphic
         log_debug("pgraph method (%d) 0x%08X * %d", subchannel, last, count);
     }
     if (method != 0x1800) {
-        const char* method_name = NULL;
+        /*const char* method_name = NULL;
         unsigned int nmethod = 0;
         switch (graphics_class) {
         case NV_KELVIN_PRIMITIVE:
@@ -1299,7 +1301,7 @@ void NV2ADevice::pgraph_method_log(unsigned int subchannel, unsigned int graphic
         default:
             break;
         }
-        /*
+        
         if (nmethod != 0 && nmethod < ARRAY_SIZE(nv2a_method_names)) {
         method_name = nv2a_method_names[nmethod];
         }
@@ -1322,7 +1324,6 @@ void NV2ADevice::pgraph_method_log(unsigned int subchannel, unsigned int graphic
 void NV2ADevice::pgraph_method(unsigned int subchannel, unsigned int method, uint32_t parameter) {
     std::lock_guard<std::mutex> lk(m_PGRAPH.mutex);
 
-    int i;
     GraphicsSubchannel *subchannel_data;
     GraphicsObject *object;
 
@@ -1439,8 +1440,7 @@ void NV2ADevice::pgraph_method(unsigned int subchannel, unsigned int method, uin
 
                 log_debug("  - 0x%tx -> 0x%tx\n", source - m_VRAM, dest - m_VRAM);
 
-                int y;
-                for (y = 0; y<image_blit->height; y++) {
+                for (unsigned int y = 0; y<image_blit->height; y++) {
                     uint8_t *source_row = source
                         + (image_blit->in_y + y) * context_surfaces->source_pitch
                         + image_blit->in_x * bytes_per_pixel;
@@ -2159,7 +2159,7 @@ void NV2ADevice::pfifo_run_pusher() {
     uint8_t channel_id;
     ChannelControl *control;
     Cache1State *state;
-    CacheEntry *command;
+    //CacheEntry *command;
     uint8_t *dma;
     uint32_t dma_len;
     uint32_t word;

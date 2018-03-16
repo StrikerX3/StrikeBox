@@ -10,7 +10,8 @@ namespace openxbox {
 class NVAPUDevice : public PCIDevice {
 public:
     // constructor
-	NVAPUDevice(uint16_t vendorID, uint16_t deviceID, uint8_t revisionID);
+    NVAPUDevice(uint16_t vendorID, uint16_t deviceID, uint8_t revisionID);
+    virtual ~NVAPUDevice();
 
     // PCI Device functions
     void Init();

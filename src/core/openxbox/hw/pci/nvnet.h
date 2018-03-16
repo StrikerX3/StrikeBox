@@ -9,7 +9,8 @@ namespace openxbox {
 
 class NVNetDevice : public PCIDevice {
 public:
-	NVNetDevice(uint16_t vendorID, uint16_t deviceID, uint8_t revisionID);
+    NVNetDevice(uint16_t vendorID, uint16_t deviceID, uint8_t revisionID);
+    virtual ~NVNetDevice();
 
     // PCI Device functions
     void Init();

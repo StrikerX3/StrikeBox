@@ -19,7 +19,7 @@ namespace openxbox {
 class i8254 : public IODevice {
 public:
     i8254(i8259 *pic, float tickRate = 1000.0f);
-    ~i8254();
+    virtual ~i8254();
     void Reset();
     
     bool MapIO(IOMapper *mapper);

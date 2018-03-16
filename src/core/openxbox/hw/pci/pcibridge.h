@@ -10,7 +10,8 @@ namespace openxbox {
 class PCIBridgeDevice : public PCIDevice {
 public:
     // constructor
-	PCIBridgeDevice(uint16_t vendorID, uint16_t deviceID, uint8_t revisionID);
+    PCIBridgeDevice(uint16_t vendorID, uint16_t deviceID, uint8_t revisionID);
+    virtual ~PCIBridgeDevice();
 
     // PCI Device functions
     virtual void Init() override;

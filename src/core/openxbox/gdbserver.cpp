@@ -56,7 +56,7 @@ namespace openxbox {
 	} while (0);
 
 #else
-#   define printNetErrorMessage fprintf(stderr, "Error: %s\n", neterrstr)
+#   define printNetErrorMessage fprintf(stderr, "Error: %s\n", strerror(errno))
 #   define initNetwork
 #   define shutdownNetwork
 #endif

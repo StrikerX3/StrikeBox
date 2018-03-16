@@ -4,6 +4,9 @@
 
 namespace openxbox {
 
+EEPROMDevice::~EEPROMDevice() {
+}
+
 void EEPROMDevice::Init() {
     // TODO
 }

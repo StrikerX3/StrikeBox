@@ -89,6 +89,7 @@ class SMCDevice : public SMDevice {
 public:
     // constructor
     SMCDevice(SMCRevision revision);
+    virtual ~SMCDevice();
 
     // SMDevice functions
     void Init();

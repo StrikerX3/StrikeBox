@@ -23,7 +23,7 @@ namespace openxbox {
 class Serial : public IODevice {
 public:
     Serial(i8259 *pic, uint32_t ioBase);
-    ~Serial();
+    virtual ~Serial();
 
     bool Init(CharDriver *chr);
     void Reset();

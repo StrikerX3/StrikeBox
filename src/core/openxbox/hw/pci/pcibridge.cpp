@@ -5,10 +5,13 @@
 namespace openxbox {
 
 PCIBridgeDevice::PCIBridgeDevice(uint16_t vendorID, uint16_t deviceID, uint8_t revisionID)
-	: PCIDevice(PCI_HEADER_TYPE_BRIDGE, vendorID, deviceID, revisionID,
+    : PCIDevice(PCI_HEADER_TYPE_BRIDGE, vendorID, deviceID, revisionID,
         0x06, 0x04, 0x00, // PCI bridge
-		/*TODO: subsystemVendorID*/0x00, /*TODO: subsystemID*/0x00)
+        /*TODO: subsystemVendorID*/0x00, /*TODO: subsystemID*/0x00)
 {
+}
+
+PCIBridgeDevice::~PCIBridgeDevice() {
 }
 
 // PCI Device functions

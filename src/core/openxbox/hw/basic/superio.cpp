@@ -55,7 +55,7 @@ void SuperIO::UpdateDevices() {
     for (int i = 0; i < SUPERIO_SERIAL_PORT_COUNT; i++) {
         uint8_t *dev = m_deviceRegs[DEVICE_SERIAL_PORT_1 + i];
         if (dev[CONFIG_DEVICE_ACTIVATE] && !m_serialPorts[i]->m_active) {
-            uint32_t iobase = (dev[CONFIG_DEVICE_BASE_ADDRESS_HIGH] << 8) | dev[CONFIG_DEVICE_BASE_ADDRESS_LOW];
+            //uint32_t iobase = (dev[CONFIG_DEVICE_BASE_ADDRESS_HIGH] << 8) | dev[CONFIG_DEVICE_BASE_ADDRESS_LOW];
             uint32_t irq = dev[CONFIG_DEVICE_INTERRUPT];
 
             m_serialPorts[i]->SetIRQ(irq);

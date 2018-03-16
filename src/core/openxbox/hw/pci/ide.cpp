@@ -4,9 +4,12 @@
 namespace openxbox {
 
 IDEDevice::IDEDevice(uint16_t vendorID, uint16_t deviceID, uint8_t revisionID)
-	: PCIDevice(PCI_HEADER_TYPE_NORMAL, vendorID, deviceID, revisionID,
-		0x01, 0x01, 0x8A) // IDE controller
+    : PCIDevice(PCI_HEADER_TYPE_NORMAL, vendorID, deviceID, revisionID,
+        0x01, 0x01, 0x8A) // IDE controller
 {
+}
+
+IDEDevice::~IDEDevice() {
 }
 
 // PCI Device functions

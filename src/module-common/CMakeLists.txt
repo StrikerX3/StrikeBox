@@ -27,3 +27,4 @@ target_link_libraries(module-common common)
 
 # Make the Debug and RelWithDebInfo targets use Program Database for Edit and Continue for easier debugging
 vs_use_edit_and_continue()
+

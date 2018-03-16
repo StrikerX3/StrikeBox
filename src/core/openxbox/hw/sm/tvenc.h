@@ -19,7 +19,8 @@ typedef enum {
 TVEncoder TVEncoderFromHardwareModel(HardwareModel hardwareModel);
 
 class TVEncoderDevice : public SMDevice {
-
+public:
+    virtual ~TVEncoderDevice();
 };
 
 }

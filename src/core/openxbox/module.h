@@ -2,6 +2,7 @@
 
 #include <string>
 #include <vector>
+#include <experimental/filesystem>
 
 #include "openxbox/cpu_module.h"
 #include "openxbox/shlibrary.h"
@@ -74,3 +75,4 @@ private:
 };
 
 }
+

@@ -10,7 +10,8 @@ namespace openxbox {
 class USBPCIDevice : public PCIDevice {
 public:
     // constructor
-	USBPCIDevice(uint16_t vendorID, uint16_t deviceID, uint8_t revisionID);
+    USBPCIDevice(uint16_t vendorID, uint16_t deviceID, uint8_t revisionID);
+    virtual ~USBPCIDevice();
 
     // PCI Device functions
     void Init();

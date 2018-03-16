@@ -11,7 +11,7 @@ namespace openxbox {
 class Win32SerialDriver : public CharDriver {
 public:
     Win32SerialDriver(uint8_t portNum);
-    ~Win32SerialDriver();
+    virtual ~Win32SerialDriver();
 
     bool Init() override;
     int Write(const uint8_t *buf, int len) override;

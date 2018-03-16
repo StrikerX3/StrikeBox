@@ -4,9 +4,12 @@
 namespace openxbox {
 
 NVAPUDevice::NVAPUDevice(uint16_t vendorID, uint16_t deviceID, uint8_t revisionID)
-	: PCIDevice(PCI_HEADER_TYPE_NORMAL, vendorID, deviceID, revisionID,
-		0x0f, 0x02, 0x00) // Audio controller
+    : PCIDevice(PCI_HEADER_TYPE_NORMAL, vendorID, deviceID, revisionID,
+        0x0f, 0x02, 0x00) // Audio controller
 {
+}
+
+NVAPUDevice::~NVAPUDevice() {
 }
 
 // PCI Device functions

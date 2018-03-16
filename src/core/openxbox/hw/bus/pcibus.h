@@ -31,6 +31,7 @@ typedef struct {
 
 class PCIBus : public IODevice {
 public:
+    virtual ~PCIBus();
     bool MapIO(IOMapper *mapper);
     
     void ConnectDevice(uint32_t deviceId, PCIDevice *pDevice);

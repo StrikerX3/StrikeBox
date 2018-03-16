@@ -139,7 +139,7 @@ typedef void (*InterruptHandlerFunc)(uint8_t vector, void *data);
 class Cpu {
 public:
 	// Constructor.
-	Cpu::Cpu();
+	Cpu();
 
 	// Destructor.
 	virtual ~Cpu();

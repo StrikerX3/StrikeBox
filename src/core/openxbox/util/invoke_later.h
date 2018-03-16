@@ -33,7 +33,7 @@ public:
     /*!
      * Sets the timer to invoke at the specified expiration time.
      */
-    void Set(std::chrono::time_point<std::chrono::steady_clock>& expiration);
+    void Set(std::chrono::time_point<std::chrono::high_resolution_clock>& expiration);
 
     /*!
      * Cancels a pending invocation.
@@ -52,7 +52,7 @@ private:
     std::condition_variable m_setupCond;
     std::mutex m_mutex;
     std::condition_variable m_cond;
-    std::chrono::time_point<std::chrono::steady_clock> m_targetExpiration;
+    std::chrono::time_point<std::chrono::high_resolution_clock> m_targetExpiration;
 
     bool m_running;
 

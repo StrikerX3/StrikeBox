@@ -4,9 +4,12 @@
 namespace openxbox {
 
 USBPCIDevice::USBPCIDevice(uint16_t vendorID, uint16_t deviceID, uint8_t revisionID)
-	: PCIDevice(PCI_HEADER_TYPE_NORMAL, vendorID, deviceID, revisionID,
-		0x0c, 0x03, 0x10) // USB OHCI
+    : PCIDevice(PCI_HEADER_TYPE_NORMAL, vendorID, deviceID, revisionID,
+        0x0c, 0x03, 0x10) // USB OHCI
 {
+}
+
+USBPCIDevice::~USBPCIDevice() {
 }
 
 // PCI Device functions

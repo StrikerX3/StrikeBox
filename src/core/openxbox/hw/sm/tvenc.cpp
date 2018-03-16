@@ -25,4 +25,7 @@ TVEncoder TVEncoderFromHardwareModel(HardwareModel hardwareModel) {
     }
 }
 
+TVEncoderDevice::~TVEncoderDevice() {
+}
+
 }

@@ -29,6 +29,9 @@ SMCDevice::SMCDevice(SMCRevision revision) {
     m_revision = revision;
 }
 
+SMCDevice::~SMCDevice() {
+}
+
 void SMCDevice::Init() {
     m_PICVersionStringIndex = 0;
     memset(m_buffer, 0, sizeof(m_buffer));

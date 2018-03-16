@@ -11,6 +11,7 @@ class LPCDevice : public PCIDevice {
 public:
     // constructor
     LPCDevice(uint16_t vendorID, uint16_t deviceID, uint8_t revisionID);
+    virtual ~LPCDevice();
 
     // PCI Device functions
     void Init();
@@ -20,7 +21,7 @@ public:
     void PCIIOWrite(int barIndex, uint32_t port, uint32_t value, uint8_t size) override;
 
 private:
-	int m_field_pin = 0;
+    int m_field_pin = 0;
 
 };
 

@@ -5,6 +5,9 @@ namespace openxbox {
 // This is just a completely fake device that doesn't respond to anything.
 // Its mere presence is enough to satisfy the X-codes initialization process.
 
+TVEncConexantDevice::~TVEncConexantDevice() {
+}
+
 void TVEncConexantDevice::Init() {
     // TODO
 }

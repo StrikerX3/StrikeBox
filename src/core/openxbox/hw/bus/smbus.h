@@ -8,9 +8,9 @@
 
 namespace openxbox {
 
-#define SMB_ADDR_OFFSET			0xE0
-#define SMB_IOSIZE				16
-#define SMB_IRQ					11
+#define SMB_ADDR_OFFSET         0xE0
+#define SMB_IOSIZE              16
+#define SMB_IRQ                 11
 
 #define SMB_GLOBAL_STATUS       0x0
 #define SMB_GLOBAL_ENABLE       0x2
@@ -51,6 +51,7 @@ namespace openxbox {
 class SMBus : public PCIDevice {
 public:
     SMBus(i8259 *pic);
+    ~SMBus();
 
     // PCI Functions
     void Init();

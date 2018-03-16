@@ -12,6 +12,7 @@ class MCPXRAMDevice : public PCIDevice {
 public:
     // constructor
     MCPXRAMDevice(uint16_t vendorID, uint16_t deviceID, uint8_t revisionID, MCPXRevision revision);
+    virtual ~MCPXRAMDevice();
 
     // PCI Device functions
     void Init();

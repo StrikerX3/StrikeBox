@@ -41,6 +41,9 @@ i8259::i8259(Cpu *cpu) {
     m_cpu = cpu;
 }
 
+i8259::~i8259() {
+}
+
 void i8259::Reset() {
     Reset(PIC_MASTER);
     Reset(PIC_SLAVE);

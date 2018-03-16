@@ -44,14 +44,14 @@ namespace openxbox {
 class SuperIO : public IODevice {
 public:
     SuperIO(i8259 *pic, CharDriver *chrs[SUPERIO_SERIAL_PORT_COUNT]);
-    ~SuperIO();
+    virtual ~SuperIO();
 
     void Init();
-	void Reset();
+    void Reset();
 
     bool MapIO(IOMapper *mapper);
 
-	bool IORead(uint32_t port, uint32_t *value, uint8_t size) override;
+    bool IORead(uint32_t port, uint32_t *value, uint8_t size) override;
     bool IOWrite(uint32_t port, uint32_t value, uint8_t size) override;
 
 private:

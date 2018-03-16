@@ -5,6 +5,9 @@
 
 namespace openxbox {
 
+PCIBus::~PCIBus() {
+}
+
 bool PCIBus::MapIO(IOMapper *mapper) {
     if (!mapper->MapIODevice(PORT_PCI_CONFIG_ADDRESS, 1, this)) return false;
     if (!mapper->MapIODevice(PORT_PCI_CONFIG_DATA, 4, this)) return false;

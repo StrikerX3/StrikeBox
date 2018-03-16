@@ -204,8 +204,8 @@ class Xbe : public Error
             uint32 dwLogoBitmapAddr;                // 0x0170 - logo bitmap address
             uint32 dwSizeofLogoBitmap;              // 0x0174 - logo bitmap size
         }
-        #pragma pack(pop)
         m_Header;
+        #pragma pack(pop)
 
         // Xbe header extra byte (used to preserve unknown data)
 		char *m_HeaderEx;
@@ -228,8 +228,8 @@ class Xbe : public Error
             uint08  bzSignatureKey[16];                   // 0x00C0 - signature key
             uint08  bzTitleAlternateSignatureKey[16][16]; // 0x00D0 - alternate signature keys
         }
-        #pragma pack(pop)
         m_Certificate;
+        #pragma pack(pop)
 
         // Xbe section header
         #pragma pack(push, 1)
@@ -261,8 +261,8 @@ class Xbe : public Error
             uint32 dwTailSharedRefCountAddr;    // tail shared page reference count address
             uint08 bzSectionDigest[20];         // section digest
         }
-        #pragma pack(pop)
         *m_SectionHeader;
+        #pragma pack(pop)
 
         // Xbe library versions
         #pragma pack(push, 1)
@@ -281,8 +281,8 @@ class Xbe : public Error
             }
             dwFlags;
         }
-        #pragma pack(pop)
         *m_LibraryVersion, *m_KernelLibraryVersion, *m_XAPILibraryVersion;
+        #pragma pack(pop)
 
         // Xbe thread local storage
         #pragma pack(push, 1)
@@ -295,8 +295,8 @@ class Xbe : public Error
             uint32 dwSizeofZeroFill;            // size of zero fill
             uint32 dwCharacteristics;           // characteristics
         }
-        #pragma pack(pop)
         *m_TLS;
+        #pragma pack(pop)
 
         // Xbe section names, each 8 bytes max and null terminated
         char (*m_szSectionName)[9];

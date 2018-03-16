@@ -2,7 +2,7 @@
 
 #include <assert.h>
 #ifndef _WIN32
-	#include <libgen.h>
+    #include <libgen.h>
 #endif
 #include <stdint.h>
 #include <stdio.h>
@@ -58,7 +58,7 @@ namespace openxbox {
 class Xbox : Emulator {
 public:
     Xbox(IOpenXBOXCPUModule *cpuModule);
-    ~Xbox();
+    virtual ~Xbox();
     int Initialize(OpenXBOXSettings *settings);
 
     void InitializePreRun();
@@ -72,19 +72,19 @@ protected:
     int RunCpu();
 
     // ----- Friends ----------------------------------------------------------
-    friend uint32_t EmuCpuThreadFunc(void *data);
+    static uint32_t EmuCpuThreadFunc(void *data);
 
     // ----- Modules ----------------------------------------------------------
-	IOpenXBOXCPUModule * m_cpuModule;
+    IOpenXBOXCPUModule * m_cpuModule;
 
-	// ----- Hardware ---------------------------------------------------------
-	Cpu              *m_cpu;
+    // ----- Hardware ---------------------------------------------------------
+    Cpu              *m_cpu;
     uint32_t          m_ramSize;
-	char             *m_ram;
-	char             *m_rom;
-	MemoryRegion     *m_memRegion;
+    char             *m_ram;
+    char             *m_rom;
+    MemoryRegion     *m_memRegion;
     IOMapper          m_ioMapper;
-	
+    
     i8254            *m_i8254;
     i8259            *m_i8259;
     CMOS             *m_CMOS;
@@ -97,27 +97,27 @@ protected:
     TVEncoderDevice  *m_TVEncoder;
 
     PCIBus           *m_PCIBus;
-	HostBridgeDevice *m_HostBridge;
+    HostBridgeDevice *m_HostBridge;
     MCPXRAMDevice    *m_MCPXRAM;
     LPCDevice        *m_LPC;
-	USBPCIDevice     *m_USB1;
-	USBPCIDevice     *m_USB2;
+    USBPCIDevice     *m_USB1;
+    USBPCIDevice     *m_USB2;
     NVNetDevice      *m_NVNet;
-	NVAPUDevice      *m_NVAPU;
-	AC97Device       *m_AC97;
-	PCIBridgeDevice  *m_PCIBridge;
-	IDEDevice        *m_IDE;
-	AGPBridgeDevice  *m_AGPBridge;
-	NV2ADevice       *m_NV2A;
+    NVAPUDevice      *m_NVAPU;
+    AC97Device       *m_AC97;
+    PCIBridgeDevice  *m_PCIBridge;
+    IDEDevice        *m_IDE;
+    AGPBridgeDevice  *m_AGPBridge;
+    NV2ADevice       *m_NV2A;
 
     // ----- Configuration ----------------------------------------------------
     OpenXBOXSettings *m_settings;
 
-	// ----- State ------------------------------------------------------------
-	bool m_should_run;
+    // ----- State ------------------------------------------------------------
+    bool m_should_run;
 
-	// ----- Debugger ---------------------------------------------------------
-	GdbServer *m_gdb;
+    // ----- Debugger ---------------------------------------------------------
+    GdbServer *m_gdb;
 };
 
 }

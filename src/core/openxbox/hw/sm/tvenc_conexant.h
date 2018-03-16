@@ -6,6 +6,8 @@ namespace openxbox {
 
 class TVEncConexantDevice : public TVEncoderDevice {
 public:
+    virtual ~TVEncConexantDevice();
+
     // SMDevice functions
     void Init();
     void Reset();
