@@ -31,7 +31,7 @@ Studio, so it's likely that this doesn't work on other platforms. If that's the
 case, feel free to fix it and submit a pull request!)*
 
 ### macOS
-You'll need CMake 2.6 or later and [HAXM](https://software.intel.com/en-us/articles/intel-hardware-accelerated-execution-manager-intel-haxm).
+You'll need CMake 3.1 or later and [HAXM](https://software.intel.com/en-us/articles/intel-hardware-accelerated-execution-manager-intel-haxm).
 This should work anywhere with a bit of work. 
 
 ```
@@ -42,8 +42,17 @@ $ ./openxbox executable.xbe
 ```
 
 ### Linux
-Linux is currently unsupported. [KVM](https://www.kernel.org/doc/Documentation/virtual/kvm/api.txt)
-support is planned.
+You'll need CMake 3.1 or later.
+[KVM](https://www.kernel.org/doc/Documentation/virtual/kvm/api.txt) support is
+planned but not implemented yet.
+
+```
+$ sudo apt-get install cmake
+$ mkdir build; cd build
+$ cmake .. && make
+$ cd src/cli
+$ ./openxbox-cli <path-to-MCPX-ROM> <path-to-BIOS-ROM> <path-to-XBE> [debug|retail]
+```
 
 ### Windows
 You'll need CMake 3.8 or later, [Visual Studio Community 2017](https://www.visualstudio.com/downloads/)
