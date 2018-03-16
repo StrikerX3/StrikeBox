@@ -237,7 +237,7 @@ int Xbox::Initialize(OpenXBOXSettings *settings)
                 break;
             case CHD_HostSerialPort:
 #ifdef _WIN32
-                m_CharDrivers[i] = new Win32SerialDriver(settings->hw_charDrivers[i].params.win32Serial.portNum);
+                m_CharDrivers[i] = new Win32SerialDriver(settings->hw_charDrivers[i].params.hostSerialPort.portNum);
 #else
                 m_CharDrivers[i] = new NullCharDriver(); // TODO: LinuxSerialDriver
 #endif

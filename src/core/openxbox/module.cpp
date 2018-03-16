@@ -25,7 +25,7 @@ void ModuleRepository::Enumerate(std::wstring modulePath) {
     // Open every shared library in the modules path and its subdirectories
     for (recursive_directory_iterator next(pPath), end; next != end; ++next) {
         auto entry = next->path();
-        auto wcharEntry = entry.wstring().c_str();
+        auto wsEntry = entry.wstring();
         ci_wstring filename = ci_wstring(entry.filename().wstring().c_str());
         
         // Found a shared library
@@ -47,7 +47,7 @@ void ModuleRepository::Enumerate(std::wstring modulePath) {
 
             // Check if module API version matches
             if (moduleInfo->moduleAPIVersion != OPENXBOX_MODULE_API_VERSION) {
-                log_debug("%S: Module API version mismatch: expected %d, found %d\n", wcharEntry, OPENXBOX_MODULE_API_VERSION, moduleInfo->moduleAPIVersion);
+                log_debug("%S: Module API version mismatch: expected %d, found %d\n", wsEntry.c_str(), OPENXBOX_MODULE_API_VERSION, moduleInfo->moduleAPIVersion);
                 delete library;
                 continue;
             }
@@ -61,20 +61,20 @@ void ModuleRepository::Enumerate(std::wstring modulePath) {
                 if (cpuModuleInfo->cpuModuleAPIVersion == OPENXBOX_CPU_MODULE_API_VERSION) {
                     // Fill in module data and add it to the list
                     CPUModuleInfo info = {
-                        wcharEntry,
+                        wsEntry.c_str(),
                         cpuModuleInfo->moduleName,
                         cpuModuleInfo->moduleVersion
                     };
                     m_cpuModules.push_back(info);
-                    log_debug("Found %s %s in %S\n", info.moduleName.c_str(), info.moduleVersion.c_str(), wcharEntry);
+                    log_debug("Found %s %s in %S\n", info.moduleName.c_str(), info.moduleVersion.c_str(), wsEntry.c_str());
                 }
                 else {
-                    log_debug("%S: CPU module API version mismatch: expected %d, found %d\n", wcharEntry, OPENXBOX_CPU_MODULE_API_VERSION, cpuModuleInfo->cpuModuleAPIVersion);
+                    log_debug("%S: CPU module API version mismatch: expected %d, found %d\n", wsEntry.c_str(), OPENXBOX_CPU_MODULE_API_VERSION, cpuModuleInfo->cpuModuleAPIVersion);
                 }
                 break;
             }
             default: {
-                log_debug("%S: Unknown module type %d\n", wcharEntry);
+                log_debug("%S: Unknown module type %d\n", wsEntry.c_str());
                 break;
             }
             }

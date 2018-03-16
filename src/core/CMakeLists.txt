@@ -45,7 +45,7 @@ include_directories(${install_dir}/src/Zydis/include ${install_dir}/src/Zydis-bu
 add_dependencies(core Zydis)
 
 if(WIN32)
-	target_link_libraries(core ${install_dir}/src/Zydis-build/Zydis.lib)
+	target_link_libraries(core ${install_dir}/src/Zydis-build/${CMAKE_CFG_INTDIR}/Zydis.lib)
 else()
 	target_link_libraries(core ${install_dir}/src/Zydis-build/libZydis.a)
 endif()
