@@ -2,6 +2,7 @@
 
 #include <fcntl.h>
 #include <sys/ioctl.h>
+#include <sys/mman.h>
 
 Kvm::Kvm() {
 
@@ -71,15 +72,76 @@ KvmVM::~KvmVM() {
 
 KvmVMStatus KvmVM::Initialize() {
     // Create the VM
-    m_fd = ioctl(m_kvm.m_fd, KVM_CREATE_VM, 0);
+    m_fd = ioctl(m_kvm.handle(), KVM_CREATE_VM, 0);
     if(m_fd < 0) {
         return KVMVMS_CREATE_FAILED;
     }
 
     // Move the identity map. It usually resides at
     // 0xfffbc000 which will conflict with the xbox bios.
-    uint32_t = identityMapAddr = 0xD0000000;
+    uint32_t identityMapAddr = 0xD0000000;
     if(ioctl(m_fd, KVM_SET_IDENTITY_MAP_ADDR, &identityMapAddr) < 0) {
         return KVMVMS_CREATE_FAILED;
     }
+
+    return KVMVMS_SUCCESS;
 }
+
+KvmVMStatus KvmVM::MapUserMemoryToGuest(void *userMemoryBlock, uint32_t userMemorySize, uint32_t guestBaseAddress) {
+
+    if(((uint64_t)userMemoryBlock) & 0xFFF) {
+        return KVMVMS_MEM_MISALIGNED;
+    }
+
+    if(userMemorySize & 0xFFF) {
+        return KVMVMS_MEMSIZE_MISALIGNED;
+    }
+
+    KvmMemoryRecord *memoryRecord = new KvmMemoryRecord;
+    memoryRecord->size = userMemorySize;
+    memoryRecord->startAddr = (uint64_t)userMemoryBlock;
+    memoryRecord->memoryRegion.memory_size = userMemorySize;
+    memoryRecord->memoryRegion.userspace_addr = (uint64_t)userMemoryBlock;
+    memoryRecord->memoryRegion.guest_phys_addr = (uint64_t)guestBaseAddress;
+    memoryRecord->memoryRegion.slot = (uint32_t)m_memoryRecords.size();
+
+    if(ioctl(m_fd, KVM_SET_USER_MEMORY_REGION, &memoryRecord->memoryRegion) < 0) {
+        return KVMVMS_MEM_ERROR;
+    }
+
+    m_memoryRecords.push_back(memoryRecord);
+
+    return KVMVMS_SUCCESS;
+}
+
+// --------------------------------------------------------------------
+KvmVCPU::KvmVCPU(KvmVM& vm, uint32_t id) :
+    m_vm(vm), m_vcpuID(id)
+{
+
+}
+
+KvmVCPUStatus KvmVCPU::Initialize() {
+
+    // Create the VCPU.
+    m_fd = ioctl(m_vm.handle(), KVM_CREATE_VCPU, m_vcpuID);
+    if(m_fd < 0) {
+        return KVMVCPUS_CREATE_FAILED;
+    }
+
+    // Get the kvmRun struct size.
+    m_kvmRunMmapSize = ioctl(m_vm.kvmHandle(), KVM_GET_VCPU_MMAP_SIZE, 0);
+    if(m_kvmRunMmapSize < 0) {
+        return KVMVCPUS_CREATE_FAILED;
+    }
+
+    m_kvmRun = (struct kvm_run*)mmap(nullptr, (size_t)m_kvmRunMmapSize,
+                                     PROT_READ | PROT_WRITE, MAP_SHARED, m_fd, 0);
+
+    if(m_kvmRun < 0) {
+        return KVMVCPUS_CREATE_FAILED;
+    }
+
+    return KVMVCPUS_SUCCESS;
+}
+

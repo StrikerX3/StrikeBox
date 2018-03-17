@@ -1,7 +1,7 @@
 # Add sources
 file(GLOB DIR_HEADERS
     ${CMAKE_CURRENT_SOURCE_DIR}/*.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/jvm/*.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/kvm/*.h
     )
 
 file(GLOB DIR_SOURCES
