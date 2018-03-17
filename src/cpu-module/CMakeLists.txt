@@ -17,8 +17,9 @@ vs_set_filters("${SOURCES}" "openxbox")
 
 # Main Executable
 if(NOT MSVC)
-    add_definitions("-Wall -Werror -O0 -g")
+    add_definitions("-Wall -Werror -O0 -g -fPIC")
 endif()
+
 add_library(cpu-module STATIC "${SOURCES}")
 target_include_directories(cpu-module PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
