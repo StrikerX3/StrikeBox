@@ -47,7 +47,7 @@ uint32_t PCIBus::IOReadConfigData(uint8_t size, uint8_t regOffset) {
     );
     if (it != m_Devices.end()) {
         uint32_t value = 0;
-        it->second->ReadConfig((m_configAddressRegister.registerNumber & PCI_CONFIG_REGISTER_MASK) + regOffset, reinterpret_cast<uint8_t *>(&value), size);
+        it->second->ReadConfig((m_configAddressRegister.registerNumber & PCI_CONFIG_REGISTER_MASK) + regOffset, &value, size);
         return value;
     }
 

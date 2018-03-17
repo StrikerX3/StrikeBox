@@ -3,6 +3,7 @@
 #include <cstdint>
 
 #include "pci_regs.h"
+#include "pci_common.h"
 #include "openxbox/io.h"
 
 namespace openxbox {
@@ -68,7 +69,7 @@ public:
     bool GetMMIOBar(uint32_t addr, uint8_t* barIndex, uint32_t *baseAddress);
     bool RegisterBAR(int index, uint32_t size, uint32_t type);
 
-    void ReadConfig(uint32_t reg, uint8_t *value, uint8_t size);
+    void ReadConfig(uint32_t reg, void *value, uint8_t size);
     virtual void WriteConfig(uint32_t reg, uint32_t value, uint8_t size);
 protected:
     uint32_t m_BARSizes[PCI_NUM_BARS_DEVICE];

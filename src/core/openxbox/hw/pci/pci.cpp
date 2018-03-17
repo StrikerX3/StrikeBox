@@ -236,7 +236,7 @@ bool PCIDevice::RegisterBAR(int index, uint32_t size, uint32_t type) {
     return true;
 }
 
-void PCIDevice::ReadConfig(uint32_t reg, uint8_t *value, uint8_t size) {
+void PCIDevice::ReadConfig(uint32_t reg, void *value, uint8_t size) {
     memcpy(value, &m_configSpace[reg], size);
 }
 
