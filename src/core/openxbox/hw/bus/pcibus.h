@@ -11,15 +11,6 @@ namespace openxbox {
 #define PORT_PCI_CONFIG_DATA      0xCFC
 #define PCI_CONFIG_REGISTER_MASK  0xFC
 
-#define PCI_DEVFN(slot, func) ((((slot) & 0x1f) << 3) | ((func) & 0x07))
-
-#define PCI_SLOT(devfn)	(((devfn) >> 3) & 0x1f) // 5 bits (PCIConfigAddressRegister.deviceNumber)
-#define PCI_FUNC(devfn)	((devfn) & 0x07) // 3 bits (PCIConfigAddressRegister.functionNumber)
-
-#define PCI_DEVID(bus, devfn)  ((((uint16_t)(bus)) << 8) | (devfn))
-
-#define PCI_BUS_NUM(x) (((x) >> 8) & 0xff)
-
 class PCIBus : public IODevice {
 public:
     virtual ~PCIBus();
