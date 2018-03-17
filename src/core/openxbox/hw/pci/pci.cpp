@@ -1,4 +1,5 @@
 #include "pci.h"
+#include "../bus/pcibus.h"
 #include "openxbox/log.h"
 
 #include <cassert>

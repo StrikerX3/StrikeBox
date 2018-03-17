@@ -7,9 +7,14 @@ namespace openxbox {
 
 PCIBus::PCIBus() {
     m_owner = nullptr;
+    m_irqMapper = new DefaultIRQMapper();
+    m_numIRQs = 0;
+    m_irqCount = nullptr;
 }
 
 PCIBus::~PCIBus() {
+    delete m_irqMapper;
+    if (m_irqCount != nullptr) delete[] m_irqCount;
 }
 
 bool PCIBus::MapIO(IOMapper *mapper) {
@@ -29,6 +34,7 @@ void PCIBus::ConnectDevice(uint32_t deviceId, PCIDevice *pDevice) {
     m_Devices[deviceId] = pDevice;
     pDevice->Init();
     pDevice->m_bus = this;
+    *(uint32_t *)(&pDevice->m_addr) = deviceId;
 }
 
 void PCIBus::IOWriteConfigAddress(uint32_t pData) {
@@ -189,13 +195,14 @@ void PCIBus::Reset() {
     }
 }
 
-void PCIBus::ConfigureIRQs(uint8_t numIRQs) {
-    // TODO: convert
-    //bus->set_irq = set_irq;
-    //bus->map_irq = map_irq;
-    //bus->irq_opaque = irq_opaque;
+void PCIBus::ConfigureIRQs(IRQMapper *irqMapper, uint8_t numIRQs) {
     m_numIRQs = numIRQs;
-    m_irqCount = new uint32_t(numIRQs);
+
+    delete m_irqMapper;
+    m_irqMapper = irqMapper;
+    
+    if (m_irqCount != nullptr) delete[] m_irqCount;
+    m_irqCount = new uint32_t[numIRQs];
     memset(m_irqCount, 0, numIRQs * sizeof(uint32_t));
 }
 

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "../pci/pci_irq.h" 
 #include "../pci/pci.h"
 #include "openxbox/io.h"
 
@@ -27,11 +28,11 @@ public:
 
     void Reset();
 
-    void ConfigureIRQs(/*TODO: something that has SetIRQ and MapIRQ*/uint8_t numIRQs);
+    void ConfigureIRQs(IRQMapper *irqMapper, uint8_t numIRQs);
 
-    uint8_t MapIRQ(PCIDevice *dev, uint8_t irqNum);
-    bool CanSetIRQ();
-    void SetIRQ(uint8_t irqNum, int level);
+    inline uint8_t MapIRQ(PCIDevice *dev, uint8_t irqNum) { return m_irqMapper->MapIRQ(dev, irqNum); }
+    inline bool CanSetIRQ() { return m_irqMapper->CanSetIRQ(); }
+    inline void SetIRQ(uint8_t irqNum, int level) { return m_irqMapper->SetIRQ(irqNum, level); }
 
 private:
     friend class PCIDevice;
@@ -42,6 +43,7 @@ private:
 
     uint8_t m_numIRQs;
     uint32_t *m_irqCount;
+    IRQMapper *m_irqMapper;
 
     void IOWriteConfigAddress(uint32_t pData);
     void IOWriteConfigData(uint32_t pData, uint8_t size, uint8_t regOffset);

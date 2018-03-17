@@ -271,7 +271,7 @@ int Xbox::Initialize(OpenXBOXSettings *settings)
     m_EEPROM = new EEPROMDevice();
     m_HostBridge = new HostBridgeDevice(PCI_VENDOR_ID_NVIDIA, 0x02A5, 0xA1);
     m_MCPXRAM = new MCPXRAMDevice(PCI_VENDOR_ID_NVIDIA, 0x02A6, 0xA1, mcpxRevision);
-    m_LPC = new LPCDevice(PCI_VENDOR_ID_NVIDIA, 0x01B2, 0xD4);
+    m_LPC = new LPCDevice(PCI_VENDOR_ID_NVIDIA, 0x01B2, 0xD4, m_IRQs);
     m_USB1 = new USBPCIDevice(PCI_VENDOR_ID_NVIDIA, 0x02A5, 0xA1);
     m_USB2 = new USBPCIDevice(PCI_VENDOR_ID_NVIDIA, 0x02A5, 0xA1);
     m_NVNet = new NVNetDevice(PCI_VENDOR_ID_NVIDIA, 0x01C3, 0xD2);
@@ -319,6 +319,9 @@ int Xbox::Initialize(OpenXBOXSettings *settings)
     m_PCIBus->ConnectDevice(PCI_DEVID(0, PCI_DEVFN(9, 0)), m_IDE);
     m_PCIBus->ConnectDevice(PCI_DEVID(0, PCI_DEVFN(30, 0)), m_AGPBridge);
     m_PCIBus->ConnectDevice(PCI_DEVID(1, PCI_DEVFN(0, 0)), m_NV2A);
+
+    // Configure PCI Bus IRQ mapper
+    m_PCIBus->ConfigureIRQs(new LPCIRQMapper(m_LPC), XBOX_NUM_INT_IRQS + XBOX_NUM_PIRQS);
 
     // Map I/O ports and MMIO addresses
     m_i8259->MapIO(&m_ioMapper);
