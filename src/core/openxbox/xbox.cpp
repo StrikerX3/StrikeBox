@@ -102,6 +102,8 @@ Xbox::~Xbox() {
     if (m_SuperIO != nullptr) delete m_SuperIO;
     if (m_i8254 != nullptr) delete m_i8254;
     if (m_i8259 != nullptr) delete m_i8259;
+    if (m_IRQs != nullptr) delete[] m_IRQs;
+    if (m_GSI != nullptr) delete m_GSI;
 }
 
 /*!
@@ -225,7 +227,11 @@ int Xbox::Initialize(OpenXBOXSettings *settings)
 
     log_debug("Initializing devices\n");
 
-    // Create PIT and PIC
+    // Create IRQs
+    m_GSI = new GSI();
+    m_IRQs = AllocateIRQs(m_GSI, GSI_NUM_PINS);
+
+    // Create basic system devices
     m_i8259 = new i8259(m_cpu);
     m_i8254 = new i8254(m_i8259, settings->hw_sysclock_tickRate);
     m_CMOS = new CMOS();
@@ -239,7 +245,7 @@ int Xbox::Initialize(OpenXBOXSettings *settings)
 #ifdef _WIN32
                 m_CharDrivers[i] = new Win32SerialDriver(settings->hw_charDrivers[i].params.hostSerialPort.portNum);
 #else
-                m_CharDrivers[i] = new NullCharDriver(); // TODO: LinuxSerialDriver
+                m_CharDrivers[i] = new NullCharDriver(); // TODO: LinuxSerialDriver(settings->hw_charDrivers[i].params.hostSerialPort.portNum);
 #endif
                 break;
             }

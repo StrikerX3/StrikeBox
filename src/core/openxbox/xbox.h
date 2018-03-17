@@ -21,6 +21,8 @@
 #include "openxbox/thread.h"
 #include "openxbox/settings.h"
 
+#include "openxbox/hw/basic/irq.h"
+#include "openxbox/hw/basic/gsi.h"
 #include "openxbox/hw/basic/i8254.h"
 #include "openxbox/hw/basic/i8259.h"
 #include "openxbox/hw/basic/superio.h"
@@ -85,6 +87,8 @@ protected:
     MemoryRegion     *m_memRegion;
     IOMapper          m_ioMapper;
     
+    GSI              *m_GSI;
+    IRQ              *m_IRQs;
     i8254            *m_i8254;
     i8259            *m_i8259;
     CMOS             *m_CMOS;
