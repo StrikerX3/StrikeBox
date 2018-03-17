@@ -1,12 +1,12 @@
 # Add sources
 file(GLOB DIR_HEADERS
     ${CMAKE_CURRENT_SOURCE_DIR}/*.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/haxm/*.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/jvm/*.h
     )
 
 file(GLOB DIR_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/haxm/*.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/kvm/*.cpp
     )
 
 set(SOURCES ${SOURCES}

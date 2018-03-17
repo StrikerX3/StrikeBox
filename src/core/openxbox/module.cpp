@@ -35,6 +35,7 @@ void ModuleRepository::Enumerate(std::wstring modulePath) {
             
             // Failed to load the library
             if (status != kLibraryLoadSuccess) {
+                log_debug("Failed to load module: %S\n", filename.c_str());
                 continue;
             }
 
