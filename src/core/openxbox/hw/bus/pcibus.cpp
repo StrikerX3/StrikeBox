@@ -5,6 +5,10 @@
 
 namespace openxbox {
 
+PCIBus::PCIBus() {
+    m_owner = nullptr;
+}
+
 PCIBus::~PCIBus() {
 }
 
@@ -24,6 +28,7 @@ void PCIBus::ConnectDevice(uint32_t deviceId, PCIDevice *pDevice) {
 
     m_Devices[deviceId] = pDevice;
     pDevice->Init();
+    pDevice->m_bus = this;
 }
 
 void PCIBus::IOWriteConfigAddress(uint32_t pData) {
@@ -85,24 +90,24 @@ void PCIBus::IOWriteConfigData(uint32_t pData, uint8_t size, uint8_t regOffset) 
         return;
     }
 
-    log_warning("PCIBus::IOWriteConfigData: Invalid Device Write (%d:%d:%d reg 0x%x offset %d size %d) = 0x%x\n",
-        m_configAddressRegister.busNumber,
-        m_configAddressRegister.deviceNumber,
-        m_configAddressRegister.functionNumber,
-        m_configAddressRegister.registerNumber,
-		regOffset,
-        size,
-        pData
-    );
+log_warning("PCIBus::IOWriteConfigData: Invalid Device Write (%d:%d:%d reg 0x%x offset %d size %d) = 0x%x\n",
+    m_configAddressRegister.busNumber,
+    m_configAddressRegister.deviceNumber,
+    m_configAddressRegister.functionNumber,
+    m_configAddressRegister.registerNumber,
+    regOffset,
+    size,
+    pData
+);
 }
 
 bool PCIBus::IORead(uint32_t port, uint32_t *value, uint8_t size) {
     switch (port) {
-	case PORT_PCI_CONFIG_DATA: // 0xCFC
-	case PORT_PCI_CONFIG_DATA + 1: // 0xCFD
-	case PORT_PCI_CONFIG_DATA + 2: // 0xCFE
-	case PORT_PCI_CONFIG_DATA + 3: // 0xCFF
-		*value = IOReadConfigData(size, port - PORT_PCI_CONFIG_DATA);
+    case PORT_PCI_CONFIG_DATA: // 0xCFC
+    case PORT_PCI_CONFIG_DATA + 1: // 0xCFD
+    case PORT_PCI_CONFIG_DATA + 2: // 0xCFE
+    case PORT_PCI_CONFIG_DATA + 3: // 0xCFF
+        *value = IOReadConfigData(size, port - PORT_PCI_CONFIG_DATA);
         return true;
     default:
         for (auto it = m_Devices.begin(); it != m_Devices.end(); ++it) {
@@ -131,10 +136,10 @@ bool PCIBus::IOWrite(uint32_t port, uint32_t value, uint8_t size) {
             return true;
         }
         break;
-	case PORT_PCI_CONFIG_DATA: // 0xCFC
-	case PORT_PCI_CONFIG_DATA + 1: // 0xCFD
-	case PORT_PCI_CONFIG_DATA + 2: // 0xCFE
-	case PORT_PCI_CONFIG_DATA + 3: // 0xCFF
+    case PORT_PCI_CONFIG_DATA: // 0xCFC
+    case PORT_PCI_CONFIG_DATA + 1: // 0xCFD
+    case PORT_PCI_CONFIG_DATA + 2: // 0xCFE
+    case PORT_PCI_CONFIG_DATA + 3: // 0xCFF
         IOWriteConfigData(value, size, port - PORT_PCI_CONFIG_DATA);
         return true; // TODO : Should IOWriteConfigData() success/failure be returned?
     default:
@@ -182,6 +187,16 @@ void PCIBus::Reset() {
     for (auto it = m_Devices.begin(); it != m_Devices.end(); ++it) {
         it->second->Reset();
     }
+}
+
+void PCIBus::ConfigureIRQs(uint8_t numIRQs) {
+    // TODO: convert
+    //bus->set_irq = set_irq;
+    //bus->map_irq = map_irq;
+    //bus->irq_opaque = irq_opaque;
+    m_numIRQs = numIRQs;
+    m_irqCount = new uint32_t(numIRQs);
+    memset(m_irqCount, 0, numIRQs * sizeof(uint32_t));
 }
 
 }

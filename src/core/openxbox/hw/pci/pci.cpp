@@ -15,6 +15,7 @@ PCIDevice::PCIDevice(uint8_t type, uint16_t vendorID, uint16_t deviceID,
     memset(m_write1ToClearMask, 0, sizeof(m_write1ToClearMask));
     memset(m_BARSizes, 0, sizeof(m_BARSizes));
 
+    m_bus = nullptr;
     m_irqState = 0;
 
     Write8(m_configSpace, PCI_HEADER_TYPE, type);
@@ -258,17 +259,17 @@ void PCIDevice::WriteConfig(uint32_t reg, uint32_t value, uint8_t size) {
 void PCIDevice::ChangeIRQLevel(uint8_t irqNum, int change) {
     PCIDevice *dev = this;
 
-    // TODO: convert
-    /*PCIBus *bus;
+    PCIBus *bus;
     for (;;) {
-        bus = dev->bus;
-        irqNum = bus->map_irq(dev, irqNum);
-        if (bus->set_irq)
+        bus = dev->m_bus;
+        irqNum = bus->MapIRQ(dev, irqNum);
+        if (bus->CanSetIRQ()) {
             break;
-        dev = bus->parent_dev;
+        }
+        dev = bus->m_owner;
     }
-    bus->irq_count[irqNum] += change;
-    bus->set_irq(bus->irq_opaque, irqNum, bus->irq_count[irqNum] != 0);*/
+    bus->m_irqCount[irqNum] += change;
+    bus->SetIRQ(irqNum, bus->m_irqCount[irqNum] != 0);
 }
 
 void PCIDevice::UpdateIRQStatus() {

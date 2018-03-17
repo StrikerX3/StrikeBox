@@ -4,7 +4,7 @@
 
 #include "pci_regs.h"
 #include "pci_common.h"
-#include "openxbox/io.h"
+#include "../bus/pcibus.h"
 
 namespace openxbox {
 
@@ -72,6 +72,10 @@ public:
     void ReadConfig(uint32_t reg, void *value, uint8_t size);
     virtual void WriteConfig(uint32_t reg, uint32_t value, uint8_t size);
 protected:
+    friend class PCIBus;
+
+    PCIBus *m_bus;
+
     uint32_t m_BARSizes[PCI_NUM_BARS_DEVICE];
 
     uint8_t m_configSpace[256];
