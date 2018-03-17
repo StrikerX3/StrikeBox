@@ -64,7 +64,7 @@ void NV2ADevice::Init() {
 	// TODO: check if this is correct
 	RegisterBAR(2, 64 * 1024 * 1024, PCI_BAR_TYPE_MEMORY); // 0xF8000000 - 0xFBFFFFFF
 
-    Write8(m_configSpace, PCI_INTERRUPT_PIN, 3);
+    Write8(m_configSpace, PCI_INTERRUPT_PIN, 1);
 
     m_PCRTC.pendingInterrupts = 0;
     m_PCRTC.enabledInterrupts = 0;
