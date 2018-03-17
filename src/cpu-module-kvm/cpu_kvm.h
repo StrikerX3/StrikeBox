@@ -24,10 +24,7 @@ typedef struct {
 } KvmVCpu;
 
 typedef struct {
-    int dev_fd;
-    int vm_fd;
-    std::vector<PhysicalMemoryRange*> physicalMemoryRanges;
-    KvmVCpu vCpu;
+
 } Kvm;
 
 class KvmCpu : public Cpu {
