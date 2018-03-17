@@ -15,6 +15,8 @@ PCIDevice::PCIDevice(uint8_t type, uint16_t vendorID, uint16_t deviceID,
     memset(m_write1ToClearMask, 0, sizeof(m_write1ToClearMask));
     memset(m_BARSizes, 0, sizeof(m_BARSizes));
 
+    m_irqState = 0;
+
     Write8(m_configSpace, PCI_HEADER_TYPE, type);
     Write16(m_configSpace, PCI_VENDOR_ID, vendorID);
     Write16(m_configSpace, PCI_DEVICE_ID, deviceID);
@@ -251,6 +253,31 @@ void PCIDevice::WriteConfig(uint32_t reg, uint32_t value, uint8_t size) {
 
     // TODO: handle memory mapping changes
     // TODO: handle Message Signalled Interrupts
+}
+
+void PCIDevice::ChangeIRQLevel(uint8_t irqNum, int change) {
+    PCIDevice *dev = this;
+
+    // TODO: convert
+    /*PCIBus *bus;
+    for (;;) {
+        bus = dev->bus;
+        irqNum = bus->map_irq(dev, irqNum);
+        if (bus->set_irq)
+            break;
+        dev = bus->parent_dev;
+    }
+    bus->irq_count[irqNum] += change;
+    bus->set_irq(bus->irq_opaque, irqNum, bus->irq_count[irqNum] != 0);*/
+}
+
+void PCIDevice::UpdateIRQStatus() {
+    if (m_irqState != 0) {
+        m_configSpace[PCI_STATUS] |= PCI_STATUS_INTERRUPT;
+    }
+    else {
+        m_configSpace[PCI_STATUS] &= ~PCI_STATUS_INTERRUPT;
+    }
 }
 
 void PCIDevice::PCIIORead(int barIndex, uint32_t port, uint32_t *value, uint8_t size) {

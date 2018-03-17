@@ -79,6 +79,18 @@ protected:
     uint8_t m_checkMask[256];
     uint8_t m_write1ToClearMask[256];
 
+    uint32_t m_irqState;
+
+    inline uint8_t GetIRQState(uint8_t irqNum) { return (m_irqState >> irqNum) & 1; }
+    inline void SetIRQState(uint8_t irqNum, int level) {
+        m_irqState &= ~(0x1 << irqNum);
+        m_irqState |= level << irqNum;
+    }
+
+    void ChangeIRQLevel(uint8_t irqNum, int change);
+
+    void UpdateIRQStatus();
+
     inline uint8_t  Read8 (uint8_t *buf, uint32_t reg) { return buf[reg]; }
     inline uint16_t Read16(uint8_t *buf, uint32_t reg) { return *reinterpret_cast<uint16_t *>(&buf[reg]); }
     inline uint32_t Read32(uint8_t *buf, uint32_t reg) { return *reinterpret_cast<uint32_t *>(&buf[reg]); }
