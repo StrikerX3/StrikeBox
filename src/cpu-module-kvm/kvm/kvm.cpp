@@ -3,13 +3,16 @@
 #include <fcntl.h>
 #include <sys/ioctl.h>
 #include <sys/mman.h>
+#include <unistd.h>
 
 Kvm::Kvm() {
 
 }
 
 Kvm::~Kvm() {
-
+    if(m_fd > 0) {
+        close(m_fd);
+    }
 }
 
 KvmStatus Kvm::Initialize() {
@@ -67,7 +70,9 @@ KvmVM::KvmVM(Kvm &kvm) :
 }
 
 KvmVM::~KvmVM() {
-
+    if(m_fd > 0) {
+        close(m_fd);
+    }
 }
 
 KvmVMStatus KvmVM::Initialize() {
@@ -119,6 +124,16 @@ KvmVCPU::KvmVCPU(KvmVM& vm, uint32_t id) :
     m_vm(vm), m_vcpuID(id)
 {
 
+}
+
+KvmVCPU::~KvmVCPU() {
+    if(m_fd > 0) {
+        close(m_fd);
+    }
+
+    if(m_kvmRun) {
+        munmap(m_kvmRun, m_kvmRunMmapSize);
+    }
 }
 
 KvmVCPUStatus KvmVCPU::Initialize() {
