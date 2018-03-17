@@ -44,7 +44,7 @@ support is planned but not implemented yet.
 ```
 $ sudo apt-get install cmake
 $ mkdir build; cd build
-$ cmake .. && make
+$ cmake .. -DCPU_MODULE=kvm && make
 $ cd src/cli
 $ ./openxbox-cli <path-to-MCPX-ROM> <path-to-BIOS-ROM> <path-to-XBE> [debug|retail]
 ```
