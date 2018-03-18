@@ -174,6 +174,12 @@ int KvmCpu::HandleIO(uint8_t direction, uint16_t port, uint8_t size, uint32_t co
         } else {
             m_ioMapper->IORead(port, (uint32_t*)(((uint64_t)m_vcpu->kvmRun()) + dataOffset), size);
         }
+
+        if(count > 0) {
+            ptr -= size;
+        } else {
+            ptr += size;
+        }
     }
     return 0;
 }
