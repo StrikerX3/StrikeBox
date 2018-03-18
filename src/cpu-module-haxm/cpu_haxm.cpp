@@ -80,14 +80,22 @@ int HaxmCpu::RunImpl() {
 		m_fpuRegsChanged = false;
 	}
 
-    // Inject an interrupt if possible
     auto tunnel = m_vcpu->Tunnel();
-    if (tunnel->ready_for_interrupt_injection) {
-        InjectPendingInterrupt();
+ 
+    // Increment the credits available for the interrupt handler
+    if (m_interruptHandlerCredits < kInterruptHandlerMaxCredits) {
+        m_interruptHandlerCredits += kInterruptHandlerIncrement;
     }
-    // Request an interrupt window if there are pending interrupts
-    else if (m_pendingInterruptsBitmap != 0) {
-        tunnel->request_interrupt_window = 1;
+
+    // Inject an interrupt if available and possible
+    if (m_pendingInterruptsBitmap != 0) {
+        if (tunnel->ready_for_interrupt_injection) {
+            InjectPendingInterrupt();
+        }
+        // Request an interrupt window if the VCPU is not ready
+        else {
+            tunnel->request_interrupt_window = 1;
+        }
     }
 
 	// Run CPU
@@ -563,11 +571,6 @@ int HaxmCpu::LoadSegmentSelector(uint16_t selector, segment_desc_t *segment) {
 }
 
 void HaxmCpu::InjectPendingInterrupt() {
-    // Increment the credits available for the interrupt handler
-    if (m_interruptHandlerCredits < kInterruptHandlerMaxCredits) {
-        m_interruptHandlerCredits += kInterruptHandlerIncrement;
-    }
-
     // If there aren't enough credits or there are no pending interrupts, get out
     if (m_interruptHandlerCredits < kInterruptHandlerCost || m_pendingInterrupts.size() == 0) {
         return;
