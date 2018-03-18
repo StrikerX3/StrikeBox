@@ -1,5 +1,3 @@
-#pragma once
-
 #include "pci_irq.h"
 
 namespace openxbox {
