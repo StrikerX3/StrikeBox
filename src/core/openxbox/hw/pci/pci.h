@@ -19,6 +19,7 @@ namespace openxbox {
 #define PCI_VENDOR_ID_NVIDIA     0x10DE
 
 class PCIDevice;
+class PCIBus;
 
 typedef struct {
     union {

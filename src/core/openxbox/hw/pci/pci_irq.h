@@ -8,6 +8,7 @@ namespace openxbox {
 
 class IRQMapper {
 public:
+    virtual ~IRQMapper() {};
     virtual uint8_t MapIRQ(PCIDevice *dev, uint8_t irqNum) = 0;
     virtual bool CanSetIRQ() = 0;
     virtual void SetIRQ(uint8_t irqNum, int level) = 0;

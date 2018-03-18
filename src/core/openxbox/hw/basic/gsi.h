@@ -16,6 +16,7 @@ struct GSI : public IRQHandler {
     IRQ *ioapicIRQs[IOAPIC_NUM_PINS];
 
     void HandleIRQ(uint8_t irqNum, int level) override;
+    virtual ~GSI() {}
 };
 
 }
