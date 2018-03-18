@@ -1,7 +1,5 @@
-
 #include "openxbox/cpu_module.h"
 #include "cpu_kvm_module.h"
-#include "cpu_kvm.h"
 
 namespace openxbox {
 

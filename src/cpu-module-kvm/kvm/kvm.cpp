@@ -92,6 +92,19 @@ KvmVMStatus KvmVM::Initialize() {
     return KVMVMS_SUCCESS;
 }
 
+KvmVCPUStatus KvmVM::CreateVCPU(KvmVCPU **vcpu) {
+    *vcpu = new KvmVCPU(*this, m_vcpus.size());
+    KvmVCPUStatus status = (*vcpu)->Initialize();
+
+    if(status != KVMVCPUS_SUCCESS) {
+        delete *vcpu;
+        *vcpu = nullptr;
+    } else {
+        m_vcpus.push_back(*vcpu);
+    }
+    return status;
+}
+
 KvmVMStatus KvmVM::MapUserMemoryToGuest(void *userMemoryBlock, uint32_t userMemorySize, uint32_t guestBaseAddress) {
 
     if(((uint64_t)userMemoryBlock) & 0xFFF) {
@@ -156,6 +169,24 @@ KvmVCPUStatus KvmVCPU::Initialize() {
     if(m_kvmRun < 0) {
         return KVMVCPUS_CREATE_FAILED;
     }
+
+    return KVMVCPUS_SUCCESS;
+}
+
+KvmVCPUStatus KvmVCPU::Run() {
+    // Start running!
+    if(ioctl(m_fd, KVM_RUN, 0) < 0) {
+        return KVMVCPUS_RUN_FAILED;
+    }
+
+    // Update our CPU regs.
+//    if(ioctl(m_fd, KVM_GET_REGS, &m_regs) < 0) {
+//        return KVMVCPUS_REG_READ_ERROR;
+//    }
+//
+//    if(ioctl(m_fd, KVM_GET_SREGS, &m_sregs) < 0) {
+//        return KVMVCPUS_REG_READ_ERROR;
+//    }
 
     return KVMVCPUS_SUCCESS;
 }

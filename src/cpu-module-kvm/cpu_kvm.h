@@ -1,31 +1,13 @@
 #pragma once
 
 #include "openxbox/cpu.h"
+#include "kvm/kvm.h"
 
 #include <linux/kvm.h>
 #include <vector>
 
 namespace openxbox {
 
-typedef struct {
-    uint32_t startingAddress;
-    uint32_t size;
-    struct kvm_userspace_memory_region memoryRegion;
-} PhysicalMemoryRange;
-
-typedef struct {
-    int dev_id;
-    int dev_fd;
-    struct kvm_run* kvm_run;
-    int kvm_run_mmap_size;
-    struct kvm_regs regs;
-    struct kvm_sregs sregs;
-    struct kvm_guest_debug debug;
-} KvmVCpu;
-
-typedef struct {
-
-} Kvm;
 
 class KvmCpu : public Cpu {
 
@@ -60,6 +42,8 @@ public:
 
 private:
     Kvm *m_kvm;
+    KvmVM *m_vm;
+    KvmVCPU *m_vcpu;
 };
 
 }

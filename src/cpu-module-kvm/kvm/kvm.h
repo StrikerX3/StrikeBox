@@ -5,15 +5,15 @@
 #include <cstdint>
 
 enum KvmStatus {
-    KVMS_SUCCESS,
     KVMS_OPEN_FAILED,
+    KVMS_SUCCESS,
     KVMS_API_VERSION_UNSUPPORTED,
     KVMS_MISSING_CAP
 };
 
 enum KvmVMStatus {
-    KVMVMS_SUCCESS,
     KVMVMS_CREATE_FAILED,
+    KVMVMS_SUCCESS,
     KVMVMS_MEM_MISALIGNED,
     KVMVMS_MEMSIZE_MISALIGNED,
     KVMVMS_MEM_ERROR,
@@ -21,8 +21,10 @@ enum KvmVMStatus {
 };
 
 enum KvmVCPUStatus {
+    KVMVCPUS_CREATE_FAILED,
     KVMVCPUS_SUCCESS,
-    KVMVCPUS_CREATE_FAILED
+    KVMVCPUS_RUN_FAILED,
+    KVMVCPUS_REG_READ_ERROR
 };
 
 typedef struct {
@@ -51,6 +53,8 @@ private:
 class KvmVM {
 public:
     KvmVMStatus MapUserMemoryToGuest(void *userMemoryBlock, uint32_t userMemorySize, uint32_t guestBaseAddress);
+    KvmVCPUStatus CreateVCPU(KvmVCPU **vcpu);
+
     const int handle() const { return m_fd; }
     const int kvmHandle() const { return m_kvm.handle(); }
 
@@ -70,6 +74,11 @@ private:
 };
 
 class KvmVCPU {
+public:
+    KvmVCPUStatus Run();
+
+    struct kvm_run* kvmRun() { return m_kvmRun; }
+
 private:
     KvmVCPU(KvmVM &vm, uint32_t id);
     ~KvmVCPU();
