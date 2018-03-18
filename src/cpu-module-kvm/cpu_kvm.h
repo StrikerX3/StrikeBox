@@ -41,9 +41,15 @@ public:
 
 
 private:
+
+    int HandleIO(uint8_t direction, uint16_t port, uint8_t size, uint32_t count, uint64_t dataOffset);
+    int HandleMMIO(uint32_t physAddress, uint32_t *data, uint8_t size, uint8_t isWrite);
+
     Kvm *m_kvm;
     KvmVM *m_vm;
     KvmVCPU *m_vcpu;
+
+
 };
 
 }

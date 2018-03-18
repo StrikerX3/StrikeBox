@@ -56,10 +56,16 @@ int KvmCpu::RunImpl() {
         return -1;
     }
 
-    switch(m_vcpu->kvmRun()->exit_reason) {
+    auto kvmRun = m_vcpu->kvmRun();
+
+    switch(kvmRun->exit_reason) {
         case KVM_EXIT_HLT:          m_exitInfo.reason = CPU_EXIT_HLT;       break;
-        case KVM_EXIT_IO:           m_exitInfo.reason = CPU_EXIT_NORMAL;    break;
-        case KVM_EXIT_MMIO:         m_exitInfo.reason = CPU_EXIT_NORMAL;    break;
+        case KVM_EXIT_IO:           m_exitInfo.reason = CPU_EXIT_NORMAL;
+            HandleIO(kvmRun->io.direction, kvmRun->io.port, kvmRun->io.size, kvmRun->io.count, kvmRun->io.data_offset);
+            break;
+        case KVM_EXIT_MMIO:         m_exitInfo.reason = CPU_EXIT_NORMAL;
+            HandleMMIO((uint32_t)kvmRun->mmio.phys_addr, (uint32_t*)kvmRun->mmio.data, (uint8_t)kvmRun->mmio.len, kvmRun->mmio.is_write);
+            break;
         case KVM_EXIT_INTR:         m_exitInfo.reason = CPU_EXIT_NORMAL;    break;
         case KVM_EXIT_FAIL_ENTRY:   m_exitInfo.reason = CPU_EXIT_SHUTDOWN;
             log_error("KVM_EXIT_FAIL_ENTRY. Failure reason: 0x%X\n", m_vcpu->kvmRun()->fail_entry.hardware_entry_failure_reason);
@@ -143,6 +149,41 @@ int KvmCpu::WriteMSR(uint32_t reg, uint64_t value) {
 }
 
 int KvmCpu::InvalidateTLBEntry(uint32_t addr) {
+    return 0;
+}
+
+
+int KvmCpu::HandleIO(uint8_t direction, uint16_t port, uint8_t size, uint32_t count, uint64_t dataOffset) {
+    uint8_t *ptr;
+    if(count > 1) {
+        ptr = (uint8_t*)((((uint64_t)m_vcpu->kvmRun()) + dataOffset) + size * count - size);
+    } else {
+        ptr = (uint8_t*)(((uint64_t)m_vcpu->kvmRun()) + dataOffset);
+    }
+
+    for(uint16_t i = 0; i < count; i++) {
+        if(direction == KVM_EXIT_IO_OUT) {
+            uint32_t value;
+            switch(size) {
+                case 1: value = *ptr; break;
+                case 2: value = *reinterpret_cast<uint16_t*>(ptr); break;
+                case 4: value = *reinterpret_cast<uint32_t*>(ptr); break;
+                default: assert(0);
+            }
+            m_ioMapper->IOWrite(port, value, size);
+        } else {
+            m_ioMapper->IORead(port, (uint32_t*)(((uint64_t)m_vcpu->kvmRun()) + dataOffset), size);
+        }
+    }
+    return 0;
+}
+
+int KvmCpu::HandleMMIO(uint32_t physAddress, uint32_t *data, uint8_t size, uint8_t isWrite) {
+    if(isWrite) {
+        m_ioMapper->MMIOWrite(physAddress, *data, size);
+    } else {
+        m_ioMapper->MMIORead(physAddress, data, size);
+    }
     return 0;
 }
 
