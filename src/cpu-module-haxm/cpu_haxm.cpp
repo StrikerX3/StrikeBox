@@ -85,6 +85,10 @@ int HaxmCpu::RunImpl() {
     if (tunnel->ready_for_interrupt_injection) {
         InjectPendingInterrupt();
     }
+    // Request an interrupt window if there are pending interrupts
+    else if (m_pendingInterruptsBitmap != 0) {
+        tunnel->request_interrupt_window = 1;
+    }
 
 	// Run CPU
 	auto status = m_vcpu->Run();
