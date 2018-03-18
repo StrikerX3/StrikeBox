@@ -195,16 +195,21 @@ KvmVCPUStatus KvmVCPU::Run() {
 }
 
 KvmVCPUStatus KvmVCPU::Interrupt(uint8_t vector) {
-    struct kvm_interrupt* kvmInterrupt = (kvm_interrupt*)malloc(sizeof(kvm_interrupt));
+    printf("KvmVCPU: Injecting interrupt. Vector: %i\n", vector);
+    kvm_interrupt* kvmInterrupt = new kvm_interrupt;
 
     memset(kvmInterrupt, 0, sizeof(kvm_interrupt));
 
-    kvmInterrupt->irq = vector;
+    kvmInterrupt->irq = (uint32_t)vector;
 
-    if(ioctl(m_fd, KVM_INTERRUPT, &kvmInterrupt) < 0) {
+    int test = ioctl(m_fd, KVM_INTERRUPT, &kvmInterrupt);
+    if(test < 0) {
+        printf("Error injecting interrupt. Reason: %i\n", test);
         return KVMVCPUS_INTERRUPT_FAILED;
     }
-    
+
+    delete kvmInterrupt;
+
     return KVMVCPUS_SUCCESS;
 }
 

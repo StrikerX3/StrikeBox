@@ -51,15 +51,19 @@ int KvmCpu::InitializeImpl() {
 
 int KvmCpu::RunImpl() {
 
-    InjectPendingInterrupt();
+    auto kvmRun = m_vcpu->kvmRun();
+
+    if(kvmRun->ready_for_interrupt_injection) {
+        InjectPendingInterrupt();
+    } else if(!m_pendingInterrupts.empty()) {
+        kvmRun->request_interrupt_window = 0x1;
+    }
 
     auto status = m_vcpu->Run();
 
     if(status == KVMVCPUS_RUN_FAILED) {
         return -1;
     }
-
-    auto kvmRun = m_vcpu->kvmRun();
 
     switch(kvmRun->exit_reason) {
         case KVM_EXIT_HLT:          m_exitInfo.reason = CPU_EXIT_HLT;       break;
@@ -214,16 +218,20 @@ void KvmCpu::InjectPendingInterrupt() {
         return;
     }
 
-    m_interruptHandlerCredits -= kInterruptHandlerCost;
-
     std::lock_guard<std::mutex> guard(m_pendingInterruptsMutex);
 
     uint8_t vector = m_pendingInterrupts.front();
+
+    if(m_vcpu->Interrupt(vector) == KVMVCPUS_INTERRUPT_FAILED) {
+        m_vcpu->kvmRun()->request_interrupt_window = 1;
+        return;
+    }
+
+    m_interruptHandlerCredits -= kInterruptHandlerCost;
+
     m_pendingInterrupts.pop();
 
     Bitmap64Clear(&m_pendingInterruptsBitmap, vector);
-
-    m_vcpu->Interrupt(vector);
 
     return;
 }
