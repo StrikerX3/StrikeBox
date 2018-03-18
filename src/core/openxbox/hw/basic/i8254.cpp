@@ -63,12 +63,12 @@ void i8254::Run() {
 
     m_running = true;
     while (m_running) {
-        m_pic->RaiseIRQ(0);
+        m_pic->HandleIRQ(0, 1);
 
         nextStop += interval;
         std::this_thread::sleep_until(nextStop);
 
-        m_pic->LowerIRQ(0);
+        m_pic->HandleIRQ(0, 0);
     }
 }
 

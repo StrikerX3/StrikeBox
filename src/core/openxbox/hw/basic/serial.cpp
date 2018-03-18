@@ -593,10 +593,10 @@ void Serial::UpdateIRQ() {
     m_iir = tmp_iir | (m_iir & 0xF0);
 
     if (tmp_iir != UART_IIR_NO_INT) {
-        m_pic->RaiseIRQ(m_irq);
+        m_pic->HandleIRQ(m_irq, 1);
     }
     else {
-        m_pic->LowerIRQ(m_irq);
+        m_pic->HandleIRQ(m_irq, 0);
     }
 }
 

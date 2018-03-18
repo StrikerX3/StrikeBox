@@ -83,24 +83,6 @@ bool i8259::MapIO(IOMapper *mapper) {
     return true;
 }
 
-void i8259::RaiseIRQ(int index) {
-    if (index <= 7) {
-        SetIRQ(PIC_MASTER, index, true);
-    }
-    else {
-        SetIRQ(PIC_SLAVE, index - 7, true);
-    }
-}
-
-void i8259::LowerIRQ(int index) {
-    if (index <= 7) {
-        SetIRQ(PIC_MASTER, index, false);
-    }
-    else {
-        SetIRQ(PIC_SLAVE, index - 7, false);
-    }
-}
-
 void i8259::SetIRQ(int pic, int index, bool asserted) {
     int mask = 1 << index;
 
@@ -184,6 +166,15 @@ bool i8259::IOWrite(uint32_t port, uint32_t value, uint8_t size) {
 
     log_warning("i8259::IOWrite: Invalid address 0x%x\n", port);
     return false;
+}
+
+void i8259::HandleIRQ(uint8_t irqNum, int level) {
+    if (level) {
+        RaiseIRQ(irqNum);
+    }
+    else {
+        LowerIRQ(irqNum);
+    }
 }
 
 uint32_t i8259::CommandRead(int pic) {
@@ -415,6 +406,24 @@ void i8259::UpdateIRQ(int pic) {
     // If this was the master PIC, trigger the IRQ
     if (pic == PIC_MASTER && m_InterruptOutput[PIC_MASTER]) {
         m_cpu->Interrupt(GetCurrentIRQ());
+    }
+}
+
+void i8259::RaiseIRQ(int index) {
+    if (index <= 7) {
+        SetIRQ(PIC_MASTER, index, true);
+    }
+    else {
+        SetIRQ(PIC_SLAVE, index - 7, true);
+    }
+}
+
+void i8259::LowerIRQ(int index) {
+    if (index <= 7) {
+        SetIRQ(PIC_MASTER, index, false);
+    }
+    else {
+        SetIRQ(PIC_SLAVE, index - 7, false);
     }
 }
 

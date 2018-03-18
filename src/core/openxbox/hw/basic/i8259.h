@@ -3,6 +3,7 @@
 #include <cstdint>
 
 #include "openxbox/cpu.h"
+#include "irq.h"
 
 namespace openxbox {
 
@@ -21,7 +22,7 @@ namespace openxbox {
 #define PIC_MASTER    0
 #define PIC_SLAVE    1
 
-class i8259 : public IODevice {
+class i8259 : public IODevice, public IRQHandler {
 public:
     i8259(Cpu *cpu);
     virtual ~i8259();
@@ -32,8 +33,7 @@ public:
     bool IORead(uint32_t port, uint32_t *value, uint8_t size) override;
     bool IOWrite(uint32_t port, uint32_t value, uint8_t size) override;
 
-    void RaiseIRQ(int index);
-    void LowerIRQ(int index);
+    void HandleIRQ(uint8_t irqNum, int level) override;
 
     int GetCurrentIRQ();
 private:
@@ -70,6 +70,9 @@ private:
     uint8_t Poll(int pic);
     void Reset(int pic);
     void UpdateIRQ(int pic);
+
+    void RaiseIRQ(int index);
+    void LowerIRQ(int index);
 };
 
 }

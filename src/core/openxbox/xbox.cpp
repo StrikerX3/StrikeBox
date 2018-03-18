@@ -281,9 +281,15 @@ int Xbox::Initialize(OpenXBOXSettings *settings)
     m_AGPBridge = new AGPBridgeDevice(PCI_VENDOR_ID_NVIDIA, 0x01B7, 0xA1);
     m_NV2A = new NV2ADevice(PCI_VENDOR_ID_NVIDIA, 0x02A0, 0xA1, (uint8_t*)m_ram, m_ramSize, m_i8259);
 
+    // Configure IRQs
     m_acpiIRQs = AllocateIRQs(m_LPC, 2);
-
     m_LPC->GetISABus()->ConfigureIRQs(m_IRQs);
+    // TODO: do we need to create an IRQ for the CPU?
+    // TODO: do we need to connect the i8259 to the ISA bus?
+    m_i8259IRQs = AllocateIRQs(m_i8259, ISA_NUM_IRQS);
+    for (uint8_t i = 0; i < ISA_NUM_IRQS; i++) {
+        m_GSI->i8259IRQs[i] = &m_i8259IRQs[i];
+    }
     
     // Create SMBus and connect devices
     m_SMBus = new SMBus(&m_acpiIRQs[1]);

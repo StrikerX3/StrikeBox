@@ -2412,10 +2412,10 @@ void NV2ADevice::UpdateIRQ() {
 
     uint8_t irq = Read8(m_configSpace, PCI_INTERRUPT_PIN);
     if (m_PMC.pendingInterrupts && m_PMC.enabledInterrupts) {
-        m_pic->RaiseIRQ(irq);
+        m_pic->HandleIRQ(irq, 1);
     }
     else {
-        m_pic->LowerIRQ(irq);
+        m_pic->HandleIRQ(irq, 0);
     }
 }
 
