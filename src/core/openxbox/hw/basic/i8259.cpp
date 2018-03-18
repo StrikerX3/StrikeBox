@@ -169,6 +169,8 @@ bool i8259::IOWrite(uint32_t port, uint32_t value, uint8_t size) {
 }
 
 void i8259::HandleIRQ(uint8_t irqNum, int level) {
+    std::lock_guard<std::mutex> lk(m_handleIRQMutex);
+
     if (level) {
         RaiseIRQ(irqNum);
     }

@@ -5,6 +5,8 @@
 #include "openxbox/cpu.h"
 #include "irq.h"
 
+#include <mutex>
+
 namespace openxbox {
 
 #define PORT_PIC_MASTER_COMMAND  0x20
@@ -57,6 +59,8 @@ private:
     bool m_InterruptOutput[2];
     bool m_AutoEOI[2];
     bool m_IsSpecialFullyNestedMode[2];
+
+    std::mutex m_handleIRQMutex;
 
     uint32_t CommandRead(int pic);
     void CommandWrite(int pic, uint32_t value);
