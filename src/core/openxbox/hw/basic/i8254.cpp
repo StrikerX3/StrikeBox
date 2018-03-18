@@ -26,7 +26,9 @@ i8254::i8254(i8259 *pic, float tickRate)
 
 i8254::~i8254() {
     m_running = false;
-    m_timerThread.join();
+    if (m_timerThread.joinable()) {
+        m_timerThread.join();
+    }
 }
 
 void i8254::Reset() {
