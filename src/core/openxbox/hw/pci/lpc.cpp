@@ -16,6 +16,17 @@ LPCDevice::LPCDevice(uint16_t vendorID, uint16_t deviceID, uint8_t revisionID, I
 LPCDevice::~LPCDevice() {
 }
 
+void LPCDevice::HandleIRQ(uint8_t irqNum, int level) {
+    uint32_t routing = Read16(m_configSpace, XBOX_LPC_ACPI_IRQ_ROUT);
+    
+    int irq = (routing >> (irqNum * 8)) & 0xff;
+    if (irq == 0 || irq >= XBOX_NUM_PIC_IRQS) {
+        return;
+    }
+
+    m_irqs[irq].Handle(level);
+}
+
 // PCI Device functions
 
 void LPCDevice::Init() {
@@ -121,7 +132,7 @@ void LPCIRQMapper::SetIRQ(uint8_t irqNum, int level) {
 
     IRQ *irq = &m_lpc->m_irqs[picIRQ];
     if (irq->handler != nullptr) {
-        irq->handler->Handle(irq->num, level);
+        irq->handler->HandleIRQ(irq->num, level);
     }
 }
 

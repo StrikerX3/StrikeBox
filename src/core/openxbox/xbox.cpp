@@ -102,6 +102,7 @@ Xbox::~Xbox() {
     if (m_SuperIO != nullptr) delete m_SuperIO;
     if (m_i8254 != nullptr) delete m_i8254;
     if (m_i8259 != nullptr) delete m_i8259;
+    if (m_acpiIRQs != nullptr) delete[] m_acpiIRQs;
     if (m_IRQs != nullptr) delete[] m_IRQs;
     if (m_GSI != nullptr) delete m_GSI;
 }
@@ -262,11 +263,9 @@ int Xbox::Initialize(OpenXBOXSettings *settings)
         m_SuperIO->Reset();
     }
 
-    // Create busses
+    // Create PCI bus and devices
     m_PCIBus = new PCIBus();
-    m_SMBus = new SMBus(m_i8259);
 
-    // Create devices
     m_SMC = new SMCDevice(smcRevision);
     m_EEPROM = new EEPROMDevice();
     m_HostBridge = new HostBridgeDevice(PCI_VENDOR_ID_NVIDIA, 0x02A5, 0xA1);
@@ -282,7 +281,11 @@ int Xbox::Initialize(OpenXBOXSettings *settings)
     m_AGPBridge = new AGPBridgeDevice(PCI_VENDOR_ID_NVIDIA, 0x01B7, 0xA1);
     m_NV2A = new NV2ADevice(PCI_VENDOR_ID_NVIDIA, 0x02A0, 0xA1, (uint8_t*)m_ram, m_ramSize, m_i8259);
 
-    // Connect devices to SMBus
+    m_acpiIRQs = AllocateIRQs(m_LPC, 2);
+
+    // Create SMBus and connect devices
+    m_SMBus = new SMBus(&m_acpiIRQs[1]);
+
     m_SMBus->ConnectDevice(kSMBusAddress_SystemMicroController, m_SMC); // W 0x20 R 0x21
     m_SMBus->ConnectDevice(kSMBusAddress_EEPROM, m_EEPROM); // W 0xA8 R 0xA9
 

@@ -2,7 +2,7 @@
 
 #include "../pci/pci.h"
 #include "../sm/sm.h"
-#include "../basic/i8259.h"
+#include "../basic/irq.h"
 
 #include <map>
 
@@ -50,7 +50,7 @@ namespace openxbox {
 
 class SMBus : public PCIDevice {
 public:
-    SMBus(i8259 *pic);
+    SMBus(IRQ *irq);
     ~SMBus();
 
     // PCI Functions
@@ -73,7 +73,7 @@ private:
     uint8_t m_Data[32];
     uint8_t m_Index;
 
-    i8259 *m_pic;
+    IRQ *m_irq;
 
     void ExecuteTransaction();
 

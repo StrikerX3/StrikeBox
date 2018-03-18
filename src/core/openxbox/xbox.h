@@ -89,6 +89,7 @@ protected:
     
     GSI              *m_GSI;
     IRQ              *m_IRQs;
+    IRQ              *m_acpiIRQs;
     i8254            *m_i8254;
     i8259            *m_i8259;
     CMOS             *m_CMOS;

@@ -18,11 +18,13 @@ namespace openxbox {
 #define XBOX_LPC_PIRQ_ROUT     0x68
 #define XBOX_LPC_INT_IRQ_ROUT  0x6C
 
-class LPCDevice : public PCIDevice {
+class LPCDevice : public PCIDevice, public IRQHandler {
 public:
     // constructor
     LPCDevice(uint16_t vendorID, uint16_t deviceID, uint8_t revisionID, IRQ *irqs);
     virtual ~LPCDevice();
+
+    void HandleIRQ(uint8_t irqNum, int level) override;
 
     // PCI Device functions
     void Init();

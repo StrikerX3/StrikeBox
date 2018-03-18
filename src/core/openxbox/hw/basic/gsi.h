@@ -15,7 +15,7 @@ struct GSI : public IRQHandler {
     IRQ *i8259IRQs[ISA_NUM_IRQS];
     IRQ *ioapicIRQs[IOAPIC_NUM_PINS];
 
-    void Handle(uint8_t irqNum, int level) override;
+    void HandleIRQ(uint8_t irqNum, int level) override;
 };
 
 }
