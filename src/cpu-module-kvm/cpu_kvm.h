@@ -5,9 +5,21 @@
 
 #include <linux/kvm.h>
 #include <vector>
+#include <queue>
+#include <mutex>
+#include <openxbox/bitmap.h>
 
 namespace openxbox {
 
+#ifdef _DEBUG
+    static const uint8_t kInterruptHandlerMaxCredits = 25;   // Maximum amount of credits available to handle interrupts
+    static const uint8_t kInterruptHandlerCost = 5;          // Credits spent when an interrupt is handled
+    static const uint8_t kInterruptHandlerIncrement = 1;     // Credits recovered when CPU emulation starts
+#else
+    static const uint8_t kInterruptHandlerMaxCredits = 200;  // Maximum amount of credits available to handle interrupts
+    static const uint8_t kInterruptHandlerCost = 2;          // Credits spent when an interrupt is handled
+    static const uint8_t kInterruptHandlerIncrement = 1;     // Credits recovered when CPU emulation starts
+#endif
 
 class KvmCpu : public Cpu {
 
@@ -45,9 +57,17 @@ private:
     int HandleIO(uint8_t direction, uint16_t port, uint8_t size, uint32_t count, uint64_t dataOffset);
     int HandleMMIO(uint32_t physAddress, uint32_t *data, uint8_t size, uint8_t isWrite);
 
+    void InjectPendingInterrupt();
+
     Kvm *m_kvm;
     KvmVM *m_vm;
     KvmVCPU *m_vcpu;
+
+    std::mutex m_interruptMutex;
+    std::mutex m_pendingInterruptsMutex;
+    std::queue<uint8_t> m_pendingInterrupts;
+    Bitmap64 m_pendingInterruptsBitmap;
+    uint8_t m_interruptHandlerCredits;
 
 
 };

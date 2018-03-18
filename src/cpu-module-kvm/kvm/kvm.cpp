@@ -194,3 +194,17 @@ KvmVCPUStatus KvmVCPU::Run() {
     return KVMVCPUS_SUCCESS;
 }
 
+KvmVCPUStatus KvmVCPU::Interrupt(uint8_t vector) {
+    struct kvm_interrupt* kvmInterrupt = (kvm_interrupt*)malloc(sizeof(kvm_interrupt));
+
+    memset(kvmInterrupt, 0, sizeof(kvm_interrupt));
+
+    kvmInterrupt->irq = vector;
+
+    if(ioctl(m_fd, KVM_INTERRUPT, &kvmInterrupt) < 0) {
+        return KVMVCPUS_INTERRUPT_FAILED;
+    }
+    
+    return KVMVCPUS_SUCCESS;
+}
+

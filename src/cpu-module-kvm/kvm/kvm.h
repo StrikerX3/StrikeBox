@@ -24,7 +24,8 @@ enum KvmVCPUStatus {
     KVMVCPUS_CREATE_FAILED,
     KVMVCPUS_SUCCESS,
     KVMVCPUS_RUN_FAILED,
-    KVMVCPUS_REG_READ_ERROR
+    KVMVCPUS_REG_READ_ERROR,
+    KVMVCPUS_INTERRUPT_FAILED
 };
 
 typedef struct {
@@ -76,6 +77,7 @@ private:
 class KvmVCPU {
 public:
     KvmVCPUStatus Run();
+    KvmVCPUStatus Interrupt(uint8_t vector);
 
     struct kvm_run* kvmRun() { return m_kvmRun; }
 

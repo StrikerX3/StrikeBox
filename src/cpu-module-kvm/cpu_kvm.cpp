@@ -50,6 +50,9 @@ int KvmCpu::InitializeImpl() {
 }
 
 int KvmCpu::RunImpl() {
+
+    InjectPendingInterrupt();
+
     auto status = m_vcpu->Run();
 
     if(status == KVMVCPUS_RUN_FAILED) {
@@ -80,7 +83,16 @@ int KvmCpu::StepImpl(uint64_t num_instructions) {
 }
 
 InterruptResult KvmCpu::InterruptImpl(uint8_t vector) {
-    return *(new InterruptResult);
+    std::lock_guard<std::mutex> guard(m_pendingInterruptsMutex);
+
+    if(!Bitmap64IsSet(m_pendingInterruptsBitmap, vector)) {
+        m_pendingInterrupts.push(vector);
+        Bitmap64Set(&m_pendingInterruptsBitmap, vector);
+    } else {
+        m_skippedInterrupts[vector]++;
+    }
+
+    return INTR_SUCCESS;
 }
 
 int KvmCpu::MemMapSubregion(MemoryRegion *subregion) {
@@ -191,6 +203,29 @@ int KvmCpu::HandleMMIO(uint32_t physAddress, uint32_t *data, uint8_t size, uint8
         m_ioMapper->MMIORead(physAddress, data, size);
     }
     return 0;
+}
+
+void KvmCpu::InjectPendingInterrupt() {
+    if(m_interruptHandlerCredits < kInterruptHandlerMaxCredits) {
+        m_interruptHandlerCredits += kInterruptHandlerIncrement;
+    }
+
+    if(m_interruptHandlerCredits < kInterruptHandlerCost || m_pendingInterrupts.size() == 0) {
+        return;
+    }
+
+    m_interruptHandlerCredits -= kInterruptHandlerCost;
+
+    std::lock_guard<std::mutex> guard(m_pendingInterruptsMutex);
+
+    uint8_t vector = m_pendingInterrupts.front();
+    m_pendingInterrupts.pop();
+
+    Bitmap64Clear(&m_pendingInterruptsBitmap, vector);
+
+    m_vcpu->Interrupt(vector);
+
+    return;
 }
 
 }
