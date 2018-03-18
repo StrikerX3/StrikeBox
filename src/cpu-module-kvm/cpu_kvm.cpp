@@ -218,20 +218,16 @@ void KvmCpu::InjectPendingInterrupt() {
         return;
     }
 
+    m_interruptHandlerCredits -= kInterruptHandlerCost;
+
     std::lock_guard<std::mutex> guard(m_pendingInterruptsMutex);
 
     uint8_t vector = m_pendingInterrupts.front();
-
-    if(m_vcpu->Interrupt(vector) == KVMVCPUS_INTERRUPT_FAILED) {
-        m_vcpu->kvmRun()->request_interrupt_window = 1;
-        return;
-    }
-
-    m_interruptHandlerCredits -= kInterruptHandlerCost;
-
     m_pendingInterrupts.pop();
 
     Bitmap64Clear(&m_pendingInterruptsBitmap, vector);
+
+    m_vcpu->Interrupt(vector);
 
     return;
 }
