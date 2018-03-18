@@ -4,6 +4,8 @@
 #include <sys/ioctl.h>
 #include <sys/mman.h>
 #include <unistd.h>
+#include <malloc.h>
+#include <cstring>
 
 Kvm::Kvm() {
 
@@ -84,7 +86,7 @@ KvmVMStatus KvmVM::Initialize() {
 
     // Move the identity map. It usually resides at
     // 0xfffbc000 which will conflict with the xbox bios.
-    uint32_t identityMapAddr = 0xD0000000;
+    uint64_t identityMapAddr = 0xD0000000;
     if(ioctl(m_fd, KVM_SET_IDENTITY_MAP_ADDR, &identityMapAddr) < 0) {
         return KVMVMS_CREATE_FAILED;
     }
@@ -115,7 +117,8 @@ KvmVMStatus KvmVM::MapUserMemoryToGuest(void *userMemoryBlock, uint32_t userMemo
         return KVMVMS_MEMSIZE_MISALIGNED;
     }
 
-    KvmMemoryRecord *memoryRecord = new KvmMemoryRecord;
+    KvmMemoryRecord *memoryRecord = (KvmMemoryRecord*)malloc(sizeof(KvmMemoryRecord));
+    memset(memoryRecord, 0, sizeof(KvmMemoryRecord));
     memoryRecord->size = userMemorySize;
     memoryRecord->startAddr = (uint64_t)userMemoryBlock;
     memoryRecord->memoryRegion.memory_size = userMemorySize;
@@ -123,11 +126,11 @@ KvmVMStatus KvmVM::MapUserMemoryToGuest(void *userMemoryBlock, uint32_t userMemo
     memoryRecord->memoryRegion.guest_phys_addr = (uint64_t)guestBaseAddress;
     memoryRecord->memoryRegion.slot = (uint32_t)m_memoryRecords.size();
 
-    if(ioctl(m_fd, KVM_SET_USER_MEMORY_REGION, &memoryRecord->memoryRegion) < 0) {
+    m_memoryRecords.push_back(memoryRecord);
+
+    if(ioctl(m_fd, KVM_SET_USER_MEMORY_REGION, &m_memoryRecords[m_memoryRecords.size() - 1]->memoryRegion) < 0) {
         return KVMVMS_MEM_ERROR;
     }
-
-    m_memoryRecords.push_back(memoryRecord);
 
     return KVMVMS_SUCCESS;
 }
