@@ -4,6 +4,8 @@
 
 #include "../defs.h"
 #include "pci.h"
+#include "../bus/pcibus.h"
+#include "pci_irq.h"
 
 namespace openxbox {
 
@@ -18,6 +20,14 @@ public:
     virtual void Reset() override;
 
     void WriteConfig(uint32_t reg, uint32_t value, uint8_t size) override;
+
+    inline PCIBus *GetSecondaryBus() { return m_secBus; }
+
+protected:
+    virtual IRQMapper *GetIRQMapper();
+
+private:
+    PCIBus *m_secBus;
 };
 
 }

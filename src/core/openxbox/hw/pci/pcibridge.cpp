@@ -9,9 +9,11 @@ PCIBridgeDevice::PCIBridgeDevice(uint16_t vendorID, uint16_t deviceID, uint8_t r
         0x06, 0x04, 0x00, // PCI bridge
         /*TODO: subsystemVendorID*/0x00, /*TODO: subsystemID*/0x00)
 {
+    m_secBus = new PCIBus();
 }
 
 PCIBridgeDevice::~PCIBridgeDevice() {
+    delete m_secBus;
 }
 
 // PCI Device functions
@@ -19,6 +21,9 @@ PCIBridgeDevice::~PCIBridgeDevice() {
 void PCIBridgeDevice::Init() {
     TestAndSet16(m_configSpace, PCI_STATUS, PCI_STATUS_66MHZ | PCI_STATUS_FAST_BACK);
     Write16(m_configSpace, PCI_SEC_STATUS, PCI_STATUS_66MHZ | PCI_STATUS_FAST_BACK);
+
+    m_secBus->m_owner = this;
+    m_secBus->m_irqMapper = GetIRQMapper();
 }
 
 void PCIBridgeDevice::Reset() {
@@ -37,6 +42,8 @@ void PCIBridgeDevice::Reset() {
     Write32(m_configSpace, PCI_PREF_LIMIT_UPPER32, 0);
 
     Write16(m_configSpace, PCI_BRIDGE_CONTROL, 0);
+
+    m_secBus->Reset();
 }
 
 void PCIBridgeDevice::WriteConfig(uint32_t reg, uint32_t value, uint8_t size) {
@@ -62,9 +69,13 @@ void PCIBridgeDevice::WriteConfig(uint32_t reg, uint32_t value, uint8_t size) {
 
     newControl = Read16(m_configSpace, PCI_BRIDGE_CONTROL);
     if (~oldControl & newControl & PCI_BRIDGE_CTL_BUS_RESET) {
-        // TODO: Trigger hot reset on 0->1 transition
-        //pci_bus_reset(&s->sec_bus);
+        // Trigger hot reset on 0->1 transition
+        m_secBus->Reset();
     }
+}
+
+IRQMapper *PCIBridgeDevice::GetIRQMapper() {
+    return new DefaultIRQMapper();
 }
 
 }

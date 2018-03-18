@@ -36,6 +36,7 @@ public:
 
 private:
     friend class PCIDevice;
+    friend class PCIBridgeDevice;
     
     PCIDevice *m_owner; // The bridge that owns this bus
     std::map<uint32_t, PCIDevice*> m_Devices;
