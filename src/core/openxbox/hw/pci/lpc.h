@@ -6,6 +6,7 @@
 #include "pci.h"
 #include "pci_irq.h"
 #include "../basic/irq.h"
+#include "../bus/isabus.h"
 
 namespace openxbox {
 
@@ -25,6 +26,7 @@ public:
     virtual ~LPCDevice();
 
     void HandleIRQ(uint8_t irqNum, int level) override;
+    inline ISABus *GetISABus() { return m_isaBus; }
 
     // PCI Device functions
     void Init();
@@ -36,6 +38,7 @@ public:
 private:
     int m_field_pin = 0;
     IRQ *m_irqs;
+    ISABus *m_isaBus;
 
     friend class LPCIRQMapper;
 };

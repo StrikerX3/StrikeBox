@@ -283,6 +283,8 @@ int Xbox::Initialize(OpenXBOXSettings *settings)
 
     m_acpiIRQs = AllocateIRQs(m_LPC, 2);
 
+    m_LPC->GetISABus()->ConfigureIRQs(m_IRQs);
+    
     // Create SMBus and connect devices
     m_SMBus = new SMBus(&m_acpiIRQs[1]);
 
