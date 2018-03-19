@@ -7,8 +7,8 @@ Open-Source (Original) Xbox Emulation Project
 
 The current state of this thing is just a tad bit more tangible than vaporware.
 Essentially right now it just initializes an x86 system (courtesy of
-[HAXM](https://github.com/intel/haxm)) and runs whatever is in ROM, which is
-provided by the user.
+[HAXM](https://github.com/intel/haxm) or [KVM](https://www.linux-kvm.org/page/Main_Page))
+and runs whatever is in ROM, which is provided by the user.
 
 No networking, no audio, no graphics, no games... yet ;).
 
@@ -38,8 +38,7 @@ and [HAXM](https://software.intel.com/en-us/articles/intel-hardware-accelerated-
 The .sln file will be generated in the build folder, ready to build.
 
 ### Linux
-You'll need CMake 3.1 or later. [KVM](https://www.linux-kvm.org/page/Main_Page)
-support is planned but not implemented yet.
+You'll need CMake 3.1 or later. The Linux build uses [KVM](https://www.linux-kvm.org/page/Main_Page).
 
 ```
 $ sudo apt-get install cmake
