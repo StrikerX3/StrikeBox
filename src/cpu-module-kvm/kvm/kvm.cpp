@@ -182,15 +182,6 @@ KvmVCPUStatus KvmVCPU::Run() {
         return KVMVCPUS_RUN_FAILED;
     }
 
-    // Update our CPU regs.
-//    if(ioctl(m_fd, KVM_GET_REGS, &m_regs) < 0) {
-//        return KVMVCPUS_REG_READ_ERROR;
-//    }
-//
-//    if(ioctl(m_fd, KVM_GET_SREGS, &m_sregs) < 0) {
-//        return KVMVCPUS_REG_READ_ERROR;
-//    }
-
     return KVMVCPUS_SUCCESS;
 }
 
@@ -203,6 +194,48 @@ KvmVCPUStatus KvmVCPU::Interrupt(uint8_t vector) {
         return KVMVCPUS_INTERRUPT_FAILED;
     }
 
+    return KVMVCPUS_SUCCESS;
+}
+
+KvmVCPUStatus KvmVCPU::GetRegisters(struct kvm_regs *regs) {
+    if(ioctl(m_fd, KVM_GET_REGS, regs) < 0) {
+        return KVMVCPUS_REG_ERROR;
+    }
+    return KVMVCPUS_SUCCESS;
+}
+
+KvmVCPUStatus KvmVCPU::SetRegisters(struct kvm_regs regs) {
+    if(ioctl(m_fd, KVM_SET_REGS, &regs) < 0) {
+        return KVMVCPUS_REG_ERROR;
+    }
+    return KVMVCPUS_SUCCESS;
+}
+
+KvmVCPUStatus KvmVCPU::GetSRegisters(struct kvm_sregs *sregs) {
+    if(ioctl(m_fd, KVM_GET_SREGS, sregs) < 0) {
+        return KVMVCPUS_REG_ERROR;
+    }
+    return KVMVCPUS_SUCCESS;
+}
+
+KvmVCPUStatus KvmVCPU::SetSRegisters(struct kvm_sregs sregs) {
+    if(ioctl(m_fd, KVM_SET_SREGS, &sregs) < 0) {
+        return KVMVCPUS_REG_ERROR;
+    }
+    return KVMVCPUS_SUCCESS;
+}
+
+KvmVCPUStatus KvmVCPU::GetFPURegisters(struct kvm_fpu *fpuRegs) {
+    if(ioctl(m_fd, KVM_GET_FPU, fpuRegs) < 0) {
+        return KVMVCPUS_REG_ERROR;
+    }
+    return KVMVCPUS_SUCCESS;
+}
+
+KvmVCPUStatus KvmVCPU::SetFPURegisters(struct kvm_fpu fpuRegs) {
+    if(ioctl(m_fd, KVM_SET_FPU, &fpuRegs) < 0) {
+        return KVMVCPUS_REG_ERROR;
+    }
     return KVMVCPUS_SUCCESS;
 }
 

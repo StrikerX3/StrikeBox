@@ -229,7 +229,9 @@ int Xbox::Initialize(OpenXBOXSettings *settings)
     memcpy(m_rom, bios, biosSize);
 
     // Overlay MCPX ROM image onto the last 512 bytes
-    memcpy(m_rom + biosSize - 512, mcpx, 512);
+    if(!(m_settings->hw_model == DebugKit)) {
+        memcpy(m_rom + biosSize - 512, mcpx, 512);
+    }
 
     // Replicate resulting ROM image across the entire 16 MiB range
     for (uint32_t addr = biosSize; addr < MiB(16); addr += biosSize) {

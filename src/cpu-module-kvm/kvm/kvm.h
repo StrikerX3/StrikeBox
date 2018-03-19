@@ -24,7 +24,7 @@ enum KvmVCPUStatus {
     KVMVCPUS_CREATE_FAILED,
     KVMVCPUS_SUCCESS,
     KVMVCPUS_RUN_FAILED,
-    KVMVCPUS_REG_READ_ERROR,
+    KVMVCPUS_REG_ERROR,
     KVMVCPUS_INTERRUPT_FAILED
 };
 
@@ -79,6 +79,13 @@ public:
     KvmVCPUStatus Run();
     KvmVCPUStatus Interrupt(uint8_t vector);
 
+    KvmVCPUStatus GetRegisters(struct kvm_regs* regs);
+    KvmVCPUStatus SetRegisters(struct kvm_regs regs);
+    KvmVCPUStatus GetSRegisters(struct kvm_sregs* sregs);
+    KvmVCPUStatus SetSRegisters(struct kvm_sregs sregs);
+    KvmVCPUStatus GetFPURegisters(struct kvm_fpu *fpuRegs);
+    KvmVCPUStatus SetFPURegisters(struct kvm_fpu fpuRegs);
+
     struct kvm_run* kvmRun() { return m_kvmRun; }
 
 private:
@@ -92,8 +99,6 @@ private:
     uint32_t m_vcpuID;
     int m_fd;
 
-    struct kvm_regs m_regs;
-    struct kvm_sregs m_sregs;
     struct kvm_run* m_kvmRun;
     int m_kvmRunMmapSize;
 

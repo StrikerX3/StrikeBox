@@ -54,20 +54,33 @@ public:
 
 private:
 
-    int HandleIO(uint8_t direction, uint16_t port, uint8_t size, uint32_t count, uint64_t dataOffset);
-    int HandleMMIO(uint32_t physAddress, uint32_t *data, uint8_t size, uint8_t isWrite);
-
-    void InjectPendingInterrupt();
-
     Kvm *m_kvm;
     KvmVM *m_vm;
     KvmVCPU *m_vcpu;
+
+    bool m_regsDirty;
+    bool m_fpuRegsDirty;
+    bool m_regsChanged;
+    bool m_fpuRegsChanged;
 
     std::mutex m_interruptMutex;
     std::mutex m_pendingInterruptsMutex;
     std::queue<uint8_t> m_pendingInterrupts;
     Bitmap64 m_pendingInterruptsBitmap;
     uint8_t m_interruptHandlerCredits;
+
+    struct kvm_regs m_regs;
+    struct kvm_sregs m_sregs;
+    struct kvm_fpu m_fpuRegs;
+
+    int HandleIO(uint8_t direction, uint16_t port, uint8_t size, uint32_t count, uint64_t dataOffset);
+    int HandleMMIO(uint32_t physAddress, uint32_t *data, uint8_t size, uint8_t isWrite);
+
+    int RefreshRegisters(bool refreshFPU);
+
+    int LoadSegmentSelector(uint16_t selector, struct kvm_segment* segment);
+
+    void InjectPendingInterrupt();
 
 
 };
