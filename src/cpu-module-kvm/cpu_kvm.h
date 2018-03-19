@@ -21,6 +21,12 @@ namespace openxbox {
     static const uint8_t kInterruptHandlerIncrement = 1;     // Credits recovered when CPU emulation starts
 #endif
 
+struct PhysicalMemoryRange {
+    char *data;
+    uint32_t startingAddress;
+    uint32_t endingAddress;
+};
+
 class KvmCpu : public Cpu {
 
 public:
@@ -62,6 +68,8 @@ private:
     bool m_fpuRegsDirty;
     bool m_regsChanged;
     bool m_fpuRegsChanged;
+
+    std::vector<PhysicalMemoryRange*> m_physMemMap;
 
     std::mutex m_interruptMutex;
     std::mutex m_pendingInterruptsMutex;

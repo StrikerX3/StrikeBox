@@ -239,3 +239,16 @@ KvmVCPUStatus KvmVCPU::SetFPURegisters(struct kvm_fpu fpuRegs) {
     return KVMVCPUS_SUCCESS;
 }
 
+KvmVCPUStatus KvmVCPU::GetMSRs(struct kvm_msrs *msrs) {
+    if(ioctl(m_fd, KVM_GET_MSRS, msrs) < 0) {
+        return KVMVCPUS_REG_ERROR;
+    }
+    return KVMVCPUS_SUCCESS;
+}
+
+KvmVCPUStatus KvmVCPU::SetMSRs(struct kvm_msrs msrs) {
+    if(ioctl(m_fd, KVM_GET_FPU, &msrs) < 0) {
+        return KVMVCPUS_REG_ERROR;
+    }
+    return KVMVCPUS_SUCCESS;
+}

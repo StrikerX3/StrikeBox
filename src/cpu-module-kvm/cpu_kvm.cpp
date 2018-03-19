@@ -135,7 +135,8 @@ int KvmCpu::MemMapSubregion(MemoryRegion *subregion) {
         case MEM_REGION_RAM:
         case MEM_REGION_ROM: {
             auto status = m_vm->MapUserMemoryToGuest(subregion->m_data, subregion->m_size, subregion->m_start);
-            if(status) { return status; }
+            if(status == KVMVMS_MEM_ERROR) { return status; }
+            m_physMemMap.push_back(new PhysicalMemoryRange{ (char *)subregion->m_data, subregion->m_start, subregion->m_start + (uint32_t)subregion->m_size - 1 });
             return 0;
         }
     }
@@ -143,11 +144,25 @@ int KvmCpu::MemMapSubregion(MemoryRegion *subregion) {
 }
 
 int KvmCpu::MemRead(uint32_t addr, uint32_t size, void *value) {
-    return 0;
+    for (auto it = m_physMemMap.begin(); it != m_physMemMap.end(); it++) {
+        auto physMemRegion = *it;
+        if (addr >= physMemRegion->startingAddress && addr <= physMemRegion->endingAddress) {
+            memcpy(value, &physMemRegion->data[addr - physMemRegion->startingAddress], size);
+            return 0;
+        }
+    }
+    return -1;
 }
 
 int KvmCpu::MemWrite(uint32_t addr, uint32_t size, void *value) {
-    return 0;
+    for (auto it = m_physMemMap.begin(); it != m_physMemMap.end(); it++) {
+        auto physMemRegion = *it;
+        if (addr >= physMemRegion->startingAddress && addr <= physMemRegion->endingAddress) {
+            memcpy(&physMemRegion->data[addr - physMemRegion->startingAddress], value, size);
+            return 0;
+        }
+    }
+    return -1;
 }
 
 int KvmCpu::RegRead(enum CpuReg reg, uint32_t *value) {
@@ -221,30 +236,81 @@ int KvmCpu::RegWrite(enum CpuReg reg, uint32_t value) {
 }
 
 int KvmCpu::GetGDT(uint32_t *addr, uint32_t *size) {
+    auto status = RefreshRegisters(false);
+    if(status == KVMVCPUS_REG_ERROR) {
+        return status;
+    }
+
+    *addr = (uint32_t)m_sregs.gdt.base;
+    *size = m_sregs.gdt.limit;
+
     return 0;
 }
 
 int KvmCpu::SetGDT(uint32_t addr, uint32_t size) {
+    auto status = RefreshRegisters(false);
+    if(status == KVMVCPUS_REG_ERROR) {
+        return status;
+    }
+
+    m_sregs.gdt.base = addr;
+    m_sregs.gdt.limit = size;
+
+    m_regsChanged = true;
+
     return 0;
 }
 
 int KvmCpu::GetIDT(uint32_t *addr, uint32_t *size) {
+    auto status = RefreshRegisters(false);
+    if(status == KVMVCPUS_REG_ERROR) {
+        return status;
+    }
+
+    *addr = (uint32_t)m_sregs.idt.base;
+    *size = m_sregs.idt.limit;
     return 0;
 }
 
 int KvmCpu::SetIDT(uint32_t addr, uint32_t size) {
+    auto status = RefreshRegisters(false);
+    if(status == KVMVCPUS_REG_ERROR) {
+        return status;
+    }
+
+    m_sregs.idt.base = addr;
+    m_sregs.idt.limit = size;
+
+    m_regsChanged = true;
+
     return 0;
 }
 
 int KvmCpu::ReadMSR(uint32_t reg, uint64_t *value) {
+    struct kvm_msrs msrs;
+    msrs.nmsrs = 1;
+    msrs.entries[0].index = reg;
+    auto regStatus = m_vcpu->GetMSRs(&msrs);
+    if(regStatus == KVMVCPUS_REG_ERROR) { return regStatus ;}
+
+    *value = msrs.entries[0].data;
+
     return 0;
 }
 
 int KvmCpu::WriteMSR(uint32_t reg, uint64_t value) {
+    struct kvm_msrs msrs;
+    msrs.nmsrs= 0;
+    msrs.entries[0].index = reg;
+    msrs.entries[0].data = value;
+    auto regStatus = m_vcpu->SetMSRs(msrs);
+    if(regStatus == KVMVCPUS_REG_ERROR) { return regStatus; }
+
     return 0;
 }
 
 int KvmCpu::InvalidateTLBEntry(uint32_t addr) {
+    // TODO: implement
     return 0;
 }
 

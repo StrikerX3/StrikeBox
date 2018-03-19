@@ -85,6 +85,8 @@ public:
     KvmVCPUStatus SetSRegisters(struct kvm_sregs sregs);
     KvmVCPUStatus GetFPURegisters(struct kvm_fpu *fpuRegs);
     KvmVCPUStatus SetFPURegisters(struct kvm_fpu fpuRegs);
+    KvmVCPUStatus GetMSRs(struct kvm_msrs* msrs);
+    KvmVCPUStatus SetMSRs(struct kvm_msrs msrs);
 
     struct kvm_run* kvmRun() { return m_kvmRun; }
 
