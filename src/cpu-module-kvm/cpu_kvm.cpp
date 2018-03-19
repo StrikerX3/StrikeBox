@@ -185,7 +185,7 @@ int KvmCpu::RegRead(enum CpuReg reg, uint32_t *value) {
 
     switch(reg) {
         case REG_EIP:       *value = (uint32_t)m_regs.rip;      break;
-        case REG_EFLAGS:    *value = (uint32_t)m_regs.rip;      break;
+        case REG_EFLAGS:    *value = (uint32_t)m_regs.rflags;   break;
         case REG_EAX:       *value = (uint32_t)m_regs.rax;      break;
         case REG_ECX:       *value = (uint32_t)m_regs.rcx;      break;
         case REG_EDX:       *value = (uint32_t)m_regs.rdx;      break;
