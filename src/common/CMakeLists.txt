@@ -23,8 +23,9 @@ vs_set_filters("${SOURCES}" "openxbox")
 
 # Main Executable
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-    add_definitions("-Wall -Werror -O0 -g")
+    add_definitions("-Wall -Werror -O0 -g -fPIC")
 endif()
+
 add_library(common STATIC ${SOURCES})
 target_include_directories(common PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 

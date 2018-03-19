@@ -13,6 +13,10 @@
 #include "openxbox/hw/basic/win32/char_serial.h"
 #endif
 
+#ifdef __linux__
+#include <sys/mman.h>
+#endif
+
 #include <chrono>
 
 namespace openxbox {
@@ -72,8 +76,22 @@ Xbox::Xbox(IOpenXBOXCPUModule *cpuModule)
  */
 Xbox::~Xbox() {
     if (m_cpu) m_cpuModule->FreeCPU(m_cpu);
-    if (m_ram) vfree(m_ram);
-    if (m_rom) vfree(m_rom);
+    if (m_ram) {
+#ifdef _WIN32
+        vfree(m_ram);
+#endif
+#ifdef __linux__
+        munmap(m_ram, m_ramSize);
+#endif
+    }
+    if (m_rom) {
+#ifdef _WIN32
+        vfree(m_rom);
+#endif
+#ifdef __linux__
+        munmap(m_rom, XBOX_ROM_AREA_SIZE);
+#endif
+    }
     if (m_memRegion) delete m_memRegion;
 
     if (m_SMC != nullptr) delete m_SMC;
@@ -123,7 +141,16 @@ int Xbox::Initialize(OpenXBOXSettings *settings)
     // Create RAM region
     m_ramSize = settings->hw_model == DebugKit ? XBOX_RAM_SIZE_DEBUG : XBOX_RAM_SIZE_RETAIL;
     log_debug("Allocating RAM (%d MiB)\n", m_ramSize >> 20);
+
+#ifdef _WIN32
     m_ram = (char *)valloc(m_ramSize);
+#endif
+
+#ifdef __linux__
+    m_ram = (char *)mmap(nullptr, m_ramSize, PROT_READ | PROT_WRITE, 
+        MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE, -1, 0);
+#endif
+
     assert(m_ram != NULL);
     memset(m_ram, 0, m_ramSize);
 
@@ -136,7 +163,16 @@ int Xbox::Initialize(OpenXBOXSettings *settings)
 
     // Create ROM region
     log_debug("Allocating ROM (%d MiB)\n", XBOX_ROM_AREA_SIZE >> 20);
+
+#ifdef _WIN32
     m_rom = (char *)valloc(XBOX_ROM_AREA_SIZE);
+#endif
+
+#ifdef __linux__
+    m_rom = (char *)mmap(nullptr, XBOX_ROM_AREA_SIZE, PROT_READ | PROT_WRITE, 
+        MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE, -1, 0);
+#endif
+
     assert(m_rom != NULL);
     memset(m_rom, 0, XBOX_ROM_AREA_SIZE);
 
@@ -193,7 +229,9 @@ int Xbox::Initialize(OpenXBOXSettings *settings)
     memcpy(m_rom, bios, biosSize);
 
     // Overlay MCPX ROM image onto the last 512 bytes
-    memcpy(m_rom + biosSize - 512, mcpx, 512);
+    if(!(m_settings->hw_model == DebugKit)) {
+        memcpy(m_rom + biosSize - 512, mcpx, 512);
+    }
 
     // Replicate resulting ROM image across the entire 16 MiB range
     for (uint32_t addr = biosSize; addr < MiB(16); addr += biosSize) {

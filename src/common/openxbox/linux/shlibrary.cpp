@@ -1,6 +1,7 @@
 #if defined(__linux__) || defined(LINUX)
 
 #include "openxbox/shlibrary.h"
+#include "openxbox/log.h"
 
 #include <dlfcn.h>
 
@@ -18,12 +19,14 @@ private:
 };
 
 SharedLibraryStatus SharedLibrary_Load(std::wstring path, SharedLibrary **library) {
-    char *pathStr = new char[path.size()];
+    char *pathStr = new char[path.size()+1];
     wcstombs(pathStr, path.c_str(), path.size());
 
     void *libHandle = ::dlopen(pathStr, RTLD_LAZY);
+
     delete[] pathStr;
     if (libHandle == nullptr) {
+        log_error("%s\n", dlerror());
         return kLibraryUnspecifiedError;
     }
     *library = new LinuxSharedLibrary(libHandle);

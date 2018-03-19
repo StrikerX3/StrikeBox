@@ -143,7 +143,7 @@ private:
 	uint32_t m_vcpuID;
 	HANDLE m_hVCPU;
 	DWORD m_lastError;
-
+//
 	HaxmVM& m_vm;
 
 	friend class HaxmVM;
