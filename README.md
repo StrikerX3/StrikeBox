@@ -7,8 +7,8 @@ Open-Source (Original) Xbox Emulation Project
 
 The current state of this thing is just a tad bit more tangible than vaporware.
 Essentially right now it just initializes an x86 system (courtesy of
-[HAXM](https://github.com/intel/haxm) or [KVM](https://www.linux-kvm.org/page/Main_Page)) and runs whatever is in ROM, which is
-provided by the user.
+[HAXM](https://github.com/intel/haxm) or [KVM](https://www.linux-kvm.org/page/Main_Page))
+and runs whatever is in ROM, which is provided by the user.
 
 No networking, no audio, no graphics, no games... yet ;).
 
