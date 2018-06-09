@@ -2,13 +2,31 @@
 
 #include <stdint.h>
 #include <string.h>
+#include <vector>
+#include <queue>
+#include <mutex>
 
 #include "openxbox/memregion.h"
 #include "openxbox/gdt.h"
 #include "openxbox/idt.h"
 #include "openxbox/io.h"
+#include "openxbox/bitmap.h"
 
 namespace openxbox {
+
+// These constants control how often the CPU can handle interrupts, while
+// giving some affordance to handle short bursts.
+// Without this, the emulator might get stuck processing interrupts alone.
+#ifdef _DEBUG
+static const uint8_t kInterruptHandlerMaxCredits = 25;   // Maximum amount of credits available to handle interrupts
+static const uint8_t kInterruptHandlerCost = 5;          // Credits spent when an interrupt is handled
+static const uint8_t kInterruptHandlerIncrement = 1;     // Credits recovered when CPU emulation starts
+#else
+static const uint8_t kInterruptHandlerMaxCredits = 200;  // Maximum amount of credits available to handle interrupts
+static const uint8_t kInterruptHandlerCost = 2;          // Credits spent when an interrupt is handled
+static const uint8_t kInterruptHandlerIncrement = 1;     // Credits recovered when CPU emulation starts
+#endif
+
 
 // CR0 bits
 #define CR0_PG       0x80000000  // paging
@@ -129,6 +147,12 @@ struct CpuExitInfo {
 };
 
 typedef void (*InterruptHandlerFunc)(uint8_t vector, void *data);
+
+struct PhysicalMemoryRange {
+    char *data;
+    uint32_t startingAddress;
+    uint32_t endingAddress;
+};
 
 /*!
  * CPU base class
@@ -306,26 +330,6 @@ public:
 	 */
 	int ClearFlags(uint32_t flagsBits);
 
-	/*!
-	 * Reads a model specific register (MSR).
-	 *
-	 * The highest 32 bits of value are copied from EDX and the lowest 32 bits
-	 * are copied from EAX.
-	 *
-	 * Equivalent to `rdmsr`.
-	 */
-	virtual int ReadMSR(uint32_t reg, uint64_t *value) = 0;
-
-	/*!
-	 * Writes a model specific register (MSR).
-	 *
-	 * The highest 32 bits of value are written to EDX and the lowest 32 bits
-	 * are written to EAX.
-	 *
-	 * Equivalent to `wrmsr`.
-	 */
-	virtual int WriteMSR(uint32_t reg, uint64_t value) = 0;
-
 	// ----- Instructions -----------------------------------------------------
 
 	/*!
@@ -377,13 +381,6 @@ public:
 	 */
 	int Ret();
 
-	/*!
-	 * Invalidates a translation lookaside buffer entry.
-	 *
-	 * Equivalent to `invlpg <addr>`.
-	 */
-	virtual int InvalidateTLBEntry(uint32_t addr) = 0;
-
 	// ----- Data -------------------------------------------------------------
 
 	/*!
@@ -432,6 +429,23 @@ protected:
 	 * already enqueued.
 	 */
 	uint32_t m_skippedInterrupts[0x40];
+
+
+    // TODO: use an AVL tree instead of a vector to speed up lookups
+    std::vector<PhysicalMemoryRange *> m_physMemMap;
+
+    std::mutex m_interruptMutex;
+    std::mutex m_pendingInterruptsMutex;
+    std::queue<uint8_t> m_pendingInterrupts;
+    Bitmap64 m_pendingInterruptsBitmap;  // Prevents the same interrupt from being enqueued more than once
+    uint8_t m_interruptHandlerCredits;
+
+    void InjectPendingInterrupt();
+
+    /*!
+     * Injects an interrupt into the VCPU.
+     */
+    virtual int InjectInterrupt(uint8_t vector) = 0;
 };
 
 }

@@ -251,7 +251,10 @@ int Xbox::Initialize(OpenXBOXSettings *settings)
         log_fatal("CPU instantiation failed\n");
         return -1;
     }
-    m_cpu->Initialize(&m_ioMapper);
+    if (m_cpu->Initialize(&m_ioMapper)) {
+        log_fatal("CPU initialization failed\n");
+        return -1;
+    }
 
     // Allow CPU to update memory map based on device allocation, etc
     m_cpu->MemMap(m_memRegion);
@@ -292,6 +295,9 @@ int Xbox::Initialize(OpenXBOXSettings *settings)
         }
         m_SuperIO = new SuperIO(m_i8259, m_CharDrivers);
         m_SuperIO->Init();
+    }
+    else {
+        m_SuperIO = nullptr;
     }
     
     m_i8259->Reset();

@@ -11,22 +11,6 @@
 
 namespace openxbox {
 
-#ifdef _DEBUG
-    static const uint8_t kInterruptHandlerMaxCredits = 25;   // Maximum amount of credits available to handle interrupts
-    static const uint8_t kInterruptHandlerCost = 5;          // Credits spent when an interrupt is handled
-    static const uint8_t kInterruptHandlerIncrement = 1;     // Credits recovered when CPU emulation starts
-#else
-    static const uint8_t kInterruptHandlerMaxCredits = 200;  // Maximum amount of credits available to handle interrupts
-    static const uint8_t kInterruptHandlerCost = 2;          // Credits spent when an interrupt is handled
-    static const uint8_t kInterruptHandlerIncrement = 1;     // Credits recovered when CPU emulation starts
-#endif
-
-struct PhysicalMemoryRange {
-    char *data;
-    uint32_t startingAddress;
-    uint32_t endingAddress;
-};
-
 class KvmCpu : public Cpu {
 
 public:
@@ -52,14 +36,10 @@ public:
     int GetIDT(uint32_t *addr, uint32_t *size);
     int SetIDT(uint32_t addr, uint32_t size);
 
-    int ReadMSR(uint32_t reg, uint64_t *value);
-    int WriteMSR(uint32_t reg, uint64_t value);
-
-    int InvalidateTLBEntry(uint32_t addr);
-
+protected:
+	int InjectInterrupt(uint8_t vector);
 
 private:
-
     Kvm *m_kvm;
     KvmVM *m_vm;
     KvmVCPU *m_vcpu;
@@ -68,14 +48,6 @@ private:
     bool m_fpuRegsDirty;
     bool m_regsChanged;
     bool m_fpuRegsChanged;
-
-    std::vector<PhysicalMemoryRange*> m_physMemMap;
-
-    std::mutex m_interruptMutex;
-    std::mutex m_pendingInterruptsMutex;
-    std::queue<uint8_t> m_pendingInterrupts;
-    Bitmap64 m_pendingInterruptsBitmap;
-    uint8_t m_interruptHandlerCredits;
 
     struct kvm_regs m_regs;
     struct kvm_sregs m_sregs;
@@ -87,9 +59,6 @@ private:
     int RefreshRegisters(bool refreshFPU);
 
     int LoadSegmentSelector(uint16_t selector, struct kvm_segment* segment);
-
-    void InjectPendingInterrupt();
-
 
 };
 

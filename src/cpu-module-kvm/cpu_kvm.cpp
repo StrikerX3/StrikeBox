@@ -298,35 +298,6 @@ int KvmCpu::SetIDT(uint32_t addr, uint32_t size) {
     return 0;
 }
 
-int KvmCpu::ReadMSR(uint32_t reg, uint64_t *value) {
-    struct kvm_msrs msrs;
-    msrs.nmsrs = 1;
-    msrs.entries[0].index = reg;
-    auto regStatus = m_vcpu->GetMSRs(&msrs);
-    if(regStatus == KVMVCPUS_REG_ERROR) { return regStatus ;}
-
-    *value = msrs.entries[0].data;
-
-    return 0;
-}
-
-int KvmCpu::WriteMSR(uint32_t reg, uint64_t value) {
-    struct kvm_msrs msrs;
-    msrs.nmsrs= 0;
-    msrs.entries[0].index = reg;
-    msrs.entries[0].data = value;
-    auto regStatus = m_vcpu->SetMSRs(msrs);
-    if(regStatus == KVMVCPUS_REG_ERROR) { return regStatus; }
-
-    return 0;
-}
-
-int KvmCpu::InvalidateTLBEntry(uint32_t addr) {
-    // TODO: implement
-    return 0;
-}
-
-
 int KvmCpu::HandleIO(uint8_t direction, uint16_t port, uint8_t size, uint32_t count, uint64_t dataOffset) {
     uint8_t *ptr;
     if(count > 1) {
@@ -365,29 +336,6 @@ int KvmCpu::HandleMMIO(uint32_t physAddress, uint32_t *data, uint8_t size, uint8
         m_ioMapper->MMIORead(physAddress, data, size);
     }
     return 0;
-}
-
-void KvmCpu::InjectPendingInterrupt() {
-    if(m_interruptHandlerCredits < kInterruptHandlerMaxCredits) {
-        m_interruptHandlerCredits += kInterruptHandlerIncrement;
-    }
-
-    if(m_interruptHandlerCredits < kInterruptHandlerCost || m_pendingInterrupts.size() == 0) {
-        return;
-    }
-
-    m_interruptHandlerCredits -= kInterruptHandlerCost;
-
-    std::lock_guard<std::mutex> guard(m_pendingInterruptsMutex);
-
-    uint8_t vector = m_pendingInterrupts.front();
-    m_pendingInterrupts.pop();
-
-    Bitmap64Clear(&m_pendingInterruptsBitmap, vector);
-
-    m_vcpu->Interrupt(vector);
-
-    return;
 }
 
 int KvmCpu::RefreshRegisters(bool refreshFPU) {
@@ -434,6 +382,10 @@ int KvmCpu::LoadSegmentSelector(uint16_t selector, struct kvm_segment *segment) 
     m_regsChanged = true;
 
     return 0;
+}
+
+int WhvpCpu::InjectInterrupt(uint8_t vector) {
+    return m_vcpu->Interrupt(vector);
 }
 
 }

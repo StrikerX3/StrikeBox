@@ -38,7 +38,7 @@ endif()
 
 # Add custom build commands to copy modules to the command line front-end build output directory
 if(MSVC)
-    set(CPU_MODULE "none" CACHE STRING "Choose a CPU module to use: haxm, none")
+    set(CPU_MODULE "none" CACHE STRING "Choose a CPU module to use: haxm, whvp, none")
 
     # Create modules directory
     add_custom_command(TARGET cli
@@ -50,6 +50,9 @@ if(MSVC)
     if(CPU_MODULE_LC STREQUAL haxm)
         message(STATUS "CLI front-end will use Intel HAXM CPU module")
         target_link_libraries(cli cpu-module-haxm)
+    elseif(CPU_MODULE_LC STREQUAL whvp)
+        message(STATUS "CLI front-end will use Windows Hypervisor Platform CPU module")
+        target_link_libraries(cli cpu-module-whvp)
     elseif(CPU_MODULE_LC STREQUAL none)
         message(WARNING "No CPU module specified. OpenXBOX requires at least one CPU module to run. "
             "Make sure to add one to the module subdirectory in the build output directory, or set the CPU_MODULE option to one of the available options.")

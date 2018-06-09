@@ -454,34 +454,6 @@ int HaxmCpu::SetIDT(uint32_t addr, uint32_t size) {
 	return 0;
 }
 
-int HaxmCpu::ReadMSR(uint32_t reg, uint64_t *value) {
-	hax_msr_data msrs;
-	msrs.nr_msr = 1;
-	msrs.entries[0].entry = reg;
-	auto regStatus = m_vcpu->GetMSRs(&msrs);
-	if (regStatus) { return regStatus; }
-
-	*value = msrs.entries[0].value;
-	
-	return 0;
-}
-
-int HaxmCpu::WriteMSR(uint32_t reg, uint64_t value) {
-	hax_msr_data msrs;
-	msrs.nr_msr = 1;
-	msrs.entries[0].entry = reg;
-	msrs.entries[0].value = value;
-	auto regStatus = m_vcpu->SetMSRs(&msrs);
-	if (regStatus) { return regStatus; }
-
-	return msrs.done ? 0 : -1;
-}
-
-int HaxmCpu::InvalidateTLBEntry(uint32_t addr) {
-	// TODO: implement
-	return 0;
-}
-
 int HaxmCpu::HandleIO(uint8_t df, uint16_t port, uint8_t direction, uint16_t size, uint16_t count, uint8_t *buffer) {
 	uint8_t *ptr;
 	if (df) {
@@ -570,28 +542,8 @@ int HaxmCpu::LoadSegmentSelector(uint16_t selector, segment_desc_t *segment) {
 	return 0;
 }
 
-void HaxmCpu::InjectPendingInterrupt() {
-    // If there aren't enough credits or there are no pending interrupts, get out
-    if (m_interruptHandlerCredits < kInterruptHandlerCost || m_pendingInterrupts.size() == 0) {
-        return;
-    }
-
-    // Spend the credits and handle one interrupt
-    m_interruptHandlerCredits -= kInterruptHandlerCost;
-
-    // Acquire the pending interrupts mutex
-    std::lock_guard<std::mutex> guard(m_pendingInterruptsMutex);
-
-    // Dequeue the next interrupt vector
-    uint8_t vector = m_pendingInterrupts.front();
-    m_pendingInterrupts.pop();
-
-    // Clear the bit in the pending interrupts bitmap
-    Bitmap64Clear(&m_pendingInterruptsBitmap, vector);
-
-    // Inject the interrupt into the VCPU
-    m_vcpu->Interrupt(vector);
-    return;
+int HaxmCpu::InjectInterrupt(uint8_t vector) {
+    return m_vcpu->Interrupt(vector);
 }
 
 }

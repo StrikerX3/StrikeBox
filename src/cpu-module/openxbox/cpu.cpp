@@ -311,4 +311,28 @@ int Cpu::Ret() {
 	return PopReg(REG_EIP);
 }
 
+void Cpu::InjectPendingInterrupt() {
+    // If there aren't enough credits or there are no pending interrupts, get out
+    if (m_interruptHandlerCredits < kInterruptHandlerCost || m_pendingInterrupts.size() == 0) {
+        return;
+    }
+
+    // Spend the credits and handle one interrupt
+    m_interruptHandlerCredits -= kInterruptHandlerCost;
+
+    // Acquire the pending interrupts mutex
+    std::lock_guard<std::mutex> guard(m_pendingInterruptsMutex);
+
+    // Dequeue the next interrupt vector
+    uint8_t vector = m_pendingInterrupts.front();
+    m_pendingInterrupts.pop();
+
+    // Clear the bit in the pending interrupts bitmap
+    Bitmap64Clear(&m_pendingInterruptsBitmap, vector);
+
+    // Inject the interrupt into the VCPU
+    InjectInterrupt(vector);
+
+    return;
+}
 }
