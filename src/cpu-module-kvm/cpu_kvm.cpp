@@ -384,7 +384,7 @@ int KvmCpu::LoadSegmentSelector(uint16_t selector, struct kvm_segment *segment) 
     return 0;
 }
 
-int WhvpCpu::InjectInterrupt(uint8_t vector) {
+int KvmCpu::InjectInterrupt(uint8_t vector) {
     return m_vcpu->Interrupt(vector);
 }
 
