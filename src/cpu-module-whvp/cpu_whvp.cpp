@@ -149,6 +149,9 @@ InterruptResult WhvpCpu::InterruptImpl(uint8_t vector) {
         m_skippedInterrupts[vector]++;
     }
 
+    // Cancel execution of the VCPU
+    m_vcpu->CancelRun();
+
 	return INTR_SUCCESS;
 }
 
