@@ -350,11 +350,11 @@ int KvmCpu::InjectInterrupt(uint8_t vector) {
     return m_vcpu->Interrupt(vector);
 }
 
-bool HaxmCpu::CanInjectInterrupt() {
+bool KvmCpu::CanInjectInterrupt() {
     return m_vcpu->kvmRun()->ready_for_interrupt_injection != 0;
 }
 
-void HaxmCpu::RequestInterruptWindow() {
+void KvmCpu::RequestInterruptWindow() {
     m_vcpu->kvmRun()->request_interrupt_window = 1;
 }
 
