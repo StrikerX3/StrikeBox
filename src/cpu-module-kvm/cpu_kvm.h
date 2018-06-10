@@ -24,8 +24,6 @@ public:
     InterruptResult InterruptImpl(uint8_t vector);
 
     int MemMapSubregion(MemoryRegion *subregion);
-    int MemRead(uint32_t addr, uint32_t size, void *value);
-    int MemWrite(uint32_t addr, uint32_t size, void *value);
 
     int RegRead(enum CpuReg reg, uint32_t *value);
     int RegWrite(enum CpuReg reg, uint32_t value);
@@ -38,6 +36,8 @@ public:
 
 protected:
 	int InjectInterrupt(uint8_t vector);
+    bool CanInjectInterrupt();
+    void RequestInterruptWindow();
 
 private:
     Kvm *m_kvm;

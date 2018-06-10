@@ -17,30 +17,86 @@ Cpu::Cpu() {
 }
 
 Cpu::~Cpu() {
+    // Clear the physical memory map
+    for (auto it = m_physMemMap.begin(); it != m_physMemMap.end(); it++) {
+        delete *it;
+    }
+    m_physMemMap.clear();
 }
 
 // ----- Basic CPU operations -------------------------------------------------
 
 int Cpu::Initialize(IOMapper *ioMapper) {
     m_ioMapper = ioMapper;
-	for (uint8_t i = 0; i < 0x40; i++) {
+	
+    for (uint8_t i = 0; i < 0x40; i++) {
 		m_skippedInterrupts[i] = 0;
 	}
-	return InitializeImpl();
+    m_pendingInterruptsBitmap = 0;
+    m_interruptHandlerCredits = kInterruptHandlerMaxCredits;
+
+    return InitializeImpl();
 }
 
 #define CHECK_RESULT(expr) result = (expr); { if (result) return result; }
 
 int Cpu::Run() {
-	return RunImpl();
+    // Increment the credits available for the interrupt handler
+    if (m_interruptHandlerCredits < kInterruptHandlerMaxCredits) {
+        m_interruptHandlerCredits += kInterruptHandlerIncrement;
+    }
+
+    // Inject an interrupt if available and possible
+    if (m_pendingInterruptsBitmap != 0) {
+        if (CanInjectInterrupt()) {
+            InjectPendingInterrupt();
+        }
+        // Request an interrupt window if the VCPU is not ready
+        else {
+            RequestInterruptWindow();
+        }
+    }
+
+    // Run the VCPU
+    return RunImpl();
 }
 
 int Cpu::Step(uint64_t num_instructions) {
-	return StepImpl(num_instructions);
+    // Increment the credits available for the interrupt handler
+    if (m_interruptHandlerCredits < kInterruptHandlerMaxCredits) {
+        m_interruptHandlerCredits += kInterruptHandlerIncrement;
+    }
+
+    // Inject an interrupt if available and possible
+    if (m_pendingInterruptsBitmap != 0) {
+        if (CanInjectInterrupt()) {
+            InjectPendingInterrupt();
+        }
+        // Request an interrupt window if the VCPU is not ready
+        else {
+            RequestInterruptWindow();
+        }
+    }
+
+    // Run the VCPU
+    return StepImpl(num_instructions);
 }
 
 InterruptResult Cpu::Interrupt(uint8_t vector) {
-	return InterruptImpl(vector);
+    // Acquire the pending interrupts mutex
+    std::lock_guard<std::mutex> guard(m_pendingInterruptsMutex);
+
+    // If the vector has not been enqueued yet, enqueue the interrupt
+    if (!Bitmap64IsSet(m_pendingInterruptsBitmap, vector)) {
+        m_pendingInterrupts.push(vector);
+        Bitmap64Set(&m_pendingInterruptsBitmap, vector);
+    }
+    // Keep track of skipped interrupts
+    else {
+        m_skippedInterrupts[vector]++;
+    }
+
+    return InterruptImpl(vector);
 }
 
 // ----- Physical memory ------------------------------------------------------
@@ -53,9 +109,40 @@ int Cpu::MemMap(MemoryRegion *mem) {
 	for (auto it = mem->m_subregions; it != nullptr; it = it->next) {
 		auto subregion = it->curr;
 		log_debug("Mapping Region [%08x-%08zx)\n", subregion->m_start, subregion->m_start + subregion->m_size);
-		MemMapSubregion(subregion);
+        if (MemMapSubregion(subregion)) {
+            log_error("  Failed to map subregion\n");
+            return -1;
+        }
+        if (subregion->m_type == MEM_REGION_RAM || subregion->m_type == MEM_REGION_ROM) {
+            // Map the physical address range
+            m_physMemMap.push_back(new PhysicalMemoryRange{ (char *)subregion->m_data, subregion->m_start, subregion->m_start + (uint32_t)subregion->m_size - 1 });
+        }
 	}
 	return 0;
+}
+
+int Cpu::MemRead(uint32_t addr, uint32_t size, void *value) {
+    for (auto it = m_physMemMap.begin(); it != m_physMemMap.end(); it++) {
+        auto physMemRegion = *it;
+        if (addr >= physMemRegion->startingAddress && addr <= physMemRegion->endingAddress) {
+            memcpy(value, &physMemRegion->data[addr - physMemRegion->startingAddress], size);
+            return 0;
+        }
+    }
+
+    return -1;
+}
+
+int Cpu::MemWrite(uint32_t addr, uint32_t size, void *value) {
+    for (auto it = m_physMemMap.begin(); it != m_physMemMap.end(); it++) {
+        auto physMemRegion = *it;
+        if (addr >= physMemRegion->startingAddress && addr <= physMemRegion->endingAddress) {
+            memcpy(&physMemRegion->data[addr - physMemRegion->startingAddress], value, size);
+            return 0;
+        }
+    }
+
+    return -1;
 }
 
 // ----- Virtual memory -------------------------------------------------------

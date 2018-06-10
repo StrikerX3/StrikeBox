@@ -66,12 +66,6 @@ int KvmCpu::RunImpl() {
     // Inject any pending interrupts.
     auto kvmRun = m_vcpu->kvmRun();
 
-    if(kvmRun->ready_for_interrupt_injection) {
-        InjectPendingInterrupt();
-    } else if(!m_pendingInterrupts.empty()) {
-        kvmRun->request_interrupt_window = 0x1;
-    }
-
     // Run the CPU.
     auto status = m_vcpu->Run();
 
@@ -117,15 +111,6 @@ int KvmCpu::StepImpl(uint64_t num_instructions) {
 }
 
 InterruptResult KvmCpu::InterruptImpl(uint8_t vector) {
-    std::lock_guard<std::mutex> guard(m_pendingInterruptsMutex);
-
-    if(!Bitmap64IsSet(m_pendingInterruptsBitmap, vector)) {
-        m_pendingInterrupts.push(vector);
-        Bitmap64Set(&m_pendingInterruptsBitmap, vector);
-    } else {
-        m_skippedInterrupts[vector]++;
-    }
-
     return INTR_SUCCESS;
 }
 
@@ -148,29 +133,6 @@ int KvmCpu::MemMapSubregion(MemoryRegion *subregion) {
         case MEM_REGION_ROM: {
             auto status = m_vm->MapUserMemoryToGuest(subregion->m_data, subregion->m_size, subregion->m_start);
             if(status == KVMVMS_MEM_ERROR) { return status; }
-            m_physMemMap.push_back(new PhysicalMemoryRange{ (char *)subregion->m_data, subregion->m_start, subregion->m_start + (uint32_t)subregion->m_size - 1 });
-            return 0;
-        }
-    }
-    return -1;
-}
-
-int KvmCpu::MemRead(uint32_t addr, uint32_t size, void *value) {
-    for (auto it = m_physMemMap.begin(); it != m_physMemMap.end(); it++) {
-        auto physMemRegion = *it;
-        if (addr >= physMemRegion->startingAddress && addr <= physMemRegion->endingAddress) {
-            memcpy(value, &physMemRegion->data[addr - physMemRegion->startingAddress], size);
-            return 0;
-        }
-    }
-    return -1;
-}
-
-int KvmCpu::MemWrite(uint32_t addr, uint32_t size, void *value) {
-    for (auto it = m_physMemMap.begin(); it != m_physMemMap.end(); it++) {
-        auto physMemRegion = *it;
-        if (addr >= physMemRegion->startingAddress && addr <= physMemRegion->endingAddress) {
-            memcpy(&physMemRegion->data[addr - physMemRegion->startingAddress], value, size);
             return 0;
         }
     }
@@ -386,6 +348,14 @@ int KvmCpu::LoadSegmentSelector(uint16_t selector, struct kvm_segment *segment) 
 
 int KvmCpu::InjectInterrupt(uint8_t vector) {
     return m_vcpu->Interrupt(vector);
+}
+
+bool HaxmCpu::CanInjectInterrupt() {
+    return m_vcpu->kvmRun()->ready_for_interrupt_injection != 0;
+}
+
+void HaxmCpu::RequestInterruptWindow() {
+    m_vcpu->kvmRun()->request_interrupt_window = 1;
 }
 
 }

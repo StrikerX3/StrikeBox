@@ -211,12 +211,12 @@ public:
 	/*!
 	 * Reads a portion of physical memory into the specified value.
 	 */
-	virtual int MemRead(uint32_t addr, uint32_t size, void *value) = 0;
+	int MemRead(uint32_t addr, uint32_t size, void *value);
 
 	/*!
 	 * Writes the specified value into physical memory.
 	 */
-	virtual int MemWrite(uint32_t addr, uint32_t size, void *value) = 0;
+	int MemWrite(uint32_t addr, uint32_t size, void *value);
 
 	// ----- Virtual memory ---------------------------------------------------
 
@@ -430,7 +430,22 @@ protected:
 	 */
 	uint32_t m_skippedInterrupts[0x40];
 
+    /*!
+     * Injects an interrupt into the VCPU.
+     */
+    virtual int InjectInterrupt(uint8_t vector) = 0;
 
+    /*!
+     * Determines if an interrupt can be injected into the VCPU.
+     */
+    virtual bool CanInjectInterrupt() = 0;
+
+    /*!
+     * Requests for an interrupt injection window.
+     */
+    virtual void RequestInterruptWindow() = 0;
+
+private:
     // TODO: use an AVL tree instead of a vector to speed up lookups
     std::vector<PhysicalMemoryRange *> m_physMemMap;
 
@@ -441,11 +456,6 @@ protected:
     uint8_t m_interruptHandlerCredits;
 
     void InjectPendingInterrupt();
-
-    /*!
-     * Injects an interrupt into the VCPU.
-     */
-    virtual int InjectInterrupt(uint8_t vector) = 0;
 };
 
 }

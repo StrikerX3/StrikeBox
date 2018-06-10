@@ -9,8 +9,6 @@ WhvpCpu::WhvpCpu() {
 	m_whvp = nullptr;
 	m_partition = nullptr;
 	m_vcpu = nullptr;
-
-    m_pendingInterruptsBitmap = 0;
 }
 
 WhvpCpu::~WhvpCpu() {
@@ -19,12 +17,6 @@ WhvpCpu::~WhvpCpu() {
 		delete m_whvp;
 		m_whvp = nullptr;
 	}
-
-	// Clear the physical memory map
-	for (auto it = m_physMemMap.begin(); it != m_physMemMap.end(); it++) {
-		delete *it;
-	}
-	m_physMemMap.clear();
 }
 
 int WhvpCpu::InitializeImpl() {
@@ -69,24 +61,12 @@ int WhvpCpu::InitializeImpl() {
         // Windows Hypervisor Platform VCPUs are initialized to EIP = 0xFFFF0,
         // but we expect it to be 0xFFFFFFF0 instead, so let's set this here
         RegWrite(REG_EIP, 0xFFFFFFF0);
-
-        m_interruptHandlerCredits = kInterruptHandlerMaxCredits;
     }
 
 	return 0;
 }
 
 int WhvpCpu::RunImpl() {
-    // Increment the credits available for the interrupt handler
-    if (m_interruptHandlerCredits < kInterruptHandlerMaxCredits) {
-        m_interruptHandlerCredits += kInterruptHandlerIncrement;
-    }
-
-    // Inject an interrupt if available and possible
-    if (m_pendingInterruptsBitmap != 0) {
-        InjectPendingInterrupt();
-    }
-
 	// Run CPU
 	auto status = m_vcpu->Run();
 
@@ -136,20 +116,7 @@ int WhvpCpu::StepImpl(uint64_t num_instructions) {
 }
 
 InterruptResult WhvpCpu::InterruptImpl(uint8_t vector) {
-    // Acquire the pending interrupts mutex
-    std::lock_guard<std::mutex> guard(m_pendingInterruptsMutex);
-
-    // If the vector has not been enqueued yet, enqueue the interrupt
-    if (!Bitmap64IsSet(m_pendingInterruptsBitmap, vector)) {
-        m_pendingInterrupts.push(vector);
-        Bitmap64Set(&m_pendingInterruptsBitmap, vector);
-    }
-    // Keep track of skipped interrupts
-    else {
-        m_skippedInterrupts[vector]++;
-    }
-
-    // Cancel execution of the VCPU
+    // Cancel execution of the VCPU to give the emulator a chance to inject the interrupt request
     m_vcpu->CancelRun();
 
 	return INTR_SUCCESS;
@@ -158,12 +125,7 @@ InterruptResult WhvpCpu::InterruptImpl(uint8_t vector) {
 int WhvpCpu::MemMapSubregion(MemoryRegion *subregion) {
 	switch (subregion->m_type) {
 	case MEM_REGION_MMIO: {
-		// TODO: map MMIO range
-		// When MMIO happens, handle similar to xb_uc_hook
-		// subregion->m_handler contains the handler function pointer
-		// subregion->m_handler_user contains user data for the handler
-
-		// All unmapped regions in a HAXM VM are MMIO, no need to allocate
+		// All unmapped regions in a Windows Hypervisor Platform VM are MMIO, no need to allocate
 		return 0;
 	}
 	case MEM_REGION_NONE: {
@@ -177,36 +139,9 @@ int WhvpCpu::MemMapSubregion(MemoryRegion *subregion) {
 		WHV_MAP_GPA_RANGE_FLAGS flags = WHvMapGpaRangeFlagRead | WHvMapGpaRangeFlagExecute | ((subregion->m_type == MEM_REGION_RAM) ? WHvMapGpaRangeFlagWrite : WHvMapGpaRangeFlagNone);
 		auto status = m_partition->MapGpaRange(subregion->m_data, subregion->m_start, subregion->m_size, flags);
 		if (status) { return status; }
-		
-		// Map the physical address range
-		m_physMemMap.push_back(new PhysicalMemoryRange{ (char *)subregion->m_data, subregion->m_start, subregion->m_start + (uint32_t)subregion->m_size - 1 });
 
 		return 0;
 	}
-	}
-
-	return -1;
-}
-
-int WhvpCpu::MemRead(uint32_t addr, uint32_t size, void *value) {
-	for (auto it = m_physMemMap.begin(); it != m_physMemMap.end(); it++) {
-		auto physMemRegion = *it;
-		if (addr >= physMemRegion->startingAddress && addr <= physMemRegion->endingAddress) {
-			memcpy(value, &physMemRegion->data[addr - physMemRegion->startingAddress], size);
-			return 0;
-		}
-	}
-
-	return -1;
-}
-
-int WhvpCpu::MemWrite(uint32_t addr, uint32_t size, void *value) {
-	for (auto it = m_physMemMap.begin(); it != m_physMemMap.end(); it++) {
-		auto physMemRegion = *it;
-		if (addr >= physMemRegion->startingAddress && addr <= physMemRegion->endingAddress) {
-			memcpy(&physMemRegion->data[addr - physMemRegion->startingAddress], value, size);
-			return 0;
-		}
 	}
 
 	return -1;
@@ -381,6 +316,15 @@ int WhvpCpu::SetIDT(uint32_t addr, uint32_t size) {
 
 int WhvpCpu::InjectInterrupt(uint8_t vector) {
     return m_vcpu->Interrupt(vector);
+}
+
+bool WhvpCpu::CanInjectInterrupt() {
+    // TODO: should probably take a look at m_vcpu->ExitContext()->InterruptWindow
+    return true;
+}
+
+void WhvpCpu::RequestInterruptWindow() {
+    // TODO: should probably take a look at m_vcpu->ExitContext()->InterruptWindow
 }
 
 HRESULT WhvpCpu::IoPortCallback(PVOID context, WHV_EMULATOR_IO_ACCESS_INFO *io) {

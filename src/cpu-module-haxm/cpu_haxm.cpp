@@ -22,8 +22,6 @@ HaxmCpu::HaxmCpu() {
 	m_fpuRegsDirty = true;
 	m_regsChanged = false;
 	m_fpuRegsChanged = false;
-
-    m_pendingInterruptsBitmap = 0;
 }
 
 HaxmCpu::~HaxmCpu() {
@@ -32,12 +30,6 @@ HaxmCpu::~HaxmCpu() {
 		delete m_haxm;
 		m_haxm = nullptr;
 	}
-
-	// Clear the physical memory map
-	for (auto it = m_physMemMap.begin(); it != m_physMemMap.end(); it++) {
-		delete *it;
-	}
-	m_physMemMap.clear();
 }
 
 int HaxmCpu::InitializeImpl() {
@@ -62,8 +54,6 @@ int HaxmCpu::InitializeImpl() {
 			m_haxm = nullptr;
 			return vcpuStatus;
 		}
-
-        m_interruptHandlerCredits = kInterruptHandlerMaxCredits;
     }
 
 	return 0;
@@ -82,23 +72,7 @@ int HaxmCpu::RunImpl() {
 
     auto tunnel = m_vcpu->Tunnel();
  
-    // Increment the credits available for the interrupt handler
-    if (m_interruptHandlerCredits < kInterruptHandlerMaxCredits) {
-        m_interruptHandlerCredits += kInterruptHandlerIncrement;
-    }
-
-    // Inject an interrupt if available and possible
-    if (m_pendingInterruptsBitmap != 0) {
-        if (tunnel->ready_for_interrupt_injection) {
-            InjectPendingInterrupt();
-        }
-        // Request an interrupt window if the VCPU is not ready
-        else {
-            tunnel->request_interrupt_window = 1;
-        }
-    }
-
-	// Run CPU
+    // Run CPU
 	auto status = m_vcpu->Run();
 
 	// Mark registers as dirty
@@ -271,30 +245,12 @@ int HaxmCpu::StepImpl(uint64_t num_instructions) {
 }
 
 InterruptResult HaxmCpu::InterruptImpl(uint8_t vector) {
-    // Acquire the pending interrupts mutex
-    std::lock_guard<std::mutex> guard(m_pendingInterruptsMutex);
-
-    // If the vector has not been enqueued yet, enqueue the interrupt
-    if (!Bitmap64IsSet(m_pendingInterruptsBitmap, vector)) {
-        m_pendingInterrupts.push(vector);
-        Bitmap64Set(&m_pendingInterruptsBitmap, vector);
-    }
-    // Keep track of skipped interrupts
-    else {
-        m_skippedInterrupts[vector]++;
-    }
-
 	return INTR_SUCCESS;
 }
 
 int HaxmCpu::MemMapSubregion(MemoryRegion *subregion) {
 	switch (subregion->m_type) {
 	case MEM_REGION_MMIO: {
-		// TODO: map MMIO range
-		// When MMIO happens, handle similar to xb_uc_hook
-		// subregion->m_handler contains the handler function pointer
-		// subregion->m_handler_user contains user data for the handler
-
 		// All unmapped regions in a HAXM VM are MMIO, no need to allocate
 		return 0;
 	}
@@ -309,36 +265,9 @@ int HaxmCpu::MemMapSubregion(MemoryRegion *subregion) {
 		HaxmVMMemoryType memType = subregion->m_type == MEM_REGION_RAM ? HXVM_MEM_RAM : HXVM_MEM_ROM;
 		auto status = m_vm->AllocateMemory(subregion->m_data, subregion->m_size, subregion->m_start, memType);
 		if (status) { return status; }
-		
-		// Map the physical address range
-		m_physMemMap.push_back(new PhysicalMemoryRange{ (char *)subregion->m_data, subregion->m_start, subregion->m_start + (uint32_t)subregion->m_size - 1 });
 
-		return 0;
+        return 0;
 	}
-	}
-
-	return -1;
-}
-
-int HaxmCpu::MemRead(uint32_t addr, uint32_t size, void *value) {
-	for (auto it = m_physMemMap.begin(); it != m_physMemMap.end(); it++) {
-		auto physMemRegion = *it;
-		if (addr >= physMemRegion->startingAddress && addr <= physMemRegion->endingAddress) {
-			memcpy(value, &physMemRegion->data[addr - physMemRegion->startingAddress], size);
-			return 0;
-		}
-	}
-
-	return -1;
-}
-
-int HaxmCpu::MemWrite(uint32_t addr, uint32_t size, void *value) {
-	for (auto it = m_physMemMap.begin(); it != m_physMemMap.end(); it++) {
-		auto physMemRegion = *it;
-		if (addr >= physMemRegion->startingAddress && addr <= physMemRegion->endingAddress) {
-			memcpy(&physMemRegion->data[addr - physMemRegion->startingAddress], value, size);
-			return 0;
-		}
 	}
 
 	return -1;
@@ -544,6 +473,14 @@ int HaxmCpu::LoadSegmentSelector(uint16_t selector, segment_desc_t *segment) {
 
 int HaxmCpu::InjectInterrupt(uint8_t vector) {
     return m_vcpu->Interrupt(vector);
+}
+
+bool HaxmCpu::CanInjectInterrupt() {
+    return m_vcpu->Tunnel()->ready_for_interrupt_injection != 0;
+}
+
+void HaxmCpu::RequestInterruptWindow() {
+    m_vcpu->Tunnel()->request_interrupt_window = 1;
 }
 
 }
