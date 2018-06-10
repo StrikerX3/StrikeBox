@@ -4,6 +4,14 @@
 
 namespace openxbox {
 
+#define ONE_KB 1024
+#define ONE_MB (1024 * 1024)
+
+#define XBOX_MEMORY_SIZE (64 * ONE_MB)
+
+#define XBE_IMAGE_BASE 0x00010000
+#define CONTIGUOUS_MEMORY_BASE  0x80000000
+
 struct Pte {
     uint32_t valid : 1;
     uint32_t write : 1;
