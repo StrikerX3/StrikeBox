@@ -251,7 +251,7 @@ private:
     bool OHCI_GetDwords(uint32_t Paddr, uint32_t* Buffer, int Number);
     // write an array of DWORDs in memory
     bool OHCI_WriteDwords(uint32_t Paddr, uint32_t* Buffer, int Number);
-    // process an ED list
+    // process an ED list. Returns nonzero if active TD was found
     int OHCI_ServiceEDlist(uint32_t Head, int Completion);
     // process a TD. Returns nonzero to terminate processing of this endpoint
     int OHCI_ServiceTD(OHCI_ED* Ed);
@@ -259,6 +259,8 @@ private:
     XboxDevice* OHCI::OHCI_FindDevice(uint8_t Addr);
     // cancel a packet when a device is removed
     void OHCI_AsyncCancelDevice(XboxDevice* dev);
+    // Process Control and Bulk lists
+    void OHCI_ProcessLists(int completion);
 };
 
 }
