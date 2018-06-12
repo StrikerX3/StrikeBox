@@ -232,10 +232,6 @@ OHCI::OHCI(int Irq, USBPCIDevice* UsbObj)
 	m_IrqNum = Irq;
 	m_UsbDevice = UsbObj;
 
-    m_irq = new IRQ();
-    m_irq->num = Irq;
-    m_irq->handler = ?; // TODO: what IRQ handler to use?
-
 	for (int i = 0; i < 2; i++) {
 		m_UsbDevice->USB_RegisterPort(&m_Registers.RhPort[i].UsbPort, i, USB_SPEED_MASK_LOW | USB_SPEED_MASK_FULL);
 	}
@@ -1241,11 +1237,12 @@ void OHCI::OHCI_WriteRegister(uint32_t Addr, uint32_t Value)
 
 void OHCI::OHCI_UpdateInterrupt()
 {
+    // TODO: interrupts
 	if ((m_Registers.HcInterrupt & OHCI_INTR_MIE) && (m_Registers.HcInterruptStatus & m_Registers.HcInterrupt)) {
-		m_irq->Handle(1);
+        //HalSystemInterrupts[m_IrqNum].Assert(true);
 	}
 	else {
-        m_irq->Handle(0);
+        //HalSystemInterrupts[m_IrqNum].Assert(false);
     }
 }
 

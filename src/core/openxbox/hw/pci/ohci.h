@@ -42,7 +42,6 @@
 
 #include "usb_pci.h"
 #include "openxbox/cxbxtimer.h"
-#include "../basic/irq.h"
 
 namespace openxbox {
 
@@ -177,7 +176,6 @@ public:
     void OHCI_Detach(USBPort* Port);
 
 private:
-    IRQ * m_irq = nullptr;
     // pointer to g_USB0 or g_USB1
     USBPCIDevice * m_UsbDevice = nullptr;
     // all the registers available on the OHCI standard
