@@ -39,37 +39,6 @@
 
 namespace openxbox {
 
-// ergo720: note that GetDwords and WriteDwords will reliably work only if the allocation was served by MapViewOfFileEx and not
-// by VirtualAlloc (see comment on OHCI_ReadHCCA for more details). Once LLE CPU and MMU are implemented, this will no
-// longer be the case. Also note that the physical pages can be modified while being read/written
-
-// read an array of DWORDs in memory
-void GetDwords(uint32_t Paddr, uint32_t* Buffer, int Number) {
-    for (int i = 0; i < Number; i++, Buffer++, Paddr += sizeof(*Buffer)) {
-        std::memcpy(Buffer, reinterpret_cast<void*>(Paddr + CONTIGUOUS_MEMORY_BASE), 4); // dropped little -> big endian conversion from XQEMU
-    }
-}
-
-// write an array of DWORDs in memory
-void WriteDwords(uint32_t Paddr, uint32_t* Buffer, int Number) {
-    for (int i = 0; i < Number; i++, Buffer++, Paddr += sizeof(*Buffer)) {
-        std::memcpy(reinterpret_cast<void*>(Paddr + CONTIGUOUS_MEMORY_BASE), Buffer, 4); // dropped big -> little endian conversion from XQEMU
-    }
-}
-
-// read an array of WORDs in memory
-void GetWords(uint32_t Paddr, uint16_t* Buffer, int Number) {
-    for (int i = 0; i < Number; i++, Buffer++, Paddr += sizeof(*Buffer)) {
-        std::memcpy(Buffer, reinterpret_cast<void*>(Paddr + CONTIGUOUS_MEMORY_BASE), 2); // dropped little -> big endian conversion from XQEMU
-    }
-}
-
-// write an array of WORDs in memory
-void WriteWords(uint32_t Paddr, uint16_t* Buffer, int Number) {
-    for (int i = 0; i < Number; i++, Buffer++, Paddr += sizeof(*Buffer)) {
-        std::memcpy(reinterpret_cast<void*>(Paddr + CONTIGUOUS_MEMORY_BASE), Buffer, 2); // dropped big -> little endian conversion from XQEMU
-    }
-}
 
 /* These macros are used to access the bits of the various registers */
 // HcControl
@@ -211,29 +180,36 @@ void WriteWords(uint32_t Paddr, uint16_t* Buffer, int Number) {
 
 #define USB_HZ 12000000
 
-#define USB_SPEED_LOW   0
-#define USB_SPEED_FULL  1
-
 #define USUB(a, b) ((int16_t)((uint16_t)(a) - (uint16_t)(b)))
 
 #define OHCI_PAGE_MASK    0xFFFFF000
 #define OHCI_OFFSET_MASK  0xFFF
 
-typedef enum _USB_SPEED
+OHCI::OHCI(Cpu* cpu, int Irq, USBPCIDevice* UsbObj)
+    : m_cpu(cpu)
 {
-	USB_SPEED_MASK_LOW =  1 << 0,
-	USB_SPEED_MASK_FULL = 1 << 1,
-}
-USB_SPEED;
+    int offset = 0;
+    USBPortOps* ops;
 
-
-OHCI::OHCI(int Irq, USBPCIDevice* UsbObj)
-{
 	m_IrqNum = Irq;
 	m_UsbDevice = UsbObj;
+    ops = new USBPortOps();
+    {
+        using namespace std::placeholders;
+
+        ops->attach = std::bind(&OHCI::OHCI_Attach, this, _1);
+        ops->detach = std::bind(&OHCI::OHCI_Detach, this, _1);
+        ops->child_detach = std::bind(&OHCI::OHCI_ChildDetach, this, nullptr, _2);
+        ops->wakeup = std::bind(&OHCI::OHCI_Wakeup, this, _1);
+        ops->complete = std::bind(&OHCI::OHCI_AsyncCompletePacket, this, _1, _2);
+    }
+    
+    if (m_IrqNum == 9) {
+        offset = 2;
+    }
 
 	for (int i = 0; i < 2; i++) {
-		m_UsbDevice->USB_RegisterPort(&m_Registers.RhPort[i].UsbPort, i, USB_SPEED_MASK_LOW | USB_SPEED_MASK_FULL);
+		m_UsbDevice->USB_RegisterPort(&m_Registers.RhPort[i].UsbPort, i + offset, USB_SPEED_MASK_LOW | USB_SPEED_MASK_FULL, ops);
 	}
 	OHCI_PacketInit(&m_UsbPacket);
 
@@ -313,7 +289,7 @@ void OHCI::OHCI_FrameBoundaryWorker()
 	}
 
 	if (m_DoneCount != 7 && m_DoneCount != 0) {
-		// decrease DelayInterrupt counter
+		// decrease Done Queue counter
 		m_DoneCount--;
 	}
 
@@ -374,7 +350,7 @@ bool OHCI::OHCI_WriteHCCA(uint32_t Paddr, OHCI_HCCA* Hcca)
 bool OHCI::OHCI_ReadED(uint32_t Paddr, OHCI_ED* Ed)
 {
 	if (Paddr != NULL) {
-		GetDwords(Paddr, reinterpret_cast<uint32_t*>(Ed), sizeof(*Ed) >> 2); // ED is 16 bytes large
+        m_cpu->VMemRead(Paddr, sizeof(*Ed), Ed);
 		return false;
 	}
 	return true; // error
@@ -385,7 +361,7 @@ bool OHCI::OHCI_WriteED(uint32_t Paddr, OHCI_ED* Ed)
 	if (Paddr != NULL) {
 		// According to the standard, only the HeadP field is writable by the HC, so we'll write just that
 		size_t OffsetOfHeadP = offsetof(OHCI_ED, HeadP);
-		WriteDwords(Paddr + OffsetOfHeadP, reinterpret_cast<uint32_t*>(reinterpret_cast<uint8_t*>(Ed) + OffsetOfHeadP), 1);
+        m_cpu->VMemWrite(Paddr, 4, Ed + OffsetOfHeadP);
 		return false;
 	}
 	return true; // error
@@ -394,7 +370,7 @@ bool OHCI::OHCI_WriteED(uint32_t Paddr, OHCI_ED* Ed)
 bool OHCI::OHCI_ReadTD(uint32_t Paddr, OHCI_TD* Td)
 {
 	if (Paddr != NULL) {
-		GetDwords(Paddr, reinterpret_cast<uint32_t*>(Td), sizeof(*Td) >> 2); // TD is 16 bytes large
+        m_cpu->VMemRead(Paddr, sizeof(*Td), Td);
 		return false;
 	}
 	return true; // error
@@ -403,7 +379,7 @@ bool OHCI::OHCI_ReadTD(uint32_t Paddr, OHCI_TD* Td)
 bool OHCI::OHCI_WriteTD(uint32_t Paddr, OHCI_TD* Td)
 {
 	if (Paddr != NULL) {
-		WriteDwords(Paddr, reinterpret_cast<uint32_t*>(Td), sizeof(*Td) >> 2);
+        m_cpu->VMemWrite(Paddr, sizeof(*Td), Td);
 		return false;
 	}
 	return true; // error
@@ -411,8 +387,7 @@ bool OHCI::OHCI_WriteTD(uint32_t Paddr, OHCI_TD* Td)
 
 bool OHCI::OHCI_ReadIsoTD(uint32_t Paddr, OHCI_ISO_TD* td) {
     if (Paddr != NULL) {
-        GetDwords(Paddr, reinterpret_cast<uint32_t*>(td), 4);
-        GetWords(Paddr + 16, td->Offset, 8);
+        m_cpu->VMemRead(Paddr, sizeof(*td), td);
         return false;
     }
     return true; // error
@@ -420,8 +395,7 @@ bool OHCI::OHCI_ReadIsoTD(uint32_t Paddr, OHCI_ISO_TD* td) {
 
 bool OHCI::OHCI_WriteIsoTD(uint32_t Paddr, OHCI_ISO_TD* td) {
     if (Paddr != NULL) {
-        WriteDwords(Paddr, reinterpret_cast<uint32_t*>(td), 4);
-        WriteWords(Paddr + 16, td->Offset, 8);
+        m_cpu->VMemWrite(Paddr, sizeof(*td), td);
         return false;
     }
     return true; // error
@@ -599,7 +573,7 @@ int OHCI::OHCI_ServiceTD(OHCI_ED* Ed)
 	int pid;
 	int ret;
 	int i;
-	XboxDevice* dev;
+    XboxDeviceState* dev;
 	USBEndpoint* ep;
 	OHCI_TD td;
 	uint32_t addr;
@@ -845,9 +819,9 @@ exit_no_retire:
 	return OHCI_BM(td.Flags, TD_CC) != OHCI_CC_NOERROR;
 }
 
-XboxDevice* OHCI::OHCI_FindDevice(uint8_t Addr)
+XboxDeviceState* OHCI::OHCI_FindDevice(uint8_t Addr)
 {
-	XboxDevice* dev;
+    XboxDeviceState* dev;
 	int i;
 
 	for (i = 0; i < 2; i++) {
@@ -1277,7 +1251,7 @@ uint32_t OHCI::OHCI_GetFrameRemaining()
 
 void OHCI::OHCI_StopEndpoints()
 {
-	XboxDevice* dev;
+    XboxDeviceState* dev;
 	int i, j;
 
 	for (i = 0; i < 2; i++) {
@@ -1455,7 +1429,7 @@ void OHCI::OHCI_Attach(USBPort* Port)
 	port->HcRhPortStatus |= OHCI_PORT_CCS | OHCI_PORT_CSC;
 
 	// update speed
-	if (port->UsbPort.Dev->speed == USB_SPEED_LOW) {
+	if (port->UsbPort.Dev->Speed == USB_SPEED_LOW) {
 		port->HcRhPortStatus |= OHCI_PORT_LSDA;
 	}
 	else {
@@ -1467,14 +1441,48 @@ void OHCI::OHCI_Attach(USBPort* Port)
 		OHCI_SetInterrupt(OHCI_INTR_RD);
 	}
 
-    log_debug("OHCI: Attached port %d\n", Port->PortIndex);
+    log_debug("OHCI: Attached port %d", Port->PortIndex);
 
 	if (old_state != port->HcRhPortStatus) {
 		OHCI_SetInterrupt(OHCI_INTR_RHSC);
 	}
 }
 
-void OHCI::OHCI_AsyncCancelDevice(XboxDevice* dev)
+void OHCI::OHCI_ChildDetach(USBPort* port, XboxDeviceState* child) {
+    OHCI_AsyncCancelDevice(child);
+}
+
+void OHCI::OHCI_Wakeup(USBPort* port1) {
+    OHCIPort* port = &m_Registers.RhPort[port1->PortIndex];
+    uint32_t intr = 0;
+    if (port->HcRhPortStatus & OHCI_PORT_PSS) {
+        log_debug("OHCI: port %d: wakeup", port1->PortIndex);
+        port->HcRhPortStatus |= OHCI_PORT_PSSC;
+        port->HcRhPortStatus &= ~OHCI_PORT_PSS;
+        intr = OHCI_INTR_RHSC;
+    }
+    // Note that the controller can be suspended even if this port is not
+    if ((m_Registers.HcControl & OHCI_CTL_HCFS) == Suspend) {
+        log_debug("OHCI: remote-wakeup: SUSPEND->RESUME");
+        // From the standard: "The only interrupts possible in the USBSUSPEND state are ResumeDetected (the
+        // Host Controller will have changed the HostControllerFunctionalState to the USBRESUME state)
+        // and OwnershipChange."
+        m_Registers.HcControl &= ~OHCI_CTL_HCFS;
+        m_Registers.HcControl |= Resume;
+        intr = OHCI_INTR_RD;
+    }
+    OHCI_SetInterrupt(intr);
+}
+
+void OHCI::OHCI_AsyncCompletePacket(USBPort* port, USBPacket* packet) {
+#ifdef DEBUG_PACKET
+    log_debug("Async packet complete");
+#endif
+    m_AsyncComplete = 1;
+    OHCI_ProcessLists(1);
+}
+
+void OHCI::OHCI_AsyncCancelDevice(XboxDeviceState* dev)
 {
 	if (m_AsyncTD &&
 		m_UsbDevice->USB_IsPacketInflight(&m_UsbPacket) &&
@@ -1518,7 +1526,7 @@ int OHCI::OHCI_ServiceIsoTD(OHCI_ED* ed, int completion)
 	int pid;
 	int ret;
 	int i;
-	XboxDevice* dev;
+    XboxDeviceState* dev;
 	USBEndpoint* ep;
 	OHCI_ISO_TD iso_td;
 	uint32_t addr;
@@ -1670,7 +1678,7 @@ int OHCI::OHCI_ServiceIsoTD(OHCI_ED* ed, int completion)
 	}
 	else {
 		// From the standard: "If, however, the data packet is the last in an Isochronous TD(R = FrameCount),
-		//  then the value of BufferEnd is the address of the last byte in the buffer."	
+		// then the value of BufferEnd is the address of the last byte in the buffer."	
 		end_addr = iso_td.BufferEnd;
 	}
 
@@ -1716,7 +1724,8 @@ int OHCI::OHCI_ServiceIsoTD(OHCI_ED* ed, int completion)
 	// From the standard: "After each data packet transfer, the Rth Offset is replaced with a value that indicates the status of
 	// the data packet transfer.The upper 4 bits of the value are the ConditionCode for the transfer and the lower 12 bits
 	// represent the size of the transfer.Together, these two fields constitute the Packet Status Word(PacketStatusWord)."
-	// Writeback
+	
+    // Writeback
 	if (dir == OHCI_TD_DIR_IN && ret >= 0 && ret <= len) {
 		// IN transfer succeeded
 		if (OHCI_CopyIsoTD(start_addr, end_addr, m_UsbBuffer, ret, true)) {
@@ -1779,6 +1788,11 @@ int OHCI::OHCI_ServiceIsoTD(OHCI_ED* ed, int completion)
 		OHCI_FatalError();
 	}
 	return 1;
+}
+
+void OHCI::OHCI_AssignUsbPortStruct(int port, XboxDeviceState* dev) {
+    dev->Port = &m_Registers.RhPort[port].UsbPort;
+    m_Registers.RhPort[port].UsbPort.Dev = dev;
 }
 
 }

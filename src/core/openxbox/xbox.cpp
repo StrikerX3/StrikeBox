@@ -315,8 +315,8 @@ int Xbox::Initialize(OpenXBOXSettings *settings)
     m_HostBridge = new HostBridgeDevice(PCI_VENDOR_ID_NVIDIA, 0x02A5, 0xA1);
     m_MCPXRAM = new MCPXRAMDevice(PCI_VENDOR_ID_NVIDIA, 0x02A6, 0xA1, mcpxRevision);
     m_LPC = new LPCDevice(PCI_VENDOR_ID_NVIDIA, 0x01B2, 0xD4, m_IRQs);
-    m_USB1 = new USBPCIDevice(PCI_VENDOR_ID_NVIDIA, 0x02A5, 0xA1, 1);
-    m_USB2 = new USBPCIDevice(PCI_VENDOR_ID_NVIDIA, 0x02A5, 0xA1, 9);
+    m_USB1 = new USBPCIDevice(PCI_VENDOR_ID_NVIDIA, 0x02A5, 0xA1, 1, m_cpu);
+    m_USB2 = new USBPCIDevice(PCI_VENDOR_ID_NVIDIA, 0x02A5, 0xA1, 9, m_cpu);
     m_NVNet = new NVNetDevice(PCI_VENDOR_ID_NVIDIA, 0x01C3, 0xD2);
     m_NVAPU = new NVAPUDevice(PCI_VENDOR_ID_NVIDIA, 0x01B0, 0xD2);
     m_AC97 = new AC97Device(PCI_VENDOR_ID_NVIDIA, 0x01B1, 0xD2);

@@ -42,12 +42,9 @@
 
 #include "usb_pci.h"
 #include "openxbox/cxbxtimer.h"
+#include "openxbox/cpu.h"
 
 namespace openxbox {
-
-#define USB_TOKEN_SETUP 0x2D
-#define USB_TOKEN_IN    0x69 // device -> host
-#define USB_TOKEN_OUT   0xE1 // host -> device
 
 #define USB_RET_SUCCESS           (0)
 #define USB_RET_NODEV             (-1)
@@ -71,32 +68,29 @@ namespace openxbox {
 
 
 /* endpoint descriptor */
-typedef struct _OHCI_ED {
+struct OHCI_ED {
     uint32_t Flags;
     uint32_t TailP;
     uint32_t HeadP;
     uint32_t NextED;
-}
-OHCI_ED;
+};
 
 /* general transfer descriptor */
-typedef struct _OHCI_TD {
+struct OHCI_TD {
     uint32_t Flags;
     uint32_t CurrentBufferPointer;
     uint32_t NextTD;
     uint32_t BufferEnd;
-}
-OHCI_TD;
+};
 
 /* Isochronous transfer descriptor */
-typedef struct _OHCI_ISO_TD {
+struct OHCI_ISO_TD {
 	uint32_t Flags;
 	uint32_t BufferPage0;
 	uint32_t NextTD;
 	uint32_t BufferEnd;
 	uint16_t Offset[8];
-}
-OHCI_ISO_TD;
+};
 
 /* enum indicating the current HC state */
 typedef enum _OHCI_State {
@@ -108,22 +102,20 @@ typedef enum _OHCI_State {
 OHCI_State;
 
 /* Host Controller Communications Area */
-typedef struct _OHCI_HCCA {
+struct OHCI_HCCA {
     uint32_t HccaInterrruptTable[32];
     uint16_t HccaFrameNumber, HccaPad1;
     uint32_t HccaDoneHead;
-}
-OHCI_HCCA;
+};
 
 /* Small struct used to hold the HcRhPortStatus register and the usb port status */
-typedef struct _OHCIPort {
+struct OHCIPort {
     USBPort UsbPort;
     uint32_t HcRhPortStatus;
-}
-OHCIPort;
+};
 
 /* All these registers are well documented in the OHCI standard */
-typedef struct _OHCI_Registers {
+struct OHCI_Registers {
     // Control and Status partition
     uint32_t HcRevision;
     uint32_t HcControl;
@@ -152,32 +144,28 @@ typedef struct _OHCI_Registers {
     uint32_t HcRhDescriptorA;
     uint32_t HcRhDescriptorB;
     uint32_t HcRhStatus;
-    // ergo720: I have some doubts here. Both XQEMU and OpenXbox set 4 ports per HC, for a total of 8 usb ports.
-    // Could it be becasue each gamepad can host 2 memory units?
     OHCIPort RhPort[2]; // 2 ports per HC, for a total of 4 USB ports
-}
-OHCI_Registers;
+};
 
 
 /* OHCI class representing the state of the HC */
 class OHCI {
 public:
     // constructor
-    OHCI(int Irqn, USBPCIDevice* UsbObj);
+    OHCI(Cpu* cpu, int Irqn, USBPCIDevice* UsbObj);
     // destructor
     ~OHCI() {}
     // read a register
     uint32_t OHCI_ReadRegister(uint32_t Addr);
     // write a register
     void OHCI_WriteRegister(uint32_t Addr, uint32_t Value);
-    // update ohci registers during a device attach
-    void OHCI_Attach(USBPort* Port);
-    // update ohci registers during a device detach
-    void OHCI_Detach(USBPort* Port);
+    // update the USBPort struct with the device attached
+    void OHCI_AssignUsbPortStruct(int port, XboxDeviceState* dev);
 
 private:
+    Cpu* m_cpu;
     // pointer to g_USB0 or g_USB1
-    USBPCIDevice * m_UsbDevice = nullptr;
+    USBPCIDevice* m_UsbDevice = nullptr;
     // all the registers available on the OHCI standard
     OHCI_Registers m_Registers;
     // end-of-frame timer
@@ -267,11 +255,17 @@ private:
     // process an isochronous TD
     int OHCI_ServiceIsoTD(OHCI_ED* ed, int completion);
     // find the usb device with the supplied address
-    XboxDevice* OHCI::OHCI_FindDevice(uint8_t Addr);
+    XboxDeviceState* OHCI::OHCI_FindDevice(uint8_t Addr);
     // cancel a packet when a device is removed
-    void OHCI_AsyncCancelDevice(XboxDevice* dev);
+    void OHCI_AsyncCancelDevice(XboxDeviceState* dev);
     // Process Control and Bulk lists
     void OHCI_ProcessLists(int completion);
+    // see USBPortOps struct for info
+    void OHCI_Attach(USBPort* Port);
+    void OHCI_Detach(USBPort* Port);
+    void OHCI_ChildDetach(USBPort* port, XboxDeviceState* child);
+    void OHCI_Wakeup(USBPort* port1);
+    void OHCI_AsyncCompletePacket(USBPort* port, USBPacket* packet);
 };
 
 }
