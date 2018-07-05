@@ -40,7 +40,7 @@
 
 #pragma once
 
-#include "usb_pci.h"
+#include "../pci/usb_pci.h"
 #include "openxbox/cxbxtimer.h"
 #include "openxbox/cpu.h"
 

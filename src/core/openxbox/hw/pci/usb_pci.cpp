@@ -44,7 +44,7 @@
 #include "openxbox/log.h"
 
 #include "usb_pci.h"
-#include "ohci.h"
+#include "../ohci/ohci.h"
 
 namespace openxbox {
 

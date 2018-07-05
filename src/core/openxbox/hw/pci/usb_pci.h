@@ -44,7 +44,7 @@
 
 #include "../defs.h"
 #include "pci.h"
-#include "ohci_common.h"
+#include "../ohci/ohci_common.h"
 #include "openxbox/cpu.h"
 
 namespace openxbox {
