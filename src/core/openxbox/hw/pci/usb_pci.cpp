@@ -116,15 +116,6 @@ void USBPCIDevice::USB_PortReset(USBPort* Port) {
     USB_DeviceReset(dev);
 }
 
-void USBPCIDevice::USB_Detach(USBPort* Port) {
-    XboxDeviceState* dev = Port->Dev;
-
-    assert(dev != nullptr);
-    assert(dev->State != USB_STATE_NOTATTACHED);
-    m_HostController->OHCI_Detach(Port);
-    dev->State = USB_STATE_NOTATTACHED;
-}
-
 void USBPCIDevice::USB_Attach(USBPort* Port) {
     XboxDeviceState* dev = Port->Dev;
 
@@ -134,6 +125,23 @@ void USBPCIDevice::USB_Attach(USBPort* Port) {
     Port->Operations->attach(Port);
     dev->State = USB_STATE_ATTACHED;
     USB_DeviceHandleAttach(dev);
+}
+
+void USBPCIDevice::USB_Detach(USBPort* Port) {
+    XboxDeviceState* dev = Port->Dev;
+
+    assert(dev != nullptr);
+    assert(dev->State != USB_STATE_NOTATTACHED);
+    Port->Operations->detach(Port);
+    dev->State = USB_STATE_NOTATTACHED;
+}
+
+void USBPCIDevice::USB_Wakeup(USBEndpoint* ep) {
+    XboxDeviceState* dev = ep->Dev;
+
+    if (dev->RemoteWakeup && dev->Port && dev->Port->Operations->wakeup) {
+        dev->Port->Operations->wakeup(dev->Port);
+    }
 }
 
 void USBPCIDevice::USB_DeviceReset(XboxDeviceState* dev) {
@@ -312,17 +320,17 @@ void USBPCIDevice::USB_DoParameter(XboxDeviceState* s, USBPacket* p) {
     value = (s->SetupBuffer[3] << 8) | s->SetupBuffer[2];
     index = (s->SetupBuffer[5] << 8) | s->SetupBuffer[4];
 
-    if (s->SetupLength > sizeof(s->data_buf)) {
-        log_debug("USB: ctrl buffer too small (%d > %zu)\n", s->SetupLength, sizeof(s->data_buf));
+    if (s->SetupLength > sizeof(s->DataBuffer)) {
+        log_debug("USB: ctrl buffer too small (%d > %zu)\n", s->SetupLength, sizeof(s->DataBuffer));
         p->Status = USB_RET_STALL;
         return;
     }
 
     if (p->Pid == USB_TOKEN_OUT) {
-        USB_PacketCopy(p, s->data_buf, s->SetupLength);
+        USB_PacketCopy(p, s->DataBuffer, s->SetupLength);
     }
 
-    USB_DeviceHandleControl(s, p, request, value, index, s->SetupLength, s->data_buf);
+    USB_DeviceHandleControl(s, p, request, value, index, s->SetupLength, s->DataBuffer);
     if (p->Status == USB_RET_ASYNC) {
         return;
     }
@@ -332,7 +340,7 @@ void USBPCIDevice::USB_DoParameter(XboxDeviceState* s, USBPacket* p) {
     }
     if (p->Pid == USB_TOKEN_IN) {
         p->ActualLength = 0;
-        USB_PacketCopy(p, s->data_buf, s->SetupLength);
+        USB_PacketCopy(p, s->DataBuffer, s->SetupLength);
     }
 }
 
@@ -363,7 +371,7 @@ void USBPCIDevice::USB_DoTokenSetup(XboxDeviceState* s, USBPacket* p) {
     index = (s->SetupBuffer[5] << 8) | s->SetupBuffer[4];
 
     if (s->SetupBuffer[0] & USB_DIR_IN) {
-        USB_DeviceHandleControl(s, p, request, value, index, s->SetupLength, s->data_buf);
+        USB_DeviceHandleControl(s, p, request, value, index, s->SetupLength, s->DataBuffer);
         if (p->Status == USB_RET_ASYNC) {
             s->SetupState = SETUP_STATE_SETUP;
         }
@@ -377,8 +385,8 @@ void USBPCIDevice::USB_DoTokenSetup(XboxDeviceState* s, USBPacket* p) {
         s->SetupState = SETUP_STATE_DATA;
     }
     else {
-        if (s->SetupLength > sizeof(s->data_buf)) {
-            log_debug("USB: ctrl buffer too small (%d > %zu)\n", s->SetupLength, sizeof(s->data_buf));
+        if (s->SetupLength > sizeof(s->DataBuffer)) {
+            log_debug("USB: ctrl buffer too small (%d > %zu)\n", s->SetupLength, sizeof(s->DataBuffer));
             p->Status = USB_RET_STALL;
             return;
         }
@@ -405,7 +413,7 @@ void USBPCIDevice::DoTokenIn(XboxDeviceState* s, USBPacket* p) {
     switch (s->SetupState) {
     case SETUP_STATE_ACK:
         if (!(s->SetupBuffer[0] & USB_DIR_IN)) {
-            USB_DeviceHandleControl(s, p, request, value, index, s->SetupLength, s->data_buf);
+            USB_DeviceHandleControl(s, p, request, value, index, s->SetupLength, s->DataBuffer);
             if (p->Status == USB_RET_ASYNC) {
                 return;
             }
@@ -420,7 +428,7 @@ void USBPCIDevice::DoTokenIn(XboxDeviceState* s, USBPacket* p) {
             if (len > p->IoVec.Size) {
                 len = p->IoVec.Size;
             }
-            USB_PacketCopy(p, s->data_buf + s->SetupIndex, len);
+            USB_PacketCopy(p, s->DataBuffer + s->SetupIndex, len);
             s->SetupIndex += len;
             if (s->SetupIndex >= s->SetupLength) {
                 s->SetupState = SETUP_STATE_ACK;
@@ -456,7 +464,7 @@ void USBPCIDevice::DoTokenOut(XboxDeviceState* s, USBPacket* p) {
             if (len > p->IoVec.Size) {
                 len = p->IoVec.Size;
             }
-            USB_PacketCopy(p, s->data_buf + s->SetupIndex, len);
+            USB_PacketCopy(p, s->DataBuffer + s->SetupIndex, len);
             s->SetupIndex += len;
             if (s->SetupIndex >= s->SetupLength) {
                 s->SetupState = SETUP_STATE_ACK;
@@ -624,6 +632,607 @@ void USBPCIDevice::USB_DeviceAttach(XboxDeviceState* dev) {
 
     dev->Attached++;
     USB_Attach(port);
+}
+
+void USBPCIDevice::USB_EpInit(XboxDeviceState* dev) {
+    USB_EpReset(dev);
+    QTAILQ_INIT(&dev->EP_ctl.Queue);
+    for (int ep = 0; ep < USB_MAX_ENDPOINTS; ep++) {
+        QTAILQ_INIT(&dev->EP_in[ep].Queue);
+        QTAILQ_INIT(&dev->EP_out[ep].Queue);
+    }
+}
+
+void USBPCIDevice::USB_EpReset(XboxDeviceState* dev) {
+    dev->EP_ctl.Num = 0;
+    dev->EP_ctl.Type = USB_ENDPOINT_XFER_CONTROL;
+    dev->EP_ctl.IfNum = 0;
+    dev->EP_ctl.MaxPacketSize = 64;
+    dev->EP_ctl.Dev = dev;
+    dev->EP_ctl.Pipeline = false;
+    for (int ep = 0; ep < USB_MAX_ENDPOINTS; ep++) {
+        dev->EP_in[ep].Num = ep + 1;
+        dev->EP_out[ep].Num = ep + 1;
+        dev->EP_in[ep].pid = USB_TOKEN_IN;
+        dev->EP_out[ep].pid = USB_TOKEN_OUT;
+        dev->EP_in[ep].Type = USB_ENDPOINT_XFER_INVALID;
+        dev->EP_out[ep].Type = USB_ENDPOINT_XFER_INVALID;
+        dev->EP_in[ep].IfNum = USB_INTERFACE_INVALID;
+        dev->EP_out[ep].IfNum = USB_INTERFACE_INVALID;
+        dev->EP_in[ep].MaxPacketSize = 0;
+        dev->EP_out[ep].MaxPacketSize = 0;
+        dev->EP_in[ep].Dev = dev;
+        dev->EP_out[ep].Dev = dev;
+        dev->EP_in[ep].Pipeline = false;
+        dev->EP_out[ep].Pipeline = false;
+    }
+}
+
+/*
+ * From XQEMU:
+ * This function creates a serial number for a usb device.
+ * The serial number should:
+ *   (a) Be unique within the emulator.
+ *   (b) Be constant, so you don't get a new one each
+ *       time the guest is started.
+ * So we are using the physical location to generate a serial number
+ * from it.  It has three pieces:  First a fixed, device-specific
+ * prefix.  Second the device path of the host controller (which is
+ * the pci address in most cases).  Third the physical port path.
+ * Results in serial numbers like this: "314159-0000:00:1d.7-3".
+ */
+void USBPCIDevice::USB_CreateSerial(XboxDeviceState* dev, const char* str) {
+    const USBDesc* desc = USBDesc_GetUsbDeviceDesc(dev);
+    int index = desc->id.iSerialNumber;
+    USBDescString* s;
+    char serial[64];
+    char* path;
+    int dst;
+
+    assert(index != 0 && str != nullptr);
+    dst = std::snprintf(serial, sizeof(serial), "%s", str);
+    dst += std::snprintf(serial + dst, sizeof(serial) - dst, "-%s", m_PciPath);
+    std::snprintf(serial + dst, sizeof(serial) - dst, "-%s", dev->Port->Path);
+
+    USBDesc_SetString(dev, index, serial);
+}
+
+const USBDesc* USBPCIDevice::USBDesc_GetUsbDeviceDesc(XboxDeviceState* dev) {
+    USBDeviceClass* klass = dev->klass;
+    if (dev->UsbDesc) {
+        return dev->UsbDesc;
+    }
+    return klass->usb_desc;
+}
+
+void USBPCIDevice::USBDesc_Init(XboxDeviceState* dev) {
+    const USBDesc* desc = USBDesc_GetUsbDeviceDesc(dev);
+
+    assert(desc != NULL);
+    dev->Speed = USB_SPEED_FULL;
+    dev->SpeedMask = 0;
+    if (desc->full) {
+        dev->SpeedMask |= USB_SPEED_MASK_FULL;
+    }
+    USBDesc_SetDefaults(dev);
+}
+
+void USBPCIDevice::USBDesc_SetDefaults(XboxDeviceState* dev) {
+    const USBDesc *desc = USBDesc_GetUsbDeviceDesc(dev);
+
+    assert(desc != NULL);
+    switch (dev->Speed) {
+    case USB_SPEED_LOW:
+    case USB_SPEED_FULL:
+    {
+        dev->Device = desc->full;
+        break;
+    }
+    default:
+        log_warning("Unknown speed parameter %d set in %s", dev->ProductDesc.c_str());
+    }
+    USBDesc_SetConfig(dev, 0);
+}
+
+int USBPCIDevice::USBDesc_SetConfig(XboxDeviceState* dev, int value) {
+    int i;
+
+    if (value == 0) { // default configuration
+        dev->Configuration = 0;
+        dev->NumInterfaces = 0;
+        dev->Config = nullptr;
+    }
+    else {
+        for (i = 0; i < dev->Device->bNumConfigurations; i++) { // select the configuration specified
+            if (dev->Device->confs[i].bConfigurationValue == value) {
+                dev->Configuration = value;
+                dev->NumInterfaces = dev->Device->confs[i].bNumInterfaces;
+                dev->Config = dev->Device->confs + i;
+                assert(dev->NumInterfaces <= USB_MAX_INTERFACES);
+            }
+        }
+        if (i < dev->Device->bNumConfigurations) {
+            return -1;
+        }
+    }
+
+    for (i = 0; i < dev->NumInterfaces; i++) { // setup all interfaces for the selected configuration
+        USBDesc_SetInterface(dev, i, 0);
+    }
+    for (; i < USB_MAX_INTERFACES; i++) { // null the remaining interfaces
+        dev->AltSetting[i] = 0;
+        dev->Ifaces[i] = nullptr;
+    }
+
+    return 0;
+}
+
+int USBPCIDevice::USBDesc_SetInterface(XboxDeviceState* dev, int index, int value) {
+    const USBDescIface* iface;
+    int old;
+
+    iface = USBDesc_FindInterface(dev, index, value);
+    if (iface == nullptr) {
+        return -1;
+    }
+
+    old = dev->AltSetting[index];
+    dev->AltSetting[index] = value;
+    dev->Ifaces[index] = iface;
+    USBDesc_EpInit(dev);
+
+    if (old != value) {
+        USB_DeviceSetInterface(dev, index, old, value);
+    }
+    return 0;
+}
+
+const USBDescIface* USBPCIDevice::USBDesc_FindInterface(XboxDeviceState* dev, int nif, int alt) {
+    const USBDescIface* iface;
+    int i;
+
+    if (!dev->Config) { // no configuration descriptor here, nothing to search
+        return nullptr;
+    }
+    for (i = 0; i < dev->Config->nif; i++) { // find the desired interface
+        iface = &dev->Config->ifs[i];
+        if (iface->bInterfaceNumber == nif &&
+            iface->bAlternateSetting == alt) {
+            return iface;
+        }
+    }
+    return nullptr; // not found
+}
+
+void USBPCIDevice::USBDesc_EpInit(XboxDeviceState* dev) {
+    const USBDescIface *iface;
+    int i, e, pid, ep;
+
+    USB_EpInit(dev); // reset endpoints (because we changed descriptors in use?)
+    for (i = 0; i < dev->NumInterfaces; i++) {
+        iface = dev->Ifaces[i];
+        if (iface == nullptr) {
+            continue;
+        }
+        for (e = 0; e < iface->bNumEndpoints; e++) {
+            // From the standard:
+            // "bEndpointAddress:
+            // Bit 3...0: The endpoint number
+            // Bit 6...4: Reserved, reset to zero
+            // Bit 7: Direction -> 0 = OUT endpoint, 1 = IN endpoint
+            // bmAttributes:
+            // Bit 1..0: Transfer Type
+            // 00 = Control, 01 = Isochronous, 10 = Bulk, 11 = Interrupt. All other bits are reserved"
+            pid = (iface->eps[e].bEndpointAddress & USB_DIR_IN) ? USB_TOKEN_IN : USB_TOKEN_OUT;
+            ep = iface->eps[e].bEndpointAddress & 0xF;
+            USB_EPsetType(dev, pid, ep, iface->eps[e].bmAttributes & 0x03);
+            USB_EPsetIfnum(dev, pid, ep, iface->bInterfaceNumber);
+            USB_EPsetMaxPacketSize(dev, pid, ep, iface->eps[e].wMaxPacketSize);
+        }
+    }
+}
+
+int USBPCIDevice::USBDesc_HandleControl(XboxDeviceState* dev, USBPacket *p, int request, int value, int index, int length, uint8_t* data) {
+    const USBDesc* desc = USBDesc_GetUsbDeviceDesc(dev);
+    int ret = -1;
+
+    assert(desc != nullptr);
+    switch (request) {
+    case DeviceOutRequest | USB_REQ_SET_ADDRESS:
+    {
+        // From the standard: "This request sets the device address for all future device accesses.
+        // The wValue field specifies the device address to use for all subsequent accesses"
+        dev->Addr = value;
+        log_debug("Address 0x%X set for device %s", dev->Addr, dev->ProductDesc.c_str());
+        ret = 0;
+        break;
+    }
+
+    case DeviceRequest | USB_REQ_GET_DESCRIPTOR:
+    {
+        // From the standard: "This request returns the specified descriptor if the descriptor exists.
+        // The wValue field specifies the descriptor type in the high byte and the descriptor index in the low byte.
+        // The wIndex field specifies the Language ID for string descriptors or is reset to zero for other descriptors"
+        ret = USBDesc_HandleStandardGetDescriptor(dev, p, value, data, length);
+        break;
+    }
+
+    case DeviceRequest | USB_REQ_GET_CONFIGURATION:
+    {
+        // From the standard: "This request returns the current device configuration value.
+        // If the returned value is zero, the device is not configured"
+        data[0] = dev->Config ? dev->Config->bConfigurationValue : 0;
+        p->ActualLength = 1;
+        ret = 0;
+        break;
+    }
+
+    case DeviceOutRequest | USB_REQ_SET_CONFIGURATION:
+    {
+        // From the standard: "This request sets the device configuration. The lower byte of the wValue field specifies the desired configuration.
+        // This configuration value must be zero or match a configuration value from a configuration descriptor"
+        ret = USBDesc_SetConfig(dev, value);
+        log_debug("Received standard SetConfiguration() request for device at address 0x%X. Configuration selected is %d and returned %d",
+            dev->Addr, value, ret);
+        break;
+    }
+
+    case DeviceRequest | USB_REQ_GET_STATUS:
+    {
+        // From the standard: "This request returns the status for the specified recipient. The Recipient bits of the bmRequestType field
+        // specify the desired recipient. The data returned is the current status of the specified recipient."
+        // From XQEMU:
+        /* Default state: Device behavior when this request is received while
+        *                the device is in the Default state is not specified.
+        * We return the same value that a configured device would return if
+        * it used the first configuration. */
+        const USBDescConfig* config = dev->Config ? dev->Config : &dev->Device->confs[0];
+        data[0] = 0;
+        if (config->bmAttributes & 0x40) {
+            data[0] |= 1 << USB_DEVICE_SELF_POWERED;
+        }
+        if (dev->RemoteWakeup) {
+            data[0] |= 1 << USB_DEVICE_REMOTE_WAKEUP;
+        }
+        data[1] = 0x00;
+        p->ActualLength = 2;
+        ret = 0;
+        break;
+    }
+
+    case DeviceOutRequest | USB_REQ_CLEAR_FEATURE:
+    {
+        // From the standard: "This request is used to clear or disable a specific feature.
+        // Feature selector values in wValue must be appropriate to the recipient"
+        if (value == USB_DEVICE_REMOTE_WAKEUP) {
+            dev->RemoteWakeup = 0;
+            ret = 0;
+        }
+        log_debug("Received standard ClearFeature() request for device at address 0x%X. Feature selected is %d and returned %d",
+            dev->Addr, value, ret);
+        break;
+    }
+
+    case DeviceOutRequest | USB_REQ_SET_FEATURE:
+    {
+        // From the standard: "This request is used to set or enable a specific feature.
+        // Feature selector values in wValue must be appropriate to the recipient"
+        if (value == USB_DEVICE_REMOTE_WAKEUP) {
+            dev->RemoteWakeup = 1;
+            ret = 0;
+        }
+        log_debug("Received standard SetFeature() request for device at address 0x%X. Feature selected is %d and returned %d",
+            dev->Addr, value, ret);
+        break;
+    }
+
+    case InterfaceRequest | USB_REQ_GET_INTERFACE:
+    {
+        // From the standard: "This request returns the selected alternate setting for the specified interface.
+        // wValue = Zero; wIndex = Interface"
+        if (index < 0 || index >= dev->NumInterfaces) {
+            break;
+        }
+        data[0] = dev->AltSetting[index];
+        p->ActualLength = 1;
+        ret = 0;
+        break;
+    }
+
+    case InterfaceOutRequest | USB_REQ_SET_INTERFACE:
+    {
+        // From the standard: "This request allows the host to select an alternate setting for the specified interface"
+        // wValue = Alternative Setting; wIndex = Interface
+        ret = USBDesc_SetInterface(dev, index, value);
+        log_debug("Received standard SetInterface() request for device at address 0x%X. Interface selected is %d, Alternative Setting is %d and returned %d", dev->Addr, index, value, ret);
+        break;
+    }
+
+    default:
+    }
+    return ret;
+}
+
+int USBPCIDevice::USBDesc_HandleStandardGetDescriptor(XboxDeviceState* dev, USBPacket* p,
+    int value, uint8_t* dest, size_t len) {
+    const USBDesc* desc = USBDesc_GetUsbDeviceDesc(dev);
+    uint8_t buf[256];
+    uint8_t type = value >> 8;    // recover descriptor type from wValue
+    uint8_t index = value & 0xFF; // recover descriptor index from wValue
+    int ret = -1;
+    int flags = 0;
+
+    // Dropped from XQEMU bcdUSB check for usb 3.0 devices
+
+    // From the standard: "The standard request to a device supports three types of descriptors: DEVICE, CONFIGURATION, and STRING."
+
+    switch (type) {
+    case USB_DT_DEVICE:
+    {
+        ret = USB_ReadDeviceDesc(&desc->id, dev->Device, buf, sizeof(buf));
+        log_debug("Read operation of device descriptor of device 0x%X returns %d", dev->Addr, ret);
+        break;
+    }
+
+    case USB_DT_CONFIG:
+    {
+        if (index < dev->Device->bNumConfigurations) {
+            ret = USB_ReadConfigurationDesc(dev->Device->confs + index, flags, buf, sizeof(buf));
+        }
+        log_debug("Read operation of configuration descriptor %d of device 0x%X returns %d", index, dev->Addr, ret);
+        break;
+    }
+
+    case USB_DT_STRING:
+    {
+        ret = USB_ReadStringDesc(dev, index, buf, sizeof(buf));
+        log_debug("Read operation of string descriptor %d of device 0x%X returns %d", index, dev->Addr, ret);
+        break;
+    }
+
+    // Dropped from XQEMU descriptor types USB_DT_DEVICE_QUALIFIER (6), USB_DT_OTHER_SPEED_CONFIG (7) -> usb 2.0 only and reserved on usb 3.0,
+    // USB_DT_BOS (15) and USB_DT_DEBUG (10) -> usb 3.0 only
+
+    default:
+        log_warning("%s: device address %d unknown type %d (len %zd)", __func__, dev->Addr, type, len);
+        break;
+    }
+
+    if (ret > 0) {
+        if (ret > len) {
+            ret = len;
+        }
+        std::memcpy(dest, buf, ret);
+        p->ActualLength = ret;
+        ret = 0;
+    }
+    return ret;
+}
+
+int USBPCIDevice::USB_ReadDeviceDesc(const USBDescID* id, const USBDescDevice* dev, uint8_t* dest, size_t len) {
+    uint8_t bLength = 0x12; // a device descriptor is 18 bytes large
+    USBDescriptor* d = reinterpret_cast<USBDescriptor*>(dest);
+
+    if (len < bLength) {
+        return -1;
+    }
+
+    d->bLength = bLength;
+    d->bDescriptorType = USB_DT_DEVICE;
+
+    d->u.device.bcdUSB_lo = GET_WORD_LOW(dev->bcdUSB);
+    d->u.device.bcdUSB_hi = GET_WORD_HIGH(dev->bcdUSB);
+    d->u.device.bDeviceClass = dev->bDeviceClass;
+    d->u.device.bDeviceSubClass = dev->bDeviceSubClass;
+    d->u.device.bDeviceProtocol = dev->bDeviceProtocol;
+    d->u.device.bMaxPacketSize0 = dev->bMaxPacketSize0;
+
+    d->u.device.idVendor_lo = GET_WORD_LOW(id->idVendor);
+    d->u.device.idVendor_hi = GET_WORD_HIGH(id->idVendor);
+    d->u.device.idProduct_lo = GET_WORD_LOW(id->idProduct);
+    d->u.device.idProduct_hi = GET_WORD_HIGH(id->idProduct);
+    d->u.device.bcdDevice_lo = GET_WORD_LOW(id->bcdDevice);
+    d->u.device.bcdDevice_hi = GET_WORD_HIGH(id->bcdDevice);
+    d->u.device.iManufacturer = id->iManufacturer;
+    d->u.device.iProduct = id->iProduct;
+    d->u.device.iSerialNumber = id->iSerialNumber;
+
+    d->u.device.bNumConfigurations = dev->bNumConfigurations;
+
+    return bLength;
+}
+
+int USBPCIDevice::USB_ReadConfigurationDesc(const USBDescConfig* conf, int flags, uint8_t* dest, size_t len) {
+    uint8_t  bLength = 0x09; // a configuration descriptor is 9 bytes large
+    uint16_t wTotalLength = 0;
+    USBDescriptor* d = reinterpret_cast<USBDescriptor*>(dest);
+    int i, rc;
+
+    if (len < bLength) {
+        return -1;
+    }
+
+    // From the standard: "A request for a configuration descriptor returns the configuration descriptor, all interface
+    // descriptors, and endpoint descriptors for all of the interfaces in a single request."
+
+    d->bLength = bLength;
+    d->bDescriptorType = USB_DT_CONFIG;
+
+    d->u.config.bNumInterfaces = conf->bNumInterfaces;
+    d->u.config.bConfigurationValue = conf->bConfigurationValue;
+    d->u.config.iConfiguration = conf->iConfiguration;
+    d->u.config.bmAttributes = conf->bmAttributes;
+    d->u.config.bMaxPower = conf->bMaxPower;
+    wTotalLength += bLength;
+
+    for (i = 0; i < conf->nif; i++) {
+        rc = USB_ReadInterfaceDesc(conf->ifs + i, flags, dest + wTotalLength, len - wTotalLength);
+        if (rc < 0) {
+            return rc;
+        }
+        wTotalLength += rc;
+    }
+
+    d->u.config.wTotalLength_lo = GET_WORD_LOW(wTotalLength);
+    d->u.config.wTotalLength_hi = GET_WORD_HIGH(wTotalLength);
+    return wTotalLength;
+}
+
+int USBPCIDevice::USB_ReadInterfaceDesc(const USBDescIface* iface, int flags, uint8_t* dest, size_t len) {
+    uint8_t bLength = 0x09; // a interface descriptor is 9 bytes large
+    int i, rc, pos = 0;
+    USBDescriptor* d = reinterpret_cast<USBDescriptor*>(dest);
+
+    if (len < bLength) {
+        return -1;
+    }
+
+    // From the standard: "The first interface descriptor follows the configuration descriptor.
+    // The endpoint descriptors for the first interface follow the first interface descriptor.
+    // If there are additional interfaces, their interface descriptor and endpoint descriptors
+    // follow the first interface's endpoint descriptors. Class-specific and/or vendor-specific
+    // descriptors follow the standard descriptors they extend or modify."
+
+    d->bLength = bLength;
+    d->bDescriptorType = USB_DT_INTERFACE;
+
+    d->u.iface.bInterfaceNumber = iface->bInterfaceNumber;
+    d->u.iface.bAlternateSetting = iface->bAlternateSetting;
+    d->u.iface.bNumEndpoints = iface->bNumEndpoints;
+    d->u.iface.bInterfaceClass = iface->bInterfaceClass;
+    d->u.iface.bInterfaceSubClass = iface->bInterfaceSubClass;
+    d->u.iface.bInterfaceProtocol = iface->bInterfaceProtocol;
+    d->u.iface.iInterface = iface->iInterface;
+    pos += bLength;
+
+    for (i = 0; i < iface->ndesc; i++) {
+        rc = USB_ReadOtherDesc(iface->descs + i, dest + pos, len - pos);
+        if (rc < 0) {
+            return rc;
+        }
+        pos += rc;
+    }
+
+    for (i = 0; i < iface->bNumEndpoints; i++) {
+        rc = USB_ReadEndpointDesc(iface->eps + i, flags, dest + pos, len - pos);
+        if (rc < 0) {
+            return rc;
+        }
+        pos += rc;
+    }
+
+    return pos;
+}
+
+int USBPCIDevice::USB_ReadOtherDesc(const USBDescOther* desc, uint8_t* dest, size_t len) {
+    int bLength = desc->length ? desc->length : desc->data[0];
+
+    if (len < bLength) {
+        return -1;
+    }
+
+    std::memcpy(dest, desc->data, bLength);
+    return bLength;
+}
+
+int USBPCIDevice::USB_ReadEndpointDesc(const USBDescEndpoint* ep, int flags, uint8_t* dest, size_t len) {
+    uint8_t bLength = ep->is_audio ? 0x09 : 0x07; // an endpoint descriptor is 7 bytes large (or 9 if it is an audio device)
+    uint8_t extralen = ep->extra ? ep->extra[0] : 0;
+    USBDescriptor* d = reinterpret_cast<USBDescriptor*>(dest);
+
+    if (len < bLength + extralen) {
+        return -1;
+    }
+
+    d->bLength = bLength;
+    d->bDescriptorType = USB_DT_ENDPOINT;
+
+    d->u.endpoint.bEndpointAddress = ep->bEndpointAddress;
+    d->u.endpoint.bmAttributes = ep->bmAttributes;
+    d->u.endpoint.wMaxPacketSize_lo = GET_WORD_LOW(ep->wMaxPacketSize);
+    d->u.endpoint.wMaxPacketSize_hi = GET_WORD_HIGH(ep->wMaxPacketSize);
+    d->u.endpoint.bInterval = ep->bInterval;
+    if (ep->is_audio) {
+        d->u.endpoint.bRefresh = ep->bRefresh;
+        d->u.endpoint.bSynchAddress = ep->bSynchAddress;
+    }
+
+    // Dropped from XQEMU the reading of SuperSpeed Endpoint Companion descriptors since those are usb 3.0 specific
+
+    if (ep->extra) {
+        std::memcpy(dest + bLength, ep->extra, extralen);
+    }
+
+    return bLength + extralen;
+}
+
+int USBPCIDevice::USB_ReadStringDesc(XboxDeviceState* dev, int index, uint8_t* dest, size_t len) {
+    uint8_t bLength, pos, i;
+    const char* str;
+
+    if (len < 4) {
+        return -1;
+    }
+
+    // From the standard: "String index zero for all languages returns a string descriptor
+    // that contains an array of two-byte LANGID codes supported by the device."
+
+    if (index == 0) {
+        /* language ids */
+        dest[0] = 4;
+        dest[1] = USB_DT_STRING;
+        dest[2] = 0x09;
+        dest[3] = 0x04; // we only support English (United States)
+        return 4;
+    }
+
+    str = USBDesc_GetString(dev, index);
+    if (str == nullptr) {
+        return 0;
+    }
+
+    // From the standard: "The UNICODE string descriptor is not NULL-terminated. The string length is
+    // computed by subtracting two from the value of the first byte of the descriptor"
+
+    bLength = strlen(str) * 2 + 2;
+    dest[0] = bLength;
+    dest[1] = USB_DT_STRING;
+    i = 0; pos = 2;
+    while (pos + 1 < bLength && pos + 1 < len) {
+        dest[pos++] = str[i++];
+        dest[pos++] = 0;
+    }
+    return pos;
+}
+
+void USBPCIDevice::USBDesc_SetString(XboxDeviceState* dev, int index, const char* str) {
+    USBDescString* s;
+
+    QLIST_FOREACH(s, &dev->Strings, next) {
+        if (s->index == index) {
+            break;
+        }
+    }
+
+    if (s == nullptr) {
+        s = new USBDescString();
+        s->index = index;
+        QLIST_INSERT_HEAD(&dev->Strings, s, next);
+    }
+
+    s->str = str;
+}
+
+const char* USBPCIDevice::USBDesc_GetString(XboxDeviceState* dev, int index) {
+    USBDescString* s;
+
+    QLIST_FOREACH(s, &dev->Strings, next) {
+        if (s->index == index) {
+            return s->str.c_str();
+        }
+    }
+
+    return nullptr;
 }
 
 }

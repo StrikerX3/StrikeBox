@@ -61,11 +61,7 @@ void IoVecAdd(IOVector* qiov, void* base, size_t len);
 size_t IoVecTobuffer(const IoVec* iov, const unsigned int iov_cnt, size_t offset, void *buf, size_t bytes);
 size_t IoVecFromBuffer(const IoVec* iov, unsigned int iov_cnt, size_t offset, void* buf, size_t bytes);
 
-// Calculate a struct base address from a pointer to a member of it
-#ifndef container_of
-#define container_of(address, type, field) ((type *)(\
-                                            (int8_t*)(address) - \
-                                            (uint32_t)(&((type *)0)->field)))
-#endif
+#define GET_WORD_LOW(value) (uint8_t)((value) & 0xFF)
+#define GET_WORD_HIGH(value) (uint8_t)(((value) >> 8) & 0xFF)
 
 }
