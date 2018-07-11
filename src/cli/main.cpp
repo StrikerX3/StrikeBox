@@ -39,13 +39,6 @@ int main(int argc, const char *argv[]) {
 	printf("OpenXBOX v%s\n", info->version);
 	printf("------------------\n");
 
-    // Parse arguments
-	const char *mcpx_path;
-    const char *bios_path;
-    const char *xbe_path;	
-	const char *model;
-	bool is_debug;
-
 	cxxopts::Options options(basename((char*)argv[0]), "Open source XBOX Emulator\n");
 	options.custom_help("-c mcpx_path -b bios_path -x xbe_path -m model");
 	options.add_options()
@@ -66,10 +59,12 @@ int main(int argc, const char *argv[]) {
 		return 1;
 	}
 
-	model = args["model"].as<std::string>().c_str();
-	xbe_path = args["xbe"].as<std::string>().c_str();
-	bios_path = args["bios"].as<std::string>().c_str();
-	mcpx_path = args["mcpx"].as<std::string>().c_str();
+	// Parse arguments
+	const char *mcpx_path = args["mcpx"].as<std::string>().c_str();;
+	const char *bios_path = args["bios"].as<std::string>().c_str();;
+	const char *xbe_path = args["xbe"].as<std::string>().c_str();;
+	const char *model = args["model"].as<std::string>().c_str();;
+	bool is_debug;
 
 	if (strcmp(model, "debug") == 0) {
 		is_debug = true;
