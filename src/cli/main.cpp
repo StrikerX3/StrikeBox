@@ -60,10 +60,10 @@ int main(int argc, const char *argv[]) {
 	}
 
 	// Parse arguments
-	const char *mcpx_path = args["mcpx"].as<std::string>().c_str();;
-	const char *bios_path = args["bios"].as<std::string>().c_str();;
-	const char *xbe_path = args["xbe"].as<std::string>().c_str();;
-	const char *model = args["model"].as<std::string>().c_str();;
+	const char *mcpx_path = args["mcpx"].as<std::string>().c_str();
+	const char *bios_path = args["bios"].as<std::string>().c_str();
+	const char *xbe_path = args["xbe"].as<std::string>().c_str();
+	const char *model = args["model"].as<std::string>().c_str();
 	bool is_debug;
 
 	if (strcmp(model, "debug") == 0) {
