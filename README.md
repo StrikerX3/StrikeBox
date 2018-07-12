@@ -62,7 +62,7 @@ $ sudo apt-get install cmake
 $ mkdir build; cd build
 $ cmake .. -DCPU_MODULE=kvm && make
 $ cd src/cli
-$ ./openxbox-cli <path-to-MCPX-ROM> <path-to-BIOS-ROM> <path-to-XBE> [debug|retail]
+$ ./openxbox-cli -c <path-to-MCPX-ROM> -b <path-to-BIOS-ROM> -x <path-to-XBE> -m [debug|retail]
 ```
 
 ### macOS
