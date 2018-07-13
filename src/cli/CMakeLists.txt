@@ -12,6 +12,8 @@ set(SOURCES ${SOURCES}
     ${DIR_SOURCES}
     )
 
+add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/lib")
+
 # Add Visual Studio filters to better organize the code
 vs_set_filters("${SOURCES}")
 

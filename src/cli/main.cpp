@@ -1,5 +1,8 @@
 #include <stdio.h>
 #include <string.h>
+#include <string>
+#include <iostream>
+#include "lib/cxxopts.hpp"
 
 #include "openxbox/core.h"
 #include "openxbox/settings.h"
@@ -36,22 +39,32 @@ int main(int argc, const char *argv[]) {
 	printf("OpenXBOX v%s\n", info->version);
 	printf("------------------\n");
 
-    // Parse arguments
-    const char *mcpx_path;
-    const char *bios_path;
-    const char *xbe_path;
-	const char *model;
-	bool is_debug;
-    const char *usage = "usage: %s <mcpx> <bios> <xbe> <model>\n";
+	cxxopts::Options options(basename((char*)argv[0]), "Open source XBOX Emulator\n");
+	options.custom_help("-c mcpx_path -b bios_path -x xbe_path -m model");
+	options.add_options()
+		("c, mcpx", "MCPX path", cxxopts::value<std::string>(), "mcpx_path")
+		("b, bios", "BIOS path", cxxopts::value<std::string>(), "bios_path")
+		("x, xbe", "XBE path", cxxopts::value<std::string>(), "xbe_path")
+		("m, model", "XBOX Model (retail | debug)", cxxopts::value<std::string>(), "xbox_model")
+		("h, help", "Shows this message");
 
-    if (argc < 5) {
-        printf(usage, basename((char*)argv[0]));
-        return 1;
-    }
-    mcpx_path = argv[1];
-    bios_path = argv[2];
-    xbe_path = argv[3];
-	model = argv[4];
+	auto args = options.parse(argc, argv);
+
+	/*
+		Argument Check
+	*/
+	if (!(args.count("mcpx") && args.count("bios") && args.count("xbe") && args.count("model")))
+	{
+		std::cout << options.help();
+		return 1;
+	}
+
+	// Parse arguments
+	const char *mcpx_path = args["mcpx"].as<std::string>().c_str();
+	const char *bios_path = args["bios"].as<std::string>().c_str();
+	const char *xbe_path = args["xbe"].as<std::string>().c_str();
+	const char *model = args["model"].as<std::string>().c_str();
+	bool is_debug;
 
 	if (strcmp(model, "debug") == 0) {
 		is_debug = true;
@@ -63,7 +76,7 @@ int main(int argc, const char *argv[]) {
 	}
 	else {
 		printf("Invalid model specified.\n");
-		printf(usage, basename((char*)argv[0]));
+		std::cout << options.help();
 		return 1;
 	}
 
