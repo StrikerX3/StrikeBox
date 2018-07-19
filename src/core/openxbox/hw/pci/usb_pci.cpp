@@ -38,7 +38,7 @@
 // *
 // ******************************************************************
 
-#include <cassert>
+#include <string>
 #include <functional>
 
 #include "openxbox/log.h"
@@ -105,6 +105,13 @@ void USBPCIDevice::USB_RegisterPort(USBPort* Port, int Index, int SpeedMask, USB
     Port->SpeedMask = SpeedMask;
     Port->Operations = Ops;
     USB_PortLocation(Port, nullptr, Index + 1);
+    m_FreePorts.push_back(Port);
+}
+
+void USBPCIDevice::USB_UnregisterPort(USBPort* Port) {
+    auto it = std::find(m_FreePorts.begin(), m_FreePorts.end(), Port);
+    assert(it != m_FreePorts.end());
+    m_FreePorts.erase(it);
 }
 
 void USBPCIDevice::USB_PortReset(USBPort* Port) {
@@ -152,7 +159,7 @@ void USBPCIDevice::USB_DeviceReset(XboxDeviceState* dev) {
     dev->RemoteWakeup = 0;
     dev->Addr = 0;
     dev->State = USB_STATE_DEFAULT;
-    usb_device_handle_reset(dev);
+    USB_DeviceHandleReset(dev);
 }
 
 XboxDeviceState* USBPCIDevice::USB_FindDevice(USBPort* Port, uint8_t Addr) {
@@ -232,8 +239,7 @@ void USBPCIDevice::USB_HandlePacket(XboxDeviceState* dev, USBPacket* p) {
             // hcd drivers cannot handle async for isoc
             assert(p->Endpoint->Type != USB_ENDPOINT_XFER_ISOC);
             // using async for interrupt packets breaks migration
-            assert(p->Endpoint->Type != USB_ENDPOINT_XFER_INT ||
-                (dev->flags & (1 << USB_DEV_FLAG_IS_HOST)));
+            assert(p->Endpoint->Type != USB_ENDPOINT_XFER_INT);
             p->State = USB_PACKET_ASYNC;
             QTAILQ_INSERT_TAIL(&p->Endpoint->Queue, p, Queue);
         }
@@ -287,14 +293,20 @@ void USBPCIDevice::USB_ProcessOne(USBPacket* p) {
         }
         switch (p->Pid) {
         case USB_TOKEN_SETUP:
+        {
             USB_DoTokenSetup(dev, p);
             break;
+        }
         case USB_TOKEN_IN:
+        {
             DoTokenIn(dev, p);
             break;
+        }
         case USB_TOKEN_OUT:
+        {
             DoTokenOut(dev, p);
             break;
+        }
         default:
             p->Status = USB_RET_STALL;
         }
@@ -451,10 +463,10 @@ void USBPCIDevice::DoTokenOut(XboxDeviceState* s, USBPacket* p) {
     case SETUP_STATE_ACK:
         if (s->SetupBuffer[0] & USB_DIR_IN) {
             s->SetupState = SETUP_STATE_IDLE;
-            /* transfer OK */
+            // transfer OK
         }
         else {
-            /* ignore additional output */
+            // ignore additional output
         }
         break;
 
@@ -529,7 +541,7 @@ void USBPCIDevice::USB_DeviceCancelPacket(XboxDeviceState* dev, USBPacket* p) {
 void USBPCIDevice::USB_DeviceHandleDestroy(XboxDeviceState* dev) {
     USBDeviceClass* klass = dev->klass;
     if (klass->handle_destroy) {
-        klass->handle_destroy(dev);
+        klass->handle_destroy();
     }
 }
 
@@ -599,7 +611,7 @@ void USBPCIDevice::USB_EPsetType(XboxDeviceState* dev, int pid, int ep, uint8_t 
     uep->Type = type;
 }
 
-uint8_t USBPCIDevice::USB_EPsetIfnum(XboxDeviceState* dev, int pid, int ep, uint8_t ifnum) {
+void USBPCIDevice::USB_EPsetIfnum(XboxDeviceState* dev, int pid, int ep, uint8_t ifnum) {
     USBEndpoint* uep = USB_GetEP(dev, pid, ep);
     uep->IfNum = ifnum;
 }
@@ -614,13 +626,10 @@ void USBPCIDevice::USB_EPsetMaxPacketSize(XboxDeviceState* dev, int pid, int ep,
 
 void USBPCIDevice::USB_PortLocation(USBPort* downstream, USBPort* upstream, int portnr) {
     if (upstream) {
-        std::snprintf(downstream->Path, sizeof(downstream->Path), "%s.%d",
-            upstream->Path, portnr);
-        downstream->HubCount = upstream->HubCount + 1;
+        downstream->Path = upstream->Path + '.' + std::to_string(portnr);
     }
     else {
-        std::snprintf(downstream->Path, sizeof(downstream->Path), "%d", portnr);
-        downstream->HubCount = 0;
+        downstream->Path = std::to_string(portnr);
     }
 }
 
@@ -632,6 +641,16 @@ void USBPCIDevice::USB_DeviceAttach(XboxDeviceState* dev) {
 
     dev->Attached++;
     USB_Attach(port);
+}
+
+void USBPCIDevice::USB_DeviceDetach(XboxDeviceState* dev) {
+    USBPort* port = dev->Port;
+
+    assert(port != nullptr);
+    assert(dev->Attached);
+
+    USB_Detach(port);
+    dev->Attached--;
 }
 
 void USBPCIDevice::USB_EpInit(XboxDeviceState* dev) {
@@ -681,20 +700,17 @@ void USBPCIDevice::USB_EpReset(XboxDeviceState* dev) {
  * the pci address in most cases).  Third the physical port path.
  * Results in serial numbers like this: "314159-0000:00:1d.7-3".
  */
-void USBPCIDevice::USB_CreateSerial(XboxDeviceState* dev, const char* str) {
+void USBPCIDevice::USB_CreateSerial(XboxDeviceState* dev, std::string&& str) {
     const USBDesc* desc = USBDesc_GetUsbDeviceDesc(dev);
     int index = desc->id.iSerialNumber;
-    USBDescString* s;
-    char serial[64];
-    char* path;
-    int dst;
+    std::string str2;
 
-    assert(index != 0 && str != nullptr);
-    dst = std::snprintf(serial, sizeof(serial), "%s", str);
-    dst += std::snprintf(serial + dst, sizeof(serial) - dst, "-%s", m_PciPath);
-    std::snprintf(serial + dst, sizeof(serial) - dst, "-%s", dev->Port->Path);
+    assert(index != 0 && str.empty() == false);
+    str += '-';
+    str += m_PciPath;
+    str += ('-' + dev->Port->Path);
 
-    USBDesc_SetString(dev, index, serial);
+    USBDesc_SetString(dev, index, std::move(str));
 }
 
 const USBDesc* USBPCIDevice::USBDesc_GetUsbDeviceDesc(XboxDeviceState* dev) {
@@ -708,7 +724,7 @@ const USBDesc* USBPCIDevice::USBDesc_GetUsbDeviceDesc(XboxDeviceState* dev) {
 void USBPCIDevice::USBDesc_Init(XboxDeviceState* dev) {
     const USBDesc* desc = USBDesc_GetUsbDeviceDesc(dev);
 
-    assert(desc != NULL);
+    assert(desc != nullptr);
     dev->Speed = USB_SPEED_FULL;
     dev->SpeedMask = 0;
     if (desc->full) {
@@ -720,7 +736,7 @@ void USBPCIDevice::USBDesc_Init(XboxDeviceState* dev) {
 void USBPCIDevice::USBDesc_SetDefaults(XboxDeviceState* dev) {
     const USBDesc *desc = USBDesc_GetUsbDeviceDesc(dev);
 
-    assert(desc != NULL);
+    assert(desc != nullptr);
     switch (dev->Speed) {
     case USB_SPEED_LOW:
     case USB_SPEED_FULL:
@@ -729,7 +745,7 @@ void USBPCIDevice::USBDesc_SetDefaults(XboxDeviceState* dev) {
         break;
     }
     default:
-        log_warning("Unknown speed parameter %d set in %s", dev->ProductDesc.c_str());
+        log_warning("USB: Unknown speed parameter %d set in %s", dev->ProductDesc.c_str());
     }
     USBDesc_SetConfig(dev, 0);
 }
@@ -843,7 +859,7 @@ int USBPCIDevice::USBDesc_HandleControl(XboxDeviceState* dev, USBPacket *p, int 
         // From the standard: "This request sets the device address for all future device accesses.
         // The wValue field specifies the device address to use for all subsequent accesses"
         dev->Addr = value;
-        log_debug("Address 0x%X set for device %s", dev->Addr, dev->ProductDesc.c_str());
+        log_debug("USB: Address 0x%X set for device %s", dev->Addr, dev->ProductDesc.c_str());
         ret = 0;
         break;
     }
@@ -872,7 +888,7 @@ int USBPCIDevice::USBDesc_HandleControl(XboxDeviceState* dev, USBPacket *p, int 
         // From the standard: "This request sets the device configuration. The lower byte of the wValue field specifies the desired configuration.
         // This configuration value must be zero or match a configuration value from a configuration descriptor"
         ret = USBDesc_SetConfig(dev, value);
-        log_debug("Received standard SetConfiguration() request for device at address 0x%X. Configuration selected is %d and returned %d",
+        log_debug("USB: Received standard SetConfiguration() request for device at address 0x%X. Configuration selected is %d and returned %d",
             dev->Addr, value, ret);
         break;
     }
@@ -908,7 +924,7 @@ int USBPCIDevice::USBDesc_HandleControl(XboxDeviceState* dev, USBPacket *p, int 
             dev->RemoteWakeup = 0;
             ret = 0;
         }
-        log_debug("Received standard ClearFeature() request for device at address 0x%X. Feature selected is %d and returned %d",
+        log_debug("USB: Received standard ClearFeature() request for device at address 0x%X. Feature selected is %d and returned %d",
             dev->Addr, value, ret);
         break;
     }
@@ -921,7 +937,7 @@ int USBPCIDevice::USBDesc_HandleControl(XboxDeviceState* dev, USBPacket *p, int 
             dev->RemoteWakeup = 1;
             ret = 0;
         }
-        log_debug("Received standard SetFeature() request for device at address 0x%X. Feature selected is %d and returned %d",
+        log_debug("USB: Received standard SetFeature() request for device at address 0x%X. Feature selected is %d and returned %d",
             dev->Addr, value, ret);
         break;
     }
@@ -944,11 +960,12 @@ int USBPCIDevice::USBDesc_HandleControl(XboxDeviceState* dev, USBPacket *p, int 
         // From the standard: "This request allows the host to select an alternate setting for the specified interface"
         // wValue = Alternative Setting; wIndex = Interface
         ret = USBDesc_SetInterface(dev, index, value);
-        log_debug("Received standard SetInterface() request for device at address 0x%X. Interface selected is %d, Alternative Setting is %d and returned %d", dev->Addr, index, value, ret);
+        log_debug("USB: Received standard SetInterface() request for device at address 0x%X. Interface selected is %d, Alternative Setting is %d and returned %d", dev->Addr, index, value, ret);
         break;
     }
 
     default:
+        break;
     }
     return ret;
 }
@@ -970,7 +987,7 @@ int USBPCIDevice::USBDesc_HandleStandardGetDescriptor(XboxDeviceState* dev, USBP
     case USB_DT_DEVICE:
     {
         ret = USB_ReadDeviceDesc(&desc->id, dev->Device, buf, sizeof(buf));
-        log_debug("Read operation of device descriptor of device 0x%X returns %d", dev->Addr, ret);
+        log_debug("USB: Read operation of device descriptor of device 0x%X returns %d", dev->Addr, ret);
         break;
     }
 
@@ -979,14 +996,14 @@ int USBPCIDevice::USBDesc_HandleStandardGetDescriptor(XboxDeviceState* dev, USBP
         if (index < dev->Device->bNumConfigurations) {
             ret = USB_ReadConfigurationDesc(dev->Device->confs + index, flags, buf, sizeof(buf));
         }
-        log_debug("Read operation of configuration descriptor %d of device 0x%X returns %d", index, dev->Addr, ret);
+        log_debug("USB: Read operation of configuration descriptor %d of device 0x%X returns %d", index, dev->Addr, ret);
         break;
     }
 
     case USB_DT_STRING:
     {
         ret = USB_ReadStringDesc(dev, index, buf, sizeof(buf));
-        log_debug("Read operation of string descriptor %d of device 0x%X returns %d", index, dev->Addr, ret);
+        log_debug("USB: Read operation of string descriptor %d of device 0x%X returns %d", index, dev->Addr, ret);
         break;
     }
 
@@ -994,7 +1011,7 @@ int USBPCIDevice::USBDesc_HandleStandardGetDescriptor(XboxDeviceState* dev, USBP
     // USB_DT_BOS (15) and USB_DT_DEBUG (10) -> usb 3.0 only
 
     default:
-        log_warning("%s: device address %d unknown type %d (len %zd)", __func__, dev->Addr, type, len);
+        log_warning("USB: %s: device address %d unknown type %d (len %zd)", __func__, dev->Addr, type, len);
         break;
     }
 
@@ -1079,7 +1096,7 @@ int USBPCIDevice::USB_ReadConfigurationDesc(const USBDescConfig* conf, int flags
 }
 
 int USBPCIDevice::USB_ReadInterfaceDesc(const USBDescIface* iface, int flags, uint8_t* dest, size_t len) {
-    uint8_t bLength = 0x09; // a interface descriptor is 9 bytes large
+    uint8_t bLength = 0x09; // an interface descriptor is 9 bytes large
     int i, rc, pos = 0;
     USBDescriptor* d = reinterpret_cast<USBDescriptor*>(dest);
 
@@ -1175,7 +1192,7 @@ int USBPCIDevice::USB_ReadStringDesc(XboxDeviceState* dev, int index, uint8_t* d
     }
 
     // From the standard: "String index zero for all languages returns a string descriptor
-    // that contains an array of two-byte LANGID codes supported by the device."
+    // that contains an array of two-byte LANGID codes supported by the device"
 
     if (index == 0) {
         /* language ids */
@@ -1205,7 +1222,7 @@ int USBPCIDevice::USB_ReadStringDesc(XboxDeviceState* dev, int index, uint8_t* d
     return pos;
 }
 
-void USBPCIDevice::USBDesc_SetString(XboxDeviceState* dev, int index, const char* str) {
+void USBPCIDevice::USBDesc_SetString(XboxDeviceState* dev, int index, std::string&& str) {
     USBDescString* s;
 
     QLIST_FOREACH(s, &dev->Strings, next) {

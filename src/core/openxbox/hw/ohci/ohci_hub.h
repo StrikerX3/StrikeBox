@@ -40,7 +40,7 @@
 
 #pragma once
 
-#include "ohci_common.h"
+#include "../pci/usb_pci.h"
 
 namespace openxbox {
 
@@ -54,19 +54,32 @@ namespace openxbox {
 #define PORT_STAT_POWER        0x0100
 #define PORT_STAT_LOW_SPEED    0x0200
 
-#define PORT_STAT_C_CONNECTION	0x0001
+#define PORT_STAT_C_CONNECTION  0x0001
 #define PORT_STAT_C_ENABLE      0x0002
 #define PORT_STAT_C_SUSPEND     0x0004
-#define PORT_STAT_C_OVERCURRENT	0x0008
+#define PORT_STAT_C_OVERCURRENT 0x0008
 #define PORT_STAT_C_RESET       0x0010
 
+#define ClearHubFeature     (0x2000 | USB_REQ_CLEAR_FEATURE)
+#define ClearPortFeature    (0x2300 | USB_REQ_CLEAR_FEATURE)
+#define GetHubDescriptor    (0xA000 | USB_REQ_GET_DESCRIPTOR)
+#define GetHubStatus        (0xA000 | USB_REQ_GET_STATUS)
+#define GetPortStatus       (0xA300 | USB_REQ_GET_STATUS)
+#define SetHubFeature       (0x2000 | USB_REQ_SET_FEATURE)
+#define SetPortFeature      (0x2300 | USB_REQ_SET_FEATURE)
 
-/* same as Linux kernel root hubs */
-typedef enum {
-    STR_MANUFACTURER = 1,
-    STR_PRODUCT,
-    STR_SERIALNUMBER,
-};
+#define PORT_CONNECTION     0
+#define PORT_ENABLE         1
+#define PORT_SUSPEND        2
+#define PORT_OVERCURRENT    3
+#define PORT_RESET          4
+#define PORT_POWER          8
+#define PORT_LOWSPEED       9
+#define PORT_C_CONNECTION   16
+#define PORT_C_ENABLE       17
+#define PORT_C_SUSPEND      18
+#define PORT_C_OVERCURRENT  19
+#define PORT_C_RESET        20
 
 struct USBHubPort {
     USBPort port;          // downstream port status
@@ -83,15 +96,16 @@ struct USBHubState {
 /* Class which implements a usb hub */
 class Hub {
 public:
-    // initialize this peripheral
-    int Init(int pport);
-    // destructor
-    ~Hub();
+    // usb device this hub is attached to
+    USBPCIDevice* m_UsbDev = nullptr;
+
+    // initialize this hub
+    int Init(int port);
+    // start hub destruction
+    void HubDestroy();
 
 
 private:
-    // usb device this hub is attached to
-    USBPCIDevice* m_UsbDev = nullptr;
     // hub state
     USBHubState* m_HubState = nullptr;
     // hub class functions
@@ -106,7 +120,7 @@ private:
     void UsbHub_HandleControl(XboxDeviceState* dev, USBPacket* p,
         int request, int value, int index, int length, uint8_t* data);
     void UsbHub_HandleData(XboxDeviceState* dev, USBPacket* p);
-    void UsbHub_HandleDestroy(XboxDeviceState* dev);
+    void UsbHub_HandleDestroy();
     // see USBPortOps struct for info
     void UsbHub_Attach(USBPort* port1);
     void UsbHub_Detach(USBPort* port1);
@@ -117,6 +131,10 @@ private:
     int UsbHubClaimPort(XboxDeviceState* dev, int port);
     // free the usb port used by this hub
     void UsbHubReleasePort(XboxDeviceState* dev);
+    // retieve the name of the feature of the usb request
+    std::string GetFeatureName(int feature);
+    // destroy hub resources
+    void HubCleanUp();
 };
 
 extern Hub* g_HubObjArray[4];

@@ -46,16 +46,6 @@
 
 namespace openxbox {
 
-#define USB_RET_SUCCESS           (0)
-#define USB_RET_NODEV             (-1)
-#define USB_RET_NAK               (-2)
-#define USB_RET_STALL             (-3)
-#define USB_RET_BABBLE            (-4)
-#define USB_RET_IOERROR           (-5)
-#define USB_RET_ASYNC             (-6)
-#define USB_RET_ADD_TO_QUEUE      (-7)
-#define USB_RET_REMOVE_FROM_QUEUE (-8)
-
 
 // Abbreviations used:
 // OHCI: Open Host Controller Interface; the standard used on the Xbox to comunicate with the usb devices
@@ -151,6 +141,10 @@ struct OHCI_Registers {
 /* OHCI class representing the state of the HC */
 class OHCI {
 public:
+    // Indicates that the timer thread is accessing the OHCI object. Necessary because the input thread from the
+    // InputDeviceManager will access us when it needs to destroy a device
+    std::atomic_bool m_bFrameTime;
+
     // constructor
     OHCI(Cpu* cpu, int Irqn, USBPCIDevice* UsbObj);
     // destructor
@@ -159,8 +153,6 @@ public:
     uint32_t OHCI_ReadRegister(uint32_t Addr);
     // write a register
     void OHCI_WriteRegister(uint32_t Addr, uint32_t Value);
-    // update the USBPort struct with the device attached
-    void OHCI_AssignUsbPortStruct(int port, XboxDeviceState* dev);
 
 private:
     Cpu* m_cpu;
@@ -215,7 +207,7 @@ private:
     void OHCI_SetInterrupt(uint32_t Value);
     // calculate frame time remaining
     uint32_t OHCI_GetFrameRemaining();
-    //
+    // halt the endpoints of the device
     void OHCI_StopEndpoints();
     // set root hub status
     void OHCI_SetHubStatus(uint32_t Value);

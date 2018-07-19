@@ -37,6 +37,9 @@
 #include "ohci.h"
 #include "openxbox/log.h"
 
+//#define DEBUG_PACKET
+//#define DEBUG_ISOCH
+
 namespace openxbox {
 
 
@@ -76,6 +79,8 @@ namespace openxbox {
 // HcFmRemaining
 #define OHCI_FMR_FR                         0x00003FFF       // FrameRemaining
 #define OHCI_FMR_FRT                        0x80000000       // FrameRemainingToggle
+// LSThreshold
+#define OHCI_LS_THRESH                      0x628            // LSThreshold
 // HcRhDescriptorA
 #define OHCI_RHA_RW_MASK                    0x00000000       // Mask of supported features
 #define OHCI_RHA_PSM                        (1<<8)           // PowerSwitchingMode
@@ -138,15 +143,15 @@ namespace openxbox {
 /* Bitfields for the first word of an Isochronous Transfer Desciptor.  */
 /* CC & DI - same as in the General Transfer Desciptor */
 #define OHCI_TD_SF_SHIFT  0
-#define OHCI_TD_SF_MASK   (0xffff<<OHCI_TD_SF_SHIFT)
+#define OHCI_TD_SF_MASK   (0xFFFF<<OHCI_TD_SF_SHIFT)
 #define OHCI_TD_FC_SHIFT  24
 #define OHCI_TD_FC_MASK   (7<<OHCI_TD_FC_SHIFT)
 
 /* Isochronous Transfer Desciptor - Offset / PacketStatusWord */
 #define OHCI_TD_PSW_CC_SHIFT 12
-#define OHCI_TD_PSW_CC_MASK  (0xf<<OHCI_TD_PSW_CC_SHIFT)
+#define OHCI_TD_PSW_CC_MASK  (0xF<<OHCI_TD_PSW_CC_SHIFT)
 #define OHCI_TD_PSW_SIZE_SHIFT 0
-#define OHCI_TD_PSW_SIZE_MASK  (0xfff<<OHCI_TD_PSW_SIZE_SHIFT)
+#define OHCI_TD_PSW_SIZE_MASK  (0xFFF<<OHCI_TD_PSW_SIZE_SHIFT)
 
 /* Mask the four least significant bits in an ED address */
 #define OHCI_DPTR_MASK    0xFFFFFFF0
@@ -193,6 +198,7 @@ OHCI::OHCI(Cpu* cpu, int Irq, USBPCIDevice* UsbObj)
 
 	m_IrqNum = Irq;
 	m_UsbDevice = UsbObj;
+    m_bFrameTime = false;
     ops = new USBPortOps();
     {
         using namespace std::placeholders;
@@ -229,9 +235,13 @@ void OHCI::OHCI_FrameBoundaryWorker()
 {
 	OHCI_HCCA hcca;
 
+    while (m_bFrameTime) {}
+    m_bFrameTime = true;
+
 	if (OHCI_ReadHCCA(m_Registers.HcHCCA, &hcca)) {
 		log_warning("OHCI: HCCA read error at physical address 0x%X\n", m_Registers.HcHCCA);
 		OHCI_FatalError();
+        m_bFrameTime = false;
 		return;
 	}
 
@@ -256,6 +266,7 @@ void OHCI::OHCI_FrameBoundaryWorker()
 
 	// Stop if UnrecoverableError happened or OHCI_SOF will crash
 	if (m_Registers.HcInterruptStatus & OHCI_INTR_UE) {
+        m_bFrameTime = false;
 		return;
 	}
 
@@ -301,6 +312,7 @@ void OHCI::OHCI_FrameBoundaryWorker()
 		log_warning("OHCI: HCCA write error at physical address 0x%X\n", m_Registers.HcHCCA);
 		OHCI_FatalError();
 	}
+    m_bFrameTime = false;
 }
 
 void OHCI::OHCI_FatalError()
@@ -529,14 +541,14 @@ int OHCI::OHCI_ServiceEDlist(uint32_t Head, int Completion)
 
 		while ((ed.HeadP & OHCI_DPTR_MASK) != ed.TailP) { // a TD is available to be processed
 #ifdef DEBUG_PACKET
-			DPRINTF("ED @ 0x%.8x fa=%u en=%u d=%u s=%u k=%u f=%u mps=%u "
-				"h=%u c=%u\n  head=0x%.8x tailp=0x%.8x next=0x%.8x\n", cur,
-				OHCI_BM(ed.flags, ED_FA), OHCI_BM(ed.flags, ED_EN),
-				OHCI_BM(ed.flags, ED_D), (ed.flags & OHCI_ED_S) != 0,
-				(ed.flags & OHCI_ED_K) != 0, (ed.flags & OHCI_ED_F) != 0,
-				OHCI_BM(ed.flags, ED_MPS), (ed.head & OHCI_ED_H) != 0,
-				(ed.head & OHCI_ED_C) != 0, ed.head & OHCI_DPTR_MASK,
-				ed.tail & OHCI_DPTR_MASK, ed.next & OHCI_DPTR_MASK);
+			log_spew("OHCI: ED @ 0x%.8x fa=%u en=%u d=%u s=%u k=%u f=%u mps=%u "
+				"h=%u c=%u\n  head=0x%.8x tailp=0x%.8x next=0x%.8x\n", current,
+				OHCI_BM(ed.Flags, ED_FA), OHCI_BM(ed.Flags, ED_EN),
+				OHCI_BM(ed.Flags, ED_D), (ed.Flags & OHCI_ED_S) != 0,
+				(ed.Flags & OHCI_ED_K) != 0, (ed.Flags & OHCI_ED_F) != 0,
+				OHCI_BM(ed.Flags, ED_MPS), (ed.HeadP & OHCI_ED_H) != 0,
+				(ed.HeadP & OHCI_ED_C) != 0, ed.HeadP & OHCI_DPTR_MASK,
+				ed.TailP & OHCI_DPTR_MASK, ed.NextED & OHCI_DPTR_MASK);
 #endif
 			active = 1;
 
@@ -548,8 +560,9 @@ int OHCI::OHCI_ServiceEDlist(uint32_t Head, int Completion)
 			}
 			else {
 				// Handle isochronous endpoints
-				if (OHCI_ServiceIsoTD(&ed, Completion))
-					break;
+                if (OHCI_ServiceIsoTD(&ed, Completion)) {
+                    break;
+                }
 			}
 		}
 
@@ -568,7 +581,7 @@ int OHCI::OHCI_ServiceTD(OHCI_ED* Ed)
 	int direction;
 	size_t length = 0, packetlen = 0;
 #ifdef DEBUG_PACKET
-	const char *str = NULL;
+	const char *str = nullptr;
 #endif
 	int pid;
 	int ret;
@@ -585,8 +598,7 @@ int OHCI::OHCI_ServiceTD(OHCI_ED* Ed)
 	completion = (addr == m_AsyncTD);
 	if (completion && !m_AsyncComplete) { // ??
 #ifdef DEBUG_PACKET
-		DPRINTF("Skipping async TD\n");
-        log_debug("Skipping async TD\n");
+        log_spew("OHCI: Skipping async TD\n");
 #endif
 		return 1;
 	}
@@ -671,17 +683,19 @@ int OHCI::OHCI_ServiceTD(OHCI_ED* Ed)
 
 	flag_r = (td.Flags & OHCI_TD_R) != 0;
 #ifdef DEBUG_PACKET
-	DPRINTF(" TD @ 0x%.8x %" PRId64 " of %" PRId64
-		" bytes %s r=%d cbp=0x%.8x be=0x%.8x\n",
-		addr, (int64_t)pktlen, (int64_t)len, str, flag_r, td.cbp, td.be);
+	log_spew("OHCI: TD @ 0x%.8X %lld of %lld bytes %s r=%d cbp=0x%.8X be=0x%.8X\n",
+        addr, (int64_t)packetlen, (int64_t)length, str, flag_r, td.CurrentBufferPointer, td.BufferEnd);
 
-	if (pktlen > 0 && dir != OHCI_TD_DIR_IN) {
-		DPRINTF("  data:");
-		for (i = 0; i < pktlen; i++) {
-			printf(" %.2x", ohci->usb_buf[i]);
+#if LOG_LEVEL >= LOG_LEVEL_SPEW
+	if (packetlen  > 0 && direction != OHCI_TD_DIR_IN) {
+		printf("  data:");
+		for (i = 0; i < packetlen; i++) {
+			printf(" %.2x", m_UsbBuffer[i]);
 		}
-		DPRINTF("\n");
+        printf("\n");
 	}
+#endif
+
 #endif
 	if (completion) {
 		m_AsyncTD = 0;
@@ -692,9 +706,6 @@ int OHCI::OHCI_ServiceTD(OHCI_ED* Ed)
 			// From XQEMU: "??? The hardware should allow one active packet per endpoint.
 			// We only allow one active packet per controller. This should be sufficient
 			// as long as devices respond in a timely manner."
-#ifdef DEBUG_PACKET
-			DPRINTF("Too many pending packets\n");
-#endif
             log_debug("OHCI: too many pending packets\n");
 			return 1;
 		}
@@ -704,7 +715,7 @@ int OHCI::OHCI_ServiceTD(OHCI_ED* Ed)
 		m_UsbDevice->USB_PacketAddBuffer(&m_UsbPacket, m_UsbBuffer, packetlen);
 		m_UsbDevice->USB_HandlePacket(dev, &m_UsbPacket);
 #ifdef DEBUG_PACKET
-		DPRINTF("status=%d\n", ohci->usb_packet.status);
+        log_spew("OHCI: status=%d\n", m_UsbPacket.Status);
 #endif
 		if (m_UsbPacket.Status == USB_RET_ASYNC) {
 			m_UsbDevice->USB_DeviceFlushEPqueue(dev, ep);
@@ -725,10 +736,12 @@ int OHCI::OHCI_ServiceTD(OHCI_ED* Ed)
 				OHCI_FatalError();
 			}
 #ifdef DEBUG_PACKET
-			DPRINTF("  data:");
+#if LOG_LEVEL >= LOG_LEVEL_SPEW
+            printf("  data:");
 			for (i = 0; i < ret; i++)
-				printf(" %.2x", ohci->usb_buf[i]);
-			DPRINTF("\n");
+				printf(" %.2x", m_UsbBuffer[i]);
+			printf("\n");
+#endif
 #endif
 		}
 		else {
@@ -869,9 +882,11 @@ void OHCI::OHCI_StateReset()
 	m_Registers.HcFmRemaining = 0;
 	m_Registers.HcFmNumber = 0;
 	m_Registers.HcPeriodicStart = 0;
+    m_Registers.HcLSThreshold = OHCI_LS_THRESH;
 
 	m_Registers.HcRhDescriptorA = OHCI_RHA_NPS | 2; // The xbox lacks the hw to switch off the power on the ports and has 2 ports per HC
 	m_Registers.HcRhDescriptorB = 0; // The attached devices are removable and use PowerSwitchingMode to control the power on the ports
+    m_Registers.HcRhStatus = 0;
 
 	m_DoneCount = 7;
 
@@ -1379,7 +1394,7 @@ int OHCI::OHCI_PortSetIfConnected(int i, uint32_t Value)
 	if (!(m_Registers.RhPort[i].HcRhPortStatus & OHCI_PORT_CCS)) {
 		m_Registers.RhPort[i].HcRhPortStatus |= OHCI_PORT_CSC;
 		if (m_Registers.HcRhStatus & OHCI_RHS_DRWE) {
-			// TODO: CSC is a wakeup event
+			// from XQEMU: TODO: CSC is a wakeup event
 		}
 		return 0;
 	}
@@ -1476,7 +1491,7 @@ void OHCI::OHCI_Wakeup(USBPort* port1) {
 
 void OHCI::OHCI_AsyncCompletePacket(USBPort* port, USBPacket* packet) {
 #ifdef DEBUG_PACKET
-    log_debug("Async packet complete");
+    log_spew("OHCI: Async packet complete");
 #endif
     m_AsyncComplete = 1;
     OHCI_ProcessLists(1);
@@ -1521,7 +1536,7 @@ int OHCI::OHCI_ServiceIsoTD(OHCI_ED* ed, int completion)
 	int dir;
 	size_t len = 0;
 #ifdef DEBUG_ISOCH
-	const char *str = NULL;
+	const char *str = nullptr;
 #endif
 	int pid;
 	int ret;
@@ -1551,20 +1566,20 @@ int OHCI::OHCI_ServiceIsoTD(OHCI_ED* ed, int completion)
 	relative_frame_number = USUB(m_Registers.HcFmNumber & 0xFFFF, starting_frame);
 
 #ifdef DEBUG_ISOCH
-	log_spew("--- ISO_TD ED head 0x%.8x tailp 0x%.8x\n"
+	log_spew("OHCI: --- ISO_TD ED head 0x%.8x tailp 0x%.8x\n"
 		"0x%.8x 0x%.8x 0x%.8x 0x%.8x\n"
 		"0x%.8x 0x%.8x 0x%.8x 0x%.8x\n"
 		"0x%.8x 0x%.8x 0x%.8x 0x%.8x\n"
 		"frame_number 0x%.8x starting_frame 0x%.8x\n"
 		"frame_count  0x%.8x relative %d\n"
 		"di 0x%.8x cc 0x%.8x\n",
-		ed->head & OHCI_DPTR_MASK, ed->tail & OHCI_DPTR_MASK,
-		iso_td.flags, iso_td.bp, iso_td.next, iso_td.be,
-		iso_td.offset[0], iso_td.offset[1], iso_td.offset[2], iso_td.offset[3],
-		iso_td.offset[4], iso_td.offset[5], iso_td.offset[6], iso_td.offset[7],
-		ohci->frame_number, starting_frame,
+		ed->HeadP  & OHCI_DPTR_MASK, ed->TailP & OHCI_DPTR_MASK,
+        iso_td.Flags, iso_td.BufferPage0, iso_td.NextTD, iso_td.BufferEnd,
+        iso_td.Offset[0], iso_td.Offset[1], iso_td.Offset[2], iso_td.Offset[3],
+        iso_td.Offset[4], iso_td.Offset[5], iso_td.Offset[6], iso_td.Offset[7],
+        m_Registers.HcFmNumber, starting_frame,
 		frame_count, relative_frame_number,
-		OHCI_BM(iso_td.flags, TD_DI), OHCI_BM(iso_td.flags, TD_CC));
+		OHCI_BM(iso_td.Flags, TD_DI), OHCI_BM(iso_td.Flags, TD_CC));
 #endif
 
 	if (relative_frame_number < 0) {
@@ -1717,7 +1732,7 @@ int OHCI::OHCI_ServiceIsoTD(OHCI_ED* ed, int completion)
 	}
 
 #ifdef DEBUG_ISOCH
-	printf("so 0x%.8x eo 0x%.8x\nsa 0x%.8x ea 0x%.8x\ndir %s len %zu ret %d\n",
+	log_spew("OHCI: so 0x%.8x eo 0x%.8x\nsa 0x%.8x ea 0x%.8x\ndir %s len %zu ret %d\n",
 		start_offset, end_offset, start_addr, end_addr, str, len, ret);
 #endif
 
@@ -1788,11 +1803,6 @@ int OHCI::OHCI_ServiceIsoTD(OHCI_ED* ed, int completion)
 		OHCI_FatalError();
 	}
 	return 1;
-}
-
-void OHCI::OHCI_AssignUsbPortStruct(int port, XboxDeviceState* dev) {
-    dev->Port = &m_Registers.RhPort[port].UsbPort;
-    m_Registers.RhPort[port].UsbPort.Dev = dev;
 }
 
 }

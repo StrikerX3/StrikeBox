@@ -81,23 +81,25 @@ public:
     OHCI* m_HostController;
     // PCI path of this usb device
     const char* m_PciPath;
+    // free usb ports on this device (hubs included)
+    std::vector<USBPort*> m_FreePorts;
 
     // register a port with the HC
     void USB_RegisterPort(USBPort* Port, int Index, int SpeedMask, USBPortOps* Ops);
+    // free a port with the HC
+    void USB_UnregisterPort(USBPort* Port);
     // reset a usb port
     void USB_PortReset(USBPort* Port);
     // update device status during an attach
     void USB_DeviceAttach(XboxDeviceState* dev);
+    // update device status during an detach
+    void USB_DeviceDetach(XboxDeviceState* dev);
     // update port status when a device is attached
     void USB_Attach(USBPort* Port);
     // update port status when a device is detached
     void USB_Detach(USBPort* Port);
-    // a device downstream from the device attached to the port (attached through a hub) is detached
-    void ChildDetach(USBPort* Port, XboxDeviceState* Child);
     // update port status when a device is detached
     void USB_Wakeup(USBEndpoint* ep);
-    // TODO
-    void Complete(USBPort* Port, USBPacket *P);
     // reset a device
     void USB_DeviceReset(XboxDeviceState* Dev);
     // find the device connected to the supplied port and address
@@ -156,7 +158,7 @@ public:
     // set the type of the endpoint
     void USB_EPsetType(XboxDeviceState* dev, int pid, int ep, uint8_t type);
     // set the interface number of the endpoint
-    uint8_t USB_EPsetIfnum(XboxDeviceState* dev, int pid, int ep, uint8_t ifnum);
+    void USB_EPsetIfnum(XboxDeviceState* dev, int pid, int ep, uint8_t ifnum);
     // set the maximum packet size parameter of the endpoint
     void USB_EPsetMaxPacketSize(XboxDeviceState* dev, int pid, int ep, uint16_t raw);
     // assign port numbers (also for hubs)
@@ -166,7 +168,7 @@ public:
     // reset all endpoints of this peripheral
     void USB_EpReset(XboxDeviceState* dev);
     // create a serial number for the device
-    void USB_CreateSerial(XboxDeviceState* dev, const char* str);
+    void USB_CreateSerial(XboxDeviceState* dev, std::string&& str);
     // start descriptors initialization
     void USBDesc_Init(XboxDeviceState* dev);
     // get device descriptor
@@ -198,7 +200,7 @@ public:
     // return the binary rapresentation of string descriptors
     int USB_ReadStringDesc(XboxDeviceState* dev, int index, uint8_t* dest, size_t len);
     // set a string in the string descriptor with the supplied index
-    void USBDesc_SetString(XboxDeviceState* dev, int index, const char* str);
+    void USBDesc_SetString(XboxDeviceState* dev, int index, std::string&& str);
     // get a string in the string descriptor with the supplied index
     const char* USBDesc_GetString(XboxDeviceState* dev, int index);
 private:
