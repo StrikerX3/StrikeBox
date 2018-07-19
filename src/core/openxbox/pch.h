@@ -1,5 +1,7 @@
 #pragma once
 
+// This is the precompiled header file for this project.
+
 #include "openxbox/platform.h"
 #include "openxbox/settings.h"
 #include "openxbox/pte.h"
