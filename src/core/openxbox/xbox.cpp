@@ -130,7 +130,7 @@ Xbox::~Xbox() {
  */
 int Xbox::Initialize(OpenXBOXSettings *settings)
 {
-    m_settings = settings;
+    m_settings = *settings;
     MemoryRegion *rgn;
 
     // Initialize 4 GiB address space
@@ -139,7 +139,7 @@ int Xbox::Initialize(OpenXBOXSettings *settings)
     // ----- RAM --------------------------------------------------------------
 
     // Create RAM region
-    m_ramSize = settings->hw_model == DebugKit ? XBOX_RAM_SIZE_DEBUG : XBOX_RAM_SIZE_RETAIL;
+    m_ramSize = m_settings.hw_model == DebugKit ? XBOX_RAM_SIZE_DEBUG : XBOX_RAM_SIZE_RETAIL;
     log_debug("Allocating RAM (%d MiB)\n", m_ramSize >> 20);
 
 #ifdef _WIN32
@@ -186,10 +186,10 @@ int Xbox::Initialize(OpenXBOXSettings *settings)
     long sz;
 
     // Load MCPX ROM
-    log_debug("Loading MCPX ROM %s...", settings->rom_mcpx);
-    fp = fopen(settings->rom_mcpx, "rb");
+    log_debug("Loading MCPX ROM %s...", m_settings.rom_mcpx);
+    fp = fopen(m_settings.rom_mcpx, "rb");
     if (fp == NULL) {
-        log_debug("file %s could not be opened\n", settings->rom_mcpx);
+        log_debug("file %s could not be opened\n", m_settings.rom_mcpx);
         return 1;
     }
     fseek(fp, 0, SEEK_END);
@@ -205,10 +205,10 @@ int Xbox::Initialize(OpenXBOXSettings *settings)
     log_debug("OK\n");
 
     // Load BIOS ROM
-    log_debug("Loading BIOS ROM %s...", settings->rom_bios);
-    fp = fopen(settings->rom_bios, "rb");
+    log_debug("Loading BIOS ROM %s...", m_settings.rom_bios);
+    fp = fopen(m_settings.rom_bios, "rb");
     if (fp == NULL) {
-        log_debug("file %s could not be opened\n", settings->rom_bios);
+        log_debug("file %s could not be opened\n", m_settings.rom_bios);
         return 1;
     }
     fseek(fp, 0, SEEK_END);
@@ -229,7 +229,7 @@ int Xbox::Initialize(OpenXBOXSettings *settings)
     memcpy(m_rom, bios, biosSize);
 
     // Overlay MCPX ROM image onto the last 512 bytes
-    if(!(m_settings->hw_model == DebugKit)) {
+    if(!(m_settings.hw_model == DebugKit)) {
         memcpy(m_rom + biosSize - 512, mcpx, 512);
     }
 
@@ -263,9 +263,9 @@ int Xbox::Initialize(OpenXBOXSettings *settings)
 
     // Determine which revisions of which components should be used for the
     // specified hardware model
-    MCPXRevision mcpxRevision = MCPXRevisionFromHardwareModel(settings->hw_model);
-    SMCRevision smcRevision = SMCRevisionFromHardwareModel(settings->hw_model);
-    TVEncoder tvEncoder = TVEncoderFromHardwareModel(settings->hw_model);
+    MCPXRevision mcpxRevision = MCPXRevisionFromHardwareModel(m_settings.hw_model);
+    SMCRevision smcRevision = SMCRevisionFromHardwareModel(m_settings.hw_model);
+    TVEncoder tvEncoder = TVEncoderFromHardwareModel(m_settings.hw_model);
 
     log_debug("Initializing devices\n");
 
@@ -275,19 +275,19 @@ int Xbox::Initialize(OpenXBOXSettings *settings)
 
     // Create basic system devices
     m_i8259 = new i8259(m_cpu);
-    m_i8254 = new i8254(m_i8259, settings->hw_sysclock_tickRate);
+    m_i8254 = new i8254(m_i8259, m_settings.hw_sysclock_tickRate);
     m_CMOS = new CMOS();
-    if (settings->hw_model == DebugKit) {
+    if (m_settings.hw_model == DebugKit) {
         for (int i = 0; i < SUPERIO_SERIAL_PORT_COUNT; i++) {
-            switch (settings->hw_charDrivers[i].type) {
+            switch (m_settings.hw_charDrivers[i].type) {
             case CHD_Null:
                 m_CharDrivers[i] = new NullCharDriver();
                 break;
             case CHD_HostSerialPort:
 #ifdef _WIN32
-                m_CharDrivers[i] = new Win32SerialDriver(settings->hw_charDrivers[i].params.hostSerialPort.portNum);
+                m_CharDrivers[i] = new Win32SerialDriver(m_settings.hw_charDrivers[i].params.hostSerialPort.portNum);
 #else
-                m_CharDrivers[i] = new NullCharDriver(); // TODO: LinuxSerialDriver(settings->hw_charDrivers[i].params.hostSerialPort.portNum);
+                m_CharDrivers[i] = new NullCharDriver(); // TODO: LinuxSerialDriver(m_settings.hw_charDrivers[i].params.hostSerialPort.portNum);
 #endif
                 break;
             }
@@ -303,7 +303,7 @@ int Xbox::Initialize(OpenXBOXSettings *settings)
     m_i8259->Reset();
     m_i8254->Reset();
     m_CMOS->Reset();
-    if (settings->hw_model == DebugKit) {
+    if (m_settings.hw_model == DebugKit) {
         m_SuperIO->Reset();
     }
 
@@ -383,7 +383,7 @@ int Xbox::Initialize(OpenXBOXSettings *settings)
     m_i8254->MapIO(&m_ioMapper);
     m_CMOS->MapIO(&m_ioMapper);
     m_PCIBus->MapIO(&m_ioMapper);
-    if (settings->hw_model == DebugKit) {
+    if (m_settings.hw_model == DebugKit) {
         m_SuperIO->MapIO(&m_ioMapper);
     }
 
@@ -401,7 +401,7 @@ int Xbox::Initialize(OpenXBOXSettings *settings)
     // ----- Debugger ---------------------------------------------------------
 
     // GDB Server
-    if (m_settings->gdb_enable) {
+    if (m_settings.gdb_enable) {
         m_gdb = new GdbServer(m_cpu, "127.0.0.1", 9269);
         m_gdb->Initialize();
     }
@@ -410,7 +410,7 @@ int Xbox::Initialize(OpenXBOXSettings *settings)
 }
 
 void Xbox::InitializePreRun() {
-    if (m_settings->gdb_enable) {
+    if (m_settings.gdb_enable) {
         // Allow debugging before running so client can setup breakpoints, etc
         log_debug("Starting GDB Server\n");
         m_gdb->WaitForConnection();
@@ -451,7 +451,7 @@ int Xbox::RunCpu()
         t.Start();
 #endif
 #endif
-        if (m_settings->cpu_singleStep) {
+        if (m_settings.cpu_singleStep) {
             result = m_cpu->Step();
         }
         else {
@@ -529,7 +529,7 @@ void Xbox::Cleanup() {
             }
         }
 
-        if (m_settings->debug_dumpPageTables) {
+        if (m_settings.debug_dumpPageTables) {
             uint32_t cr0;
             m_cpu->RegRead(REG_CR0, &cr0);
             if (cr0 & (CR0_PG | CR0_PE)) {
@@ -597,7 +597,7 @@ void Xbox::Cleanup() {
         }
     }
 
-    if (m_settings->gdb_enable) {
+    if (m_settings.gdb_enable) {
         m_gdb->Shutdown();
     }
 }

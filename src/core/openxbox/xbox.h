@@ -66,6 +66,8 @@ public:
     void InitializePreRun();
     void Cleanup();
 
+    OpenXBOXSettings *GetSettings() { return &m_settings; }
+
     int Run();
     void Stop();
 
@@ -118,7 +120,7 @@ protected:
     NV2ADevice       *m_NV2A;
 
     // ----- Configuration ----------------------------------------------------
-    OpenXBOXSettings *m_settings;
+    OpenXBOXSettings  m_settings;
 
     // ----- State ------------------------------------------------------------
     bool m_should_run;
