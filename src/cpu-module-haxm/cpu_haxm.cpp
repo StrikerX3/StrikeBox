@@ -386,7 +386,9 @@ int HaxmCpu::LoadSegmentSelector(uint16_t selector, segment_desc_t *segment) {
 }
 
 int HaxmCpu::InjectInterrupt(uint8_t vector) {
-    return m_vcpu->Interrupt(vector);
+    int result = m_vcpu->Interrupt(vector);
+    m_vcpu->Tunnel()->request_interrupt_window = 0;
+    return result;
 }
 
 bool HaxmCpu::CanInjectInterrupt() {
