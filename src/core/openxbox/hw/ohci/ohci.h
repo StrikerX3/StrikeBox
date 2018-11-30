@@ -161,7 +161,7 @@ private:
     // all the registers available on the OHCI standard
     OHCI_Registers m_Registers;
     // end-of-frame timer
-    TimerObject* m_pEOFtimer;
+    TimerObject* m_pEOFtimer = nullptr;
     // time at which a SOF was sent
     uint64_t m_SOFtime;
     // the duration of a usb frame
@@ -179,7 +179,7 @@ private:
     // Done Queue Interrupt Counter
     int m_DoneCount;
     // the address of the pending TD
-    uint32_t m_AsyncTD;
+    uint32_t m_AsyncTD = NULL;
     // ergo720: I think it signals that a TD has been processed completely
     bool m_AsyncComplete;
 

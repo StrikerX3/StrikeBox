@@ -411,12 +411,12 @@ struct USBPortOps {
 
 /* Struct describing the status of a usb port */
 struct USBPort {
-    XboxDeviceState* Dev;         // usb device (if present)
-    USBPortOps* Operations;       // functions to call when a port event happens
-    int SpeedMask;                // usb speeds supported
-    int HubCount;                 // number of hubs chained
-    std::string Path;             // the number of the port + 1, used to create a serial number for this device
-    int PortIndex;                // internal port index
+    XboxDeviceState* Dev = nullptr;    // usb device (if present)
+    USBPortOps* Operations = nullptr;  // functions to call when a port event happens
+    int SpeedMask;                     // usb speeds supported
+    int HubCount;                      // number of hubs chained
+    std::string Path;                  // the number of the port + 1, used to create a serial number for this device
+    int PortIndex;                     // internal port index
 };
 
 /* Struct which stores general functions/variables regarding the peripheral */

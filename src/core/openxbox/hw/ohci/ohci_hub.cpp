@@ -165,10 +165,10 @@ int Hub::UsbHubClaimPort(XboxDeviceState* dev, int port) {
     assert(dev->Port == nullptr);
 
     if (port > 2) {
-        m_UsbDev = g_USB0; // FIXME: how to retrieve these?
+        //m_UsbDev = g_USB0; // FIXME: how to retrieve these?
     }
     else {
-        m_UsbDev = g_USB1; // FIXME: how to retrieve these?
+        //m_UsbDev = g_USB1; // FIXME: how to retrieve these?
     }
 
     i = 0;

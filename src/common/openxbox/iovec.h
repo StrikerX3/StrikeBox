@@ -54,8 +54,6 @@ struct IOVector {
     size_t Size;          // total size of all I/O buffers supplied
 };
 
-inline uint64_t Muldiv64(uint64_t a, uint32_t b, uint32_t c);
-
 void IoVecReset(IOVector* qiov);
 void IoVecAdd(IOVector* qiov, void* base, size_t len);
 size_t IoVecTobuffer(const IoVec* iov, const unsigned int iov_cnt, size_t offset, void *buf, size_t bytes);
