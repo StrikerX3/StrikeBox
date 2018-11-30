@@ -38,6 +38,17 @@
  */
 
 #include "hax_types.h"
+
+#ifdef HAX_PLATFORM_DARWIN
+#include "darwin/hax_interface_mac.h"
+#endif
+#ifdef HAX_PLATFORM_LINUX
+#include "linux/hax_interface_linux.h"
+#endif
+#ifdef HAX_PLATFORM_WINDOWS
+#include "windows/hax_interface_windows.h"
+#endif
+
 #include "vcpu_state.h"
 
 struct vmx_msr {
@@ -47,33 +58,33 @@ struct vmx_msr {
 
 /* fx_layout has 3 formats table 3-56, 512bytes */
 struct fx_layout {
-    uint16  fcw;
-    uint16  fsw;
-    uint8   ftw;
-    uint8   res1;
-    uint16  fop;
+    uint16_t  fcw;
+    uint16_t  fsw;
+    uint8_t   ftw;
+    uint8_t   res1;
+    uint16_t  fop;
     union {
         struct {
-            uint32  fip;
-            uint16  fcs;
-            uint16  res2;
+            uint32_t  fip;
+            uint16_t  fcs;
+            uint16_t  res2;
         };
-        uint64  fpu_ip;
+        uint64_t  fpu_ip;
     };
     union {
         struct {
-            uint32  fdp;
-            uint16  fds;
-            uint16  res3;
+            uint32_t  fdp;
+            uint16_t  fds;
+            uint16_t  res3;
         };
-        uint64  fpu_dp;
+        uint64_t  fpu_dp;
     };
-    uint32  mxcsr;
-    uint32  mxcsr_mask;
-    uint8   st_mm[8][16];
-    uint8   mmx_1[8][16];
-    uint8   mmx_2[8][16];
-    uint8   pad[96];
+    uint32_t  mxcsr;
+    uint32_t  mxcsr_mask;
+    uint8_t   st_mm[8][16];
+    uint8_t   mmx_1[8][16];
+    uint8_t   mmx_2[8][16];
+    uint8_t   pad[96];
 } ALIGNED(16);
 
 /*
@@ -92,86 +103,6 @@ struct hax_msr_data {
 #define HAX_IO_OUT 0
 #define HAX_IO_IN  1
 
-enum exit_reason {
-    INT_EXCEPTION_NMI       = 0, // An SW interrupt, exception or NMI has occurred
-    EXT_INTERRUPT           = 1, // An external interrupt has occurred
-    TRIPLE_FAULT            = 2, // Triple fault occurred
-    INIT_EVENT              = 3,
-    SIPI_EVENT              = 4,
-
-    SMI_IO_EVENT            = 5,
-    SMI_OTHER_EVENT         = 6,
-    PENDING_INTERRUPT       = 7,
-    PENDING_NMI             = 8,
-    TASK_SWITCH             = 9,
-
-    CPUID_INSTRUCTION       = 10, // Guest executed CPUID instruction
-    GETSEC_INSTRUCTION      = 11,
-    HLT_INSTRUCTION         = 12, // Guest executed HLT instruction
-    INVD_INSTRUCTION        = 13, // Guest executed INVD instruction
-    INVLPG_INSTRUCTION      = 14, // Guest executed INVLPG instruction
-    RDPMC_INSTRUCTION       = 15, // Guest executed RDPMC instruction
-    RDTSC_INSTRUCTION       = 16, // Guest executed RDTSC instruction
-    RSM_INSTRUCTION         = 17,
-
-    // Guest executed VMX instruction
-    VMCALL_INSTRUCTION      = 18,
-    VMCLEAR_INSTRUCTION     = 19,
-    VMLAUNCH_INSTRUCTION    = 20,
-    VMPTRLD_INSTRUCTION     = 21,
-    VMPTRST_INSTRUCTION     = 22,
-    VMREAD_INSTRUCTION      = 23,
-    VMRESUME_INSTRUCTION    = 24,
-    VMWRITE_INSTRUCTION     = 25,
-    VMXOFF_INSTRUCTION      = 26,
-    VMXON_INSTRUCTION       = 27,
-
-    CR_ACCESS               = 28, // Guest accessed a control register
-    DR_ACCESS               = 29, // Guest attempted access to debug register
-    IO_INSTRUCTION          = 30, // Guest attempted io
-    MSR_READ                = 31, // Guest attempted to read an MSR
-    MSR_WRITE               = 32, // Guest attempted to write an MSR
-
-    FAILED_VMENTER_GS       = 33, // VMENTER failed due to guest state
-    FAILED_VMENTER_MSR      = 34, // VMENTER failed due to msr loading
-
-    MWAIT_INSTRUCTION       = 36,
-    MTF_EXIT                = 37,
-
-    MONITOR_INSTRUCTION     = 39,
-    PAUSE_INSTRUCTION       = 40,
-    MACHINE_CHECK           = 41,
-    TPR_BELOW_THRESHOLD     = 43,
-
-    APIC_ACCESS             = 44,
-
-    GDT_IDT_ACCESS          = 46,
-    LDT_TR_ACCESS           = 47,
-
-    EPT_VIOLATION           = 48,
-    EPT_MISCONFIG           = 49,
-    INVEPT_INSTRUCTION      = 50,
-    RDTSCP_INSTRUCTION      = 51,
-    VMX_TIMER_EXIT          = 52,
-    INVVPID_INSTRUCTION     = 53,
-
-    WBINVD_INSTRUCTION      = 54,
-    XSETBV_INSTRUCTION      = 55,
-    APIC_WRITE              = 56
-};
-
-enum exit_status {
-	HAX_EXIT_IO = 1,
-	HAX_EXIT_MMIO,
-	HAX_EXIT_REALMODE,
-	HAX_EXIT_INTERRUPT,
-	HAX_EXIT_UNKNOWN,
-	HAX_EXIT_HLT,
-	HAX_EXIT_STATECHANGE,
-	HAX_EXIT_PAUSED,
-	HAX_EXIT_FAST_MMIO
-};
-
 /* The area to communicate with device model */
 struct hax_tunnel {
     uint32_t _exit_reason;
@@ -183,7 +114,7 @@ struct hax_tunnel {
 
     union {
         struct {
-			uint8_t _direction;
+            uint8_t _direction;
             uint8_t _df;
             uint16_t _size;
             uint16_t _port;
@@ -194,22 +125,40 @@ struct hax_tunnel {
             uint8_t _pad0;
             uint16_t _pad1;
             uint32_t _pad2;
-            vaddr_t _vaddr;
+            hax_vaddr_t _vaddr;
         } io;
         struct {
-            paddr_t gla;
+            hax_paddr_t gla;
         } mmio;
         struct {
-            paddr_t dummy;
+            hax_paddr_t gpa;
+#define HAX_PAGEFAULT_ACC_R  (1 << 0)
+#define HAX_PAGEFAULT_ACC_W  (1 << 1)
+#define HAX_PAGEFAULT_ACC_X  (1 << 2)
+#define HAX_PAGEFAULT_PERM_R (1 << 4)
+#define HAX_PAGEFAULT_PERM_W (1 << 5)
+#define HAX_PAGEFAULT_PERM_X (1 << 6)
+            uint32_t flags;
+            uint32_t reserved1;
+            uint64_t reserved2;
+        } pagefault;
+        struct {
+            hax_paddr_t dummy;
         } state;
+        struct {
+            uint64_t rip;
+            uint64_t dr6;
+            uint64_t dr7;
+        } debug;
     };
+    uint64_t apic_base;
 } PACKED;
 
 struct hax_fastmmio {
-    paddr_t gpa;
+    hax_paddr_t gpa;
     union {
         uint64_t value;
-        paddr_t gpa2;  /* since API v4 */
+        hax_paddr_t gpa2;  /* since API v4 */
     };
     uint8_t size;
     uint8_t direction;
@@ -238,6 +187,9 @@ struct hax_module_version {
 #define HAX_CAP_UG                 (1 << 2)
 #define HAX_CAP_64BIT_RAMBLOCK     (1 << 3)
 #define HAX_CAP_64BIT_SETRAM       (1 << 4)
+#define HAX_CAP_TUNNEL_PAGE        (1 << 5)
+#define HAX_CAP_RAM_PROTECTION     (1 << 6)
+#define HAX_CAP_DEBUG              (1 << 7)
 
 struct hax_capabilityinfo {
     /*
@@ -305,6 +257,18 @@ struct hax_set_ram_info2 {
     uint64_t reserved2;
 } PACKED;
 
+// No access (R/W/X) is allowed
+#define HAX_RAM_PERM_NONE 0x0
+// All accesses (R/W/X) are allowed
+#define HAX_RAM_PERM_RWX  0x7
+#define HAX_RAM_PERM_MASK 0x7
+struct hax_protect_ram_info {
+    uint64_t pa_start;
+    uint64_t size;
+    uint32_t flags;
+    uint32_t reserved;
+} PACKED;
+
 /* This interface is support only after API version 2 */
 struct hax_qemu_version {
     /* Current API version in QEMU*/
@@ -313,62 +277,15 @@ struct hax_qemu_version {
     uint32_t least_version;
 } PACKED;
 
-#ifdef _WIN32
+#define HAX_DEBUG_ENABLE     (1 << 0)
+#define HAX_DEBUG_STEP       (1 << 1)
+#define HAX_DEBUG_USE_SW_BP  (1 << 2)
+#define HAX_DEBUG_USE_HW_BP  (1 << 3)
 
-//#define CTL_CODE( DeviceType, Function, Method, Access ) (                 \
-//    ((DeviceType) << 16) | ((Access) << 14) | ((Function) << 2) | (Method) \
-
-#define HAX_DEVICE_TYPE 0x4000
-
-#define HAX_IOCTL_VERSION \
-        CTL_CODE(HAX_DEVICE_TYPE, 0x900, METHOD_BUFFERED, FILE_ANY_ACCESS)
-#define HAX_IOCTL_CREATE_VM \
-        CTL_CODE(HAX_DEVICE_TYPE, 0x901, METHOD_BUFFERED, FILE_ANY_ACCESS)
-#define HAX_IOCTL_CAPABILITY \
-        CTL_CODE(HAX_DEVICE_TYPE, 0x910, METHOD_BUFFERED, FILE_ANY_ACCESS)
-#define HAX_IOCTL_SET_MEMLIMIT \
-        CTL_CODE(HAX_DEVICE_TYPE, 0x911, METHOD_BUFFERED, FILE_ANY_ACCESS)
-
-#define HAX_VM_IOCTL_VCPU_CREATE \
-        CTL_CODE(HAX_DEVICE_TYPE, 0x902, METHOD_BUFFERED, FILE_ANY_ACCESS)
-#define HAX_VM_IOCTL_ALLOC_RAM \
-        CTL_CODE(HAX_DEVICE_TYPE, 0x903, METHOD_BUFFERED, FILE_ANY_ACCESS)
-#define HAX_VM_IOCTL_SET_RAM \
-        CTL_CODE(HAX_DEVICE_TYPE, 0x904, METHOD_BUFFERED, FILE_ANY_ACCESS)
-#define HAX_VM_IOCTL_VCPU_DESTROY \
-        CTL_CODE(HAX_DEVICE_TYPE, 0x905, METHOD_BUFFERED, FILE_ANY_ACCESS)
-#define HAX_VM_IOCTL_ADD_RAMBLOCK \
-        CTL_CODE(HAX_DEVICE_TYPE, 0x913, METHOD_BUFFERED, FILE_ANY_ACCESS)
-#define HAX_VM_IOCTL_SET_RAM2 \
-        CTL_CODE(HAX_DEVICE_TYPE, 0x914, METHOD_BUFFERED, FILE_ANY_ACCESS)
-
-#define HAX_VCPU_IOCTL_RUN \
-        CTL_CODE(HAX_DEVICE_TYPE, 0x906, METHOD_BUFFERED, FILE_ANY_ACCESS)
-#define HAX_VCPU_IOCTL_SET_MSRS \
-        CTL_CODE(HAX_DEVICE_TYPE, 0x907, METHOD_BUFFERED, FILE_ANY_ACCESS)
-#define HAX_VCPU_IOCTL_GET_MSRS \
-        CTL_CODE(HAX_DEVICE_TYPE, 0x908, METHOD_BUFFERED, FILE_ANY_ACCESS)
-
-#define HAX_VCPU_IOCTL_SET_FPU \
-        CTL_CODE(HAX_DEVICE_TYPE, 0x909, METHOD_BUFFERED, FILE_ANY_ACCESS)
-#define HAX_VCPU_IOCTL_GET_FPU \
-        CTL_CODE(HAX_DEVICE_TYPE, 0x90a, METHOD_BUFFERED, FILE_ANY_ACCESS)
-
-#define HAX_VCPU_IOCTL_SETUP_TUNNEL \
-        CTL_CODE(HAX_DEVICE_TYPE, 0x90b, METHOD_BUFFERED, FILE_ANY_ACCESS)
-#define HAX_VCPU_IOCTL_INTERRUPT \
-        CTL_CODE(HAX_DEVICE_TYPE, 0x90c, METHOD_BUFFERED, FILE_ANY_ACCESS)
-#define HAX_VCPU_SET_REGS \
-        CTL_CODE(HAX_DEVICE_TYPE, 0x90d, METHOD_BUFFERED, FILE_ANY_ACCESS)
-#define HAX_VCPU_GET_REGS \
-        CTL_CODE(HAX_DEVICE_TYPE, 0x90e, METHOD_BUFFERED, FILE_ANY_ACCESS)
-#define HAX_VCPU_IOCTL_KICKOFF \
-        CTL_CODE(HAX_DEVICE_TYPE, 0x90f, METHOD_BUFFERED, FILE_ANY_ACCESS)
-
-/* API version 2.0 */
-#define HAX_VM_IOCTL_NOTIFY_QEMU_VERSION \
-        CTL_CODE(HAX_DEVICE_TYPE, 0x910, METHOD_BUFFERED, FILE_ANY_ACCESS)
-
-#endif
+struct hax_debug_t {
+    uint32_t control;
+    uint32_t reserved;
+    uint64_t dr[8];
+} PACKED;
 
 #endif  // HAX_INTERFACE_H_

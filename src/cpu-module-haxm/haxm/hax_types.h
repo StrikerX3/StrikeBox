@@ -31,204 +31,149 @@
 #ifndef HAX_TYPES_H_
 #define HAX_TYPES_H_
 
-#include "openxbox/platform.h"
+/* Detect architecture */
+// x86 (32-bit)
+#if defined(__i386__) || defined(_M_IX86)
+#define HAX_ARCH_X86_32
+#define ASMCALL __cdecl
+// x86 (64-bit)
+#elif defined(__x86_64__) || defined(_M_X64)
+#define HAX_ARCH_X86_64
+#define ASMCALL
+#else
+#error "Unsupported architecture"
+#endif
 
-enum component_index_t {
-    VMX_PIN_CONTROLS                            = 0x00004000,
-    VMX_PRIMARY_PROCESSOR_CONTROLS              = 0x00004002,
-    VMX_SECONDARY_PROCESSOR_CONTROLS            = 0x0000401e,
-    VMX_EXCEPTION_BITMAP                        = 0x00004004,
-    VMX_PAGE_FAULT_ERROR_CODE_MASK              = 0x00004006,
-    VMX_PAGE_FAULT_ERROR_CODE_MATCH             = 0x00004008,
-    VMX_EXIT_CONTROLS                           = 0x0000400c,
-    VMX_EXIT_MSR_STORE_COUNT                    = 0x0000400e,
-    VMX_EXIT_MSR_LOAD_COUNT                     = 0x00004010,
-    VMX_ENTRY_CONTROLS                          = 0x00004012,
-    VMX_ENTRY_MSR_LOAD_COUNT                    = 0x00004014,
-    VMX_ENTRY_INTERRUPT_INFO                    = 0x00004016,
-    VMX_ENTRY_EXCEPTION_ERROR_CODE              = 0x00004018,
-    VMX_ENTRY_INSTRUCTION_LENGTH                = 0x0000401a,
-    VMX_TPR_THRESHOLD                           = 0x0000401c,
+/* Detect compiler */
+// Clang
+#if defined(__clang__)
+#define HAX_COMPILER_CLANG
+#define PACKED     __attribute__ ((packed))
+#define ALIGNED(x) __attribute__ ((aligned(x)))
+// GCC
+#elif defined(__GNUC__)
+#define HAX_COMPILER_GCC
+#define PACKED     __attribute__ ((packed))
+#define ALIGNED(x) __attribute__ ((aligned(x)))
+#define __cdecl    __attribute__ ((__cdecl__,regparm(0)))
+#define __stdcall  __attribute__ ((__stdcall__))
+// MSVC
+#elif defined(_MSC_VER)
+#define HAX_COMPILER_MSVC
+// FIXME: MSVC doesn't have a simple equivalent for PACKED.
+//        Instead, The corresponding #pragma directives are added manually.
+#define PACKED     
+#define ALIGNED(x) __declspec(align(x))
+#else
+#error "Unsupported compiler"
+#endif
 
-    VMX_CR0_MASK                                = 0x00006000,
-    VMX_CR4_MASK                                = 0x00006002,
-    VMX_CR0_READ_SHADOW                         = 0x00006004,
-    VMX_CR4_READ_SHADOW                         = 0x00006006,
-    VMX_CR3_TARGET_COUNT                        = 0x0000400a,
-    VMX_CR3_TARGET_VAL_BASE                     = 0x00006008, // x6008-x6206
+/* Detect platform */
+#ifndef HAX_TESTS // Prevent kernel-only exports from reaching userland code
+// MacOS
+#if defined(__MACH__)
+#define HAX_PLATFORM_DARWIN
+#include "darwin/hax_types_mac.h"
+// Linux
+#elif defined(__linux__)
+#define HAX_PLATFORM_LINUX
+#include "linux/hax_types_linux.h"
+// Windows
+#elif defined(_WIN32)
+#define HAX_PLATFORM_WINDOWS
+#include "windows/hax_types_windows.h"
+#else
+#error "Unsupported platform"
+#endif
+#else // !HAX_TESTS
+#include <stdint.h>
+#endif // HAX_TESTS
 
-    VMX_VPID                                    = 0x00000000,
-    VMX_IO_BITMAP_A                             = 0x00002000,
-    VMX_IO_BITMAP_B                             = 0x00002002,
-    VMX_MSR_BITMAP                              = 0x00002004,
-    VMX_EXIT_MSR_STORE_ADDRESS                  = 0x00002006,
-    VMX_EXIT_MSR_LOAD_ADDRESS                   = 0x00002008,
-    VMX_ENTRY_MSR_LOAD_ADDRESS                  = 0x0000200a,
-    VMX_TSC_OFFSET                              = 0x00002010,
-    VMX_VAPIC_PAGE                              = 0x00002012,
-    VMX_APIC_ACCESS_PAGE                        = 0x00002014,
-    VMX_EPTP                                    = 0x0000201a,
-    VMX_PREEMPTION_TIMER                        = 0x0000482e,
+#define HAX_PAGE_SIZE  4096
+#define HAX_PAGE_SHIFT 12
+#define HAX_PAGE_MASK  0xfff
 
-    VMX_INSTRUCTION_ERROR_CODE                  = 0x00004400,
+/* Common typedef for all platforms */
+typedef uint64_t hax_pa_t;
+typedef uint64_t hax_pfn_t;
+typedef uint64_t hax_paddr_t;
+typedef uint64_t hax_vaddr_t;
 
-    VM_EXIT_INFO_REASON                         = 0x00004402,
-    VM_EXIT_INFO_INTERRUPT_INFO                 = 0x00004404,
-    VM_EXIT_INFO_EXCEPTION_ERROR_CODE           = 0x00004406,
-    VM_EXIT_INFO_IDT_VECTORING                  = 0x00004408,
-    VM_EXIT_INFO_IDT_VECTORING_ERROR_CODE       = 0x0000440a,
-    VM_EXIT_INFO_INSTRUCTION_LENGTH             = 0x0000440c,
-    VM_EXIT_INFO_INSTRUCTION_INFO               = 0x0000440e,
-    VM_EXIT_INFO_QUALIFICATION                  = 0x00006400,
-    VM_EXIT_INFO_IO_ECX                         = 0x00006402,
-    VM_EXIT_INFO_IO_ESI                         = 0x00006404,
-    VM_EXIT_INFO_IO_EDI                         = 0x00006406,
-    VM_EXIT_INFO_IO_EIP                         = 0x00006408,
-    VM_EXIT_INFO_GUEST_LINEAR_ADDRESS           = 0x0000640a,
-    VM_EXIT_INFO_GUEST_PHYSICAL_ADDRESS         = 0x00002400,
-
-    HOST_RIP                                    = 0x00006c16,
-    HOST_RSP                                    = 0x00006c14,
-    HOST_CR0                                    = 0x00006c00,
-    HOST_CR3                                    = 0x00006c02,
-    HOST_CR4                                    = 0x00006c04,
-
-    HOST_CS_SELECTOR                            = 0x00000c02,
-    HOST_DS_SELECTOR                            = 0x00000c06,
-    HOST_ES_SELECTOR                            = 0x00000c00,
-    HOST_FS_SELECTOR                            = 0x00000c08,
-    HOST_GS_SELECTOR                            = 0x00000c0a,
-    HOST_SS_SELECTOR                            = 0x00000c04,
-    HOST_TR_SELECTOR                            = 0x00000c0c,
-    HOST_FS_BASE                                = 0x00006c06,
-    HOST_GS_BASE                                = 0x00006c08,
-    HOST_TR_BASE                                = 0x00006c0a,
-    HOST_GDTR_BASE                              = 0x00006c0c,
-    HOST_IDTR_BASE                              = 0x00006c0e,
-
-    HOST_SYSENTER_CS                            = 0x00004c00,
-    HOST_SYSENTER_ESP                           = 0x00006c10,
-    HOST_SYSENTER_EIP                           = 0x00006c12,
-
-    HOST_PAT                                    = 0x00002c00,
-    HOST_EFER                                   = 0x00002c02,
-    HOST_PERF_GLOBAL_CTRL                       = 0x00002c04,
-
-
-    GUEST_RIP                                   = 0x0000681e,
-    GUEST_RFLAGS                                = 0x00006820,
-    GUEST_RSP                                   = 0x0000681c,
-    GUEST_CR0                                   = 0x00006800,
-    GUEST_CR3                                   = 0x00006802,
-    GUEST_CR4                                   = 0x00006804,
-
-    GUEST_ES_SELECTOR                           = 0x00000800,
-    GUEST_CS_SELECTOR                           = 0x00000802,
-    GUEST_SS_SELECTOR                           = 0x00000804,
-    GUEST_DS_SELECTOR                           = 0x00000806,
-    GUEST_FS_SELECTOR                           = 0x00000808,
-    GUEST_GS_SELECTOR                           = 0x0000080a,
-    GUEST_LDTR_SELECTOR                         = 0x0000080c,
-    GUEST_TR_SELECTOR                           = 0x0000080e,
-
-    GUEST_ES_AR                                 = 0x00004814,
-    GUEST_CS_AR                                 = 0x00004816,
-    GUEST_SS_AR                                 = 0x00004818,
-    GUEST_DS_AR                                 = 0x0000481a,
-    GUEST_FS_AR                                 = 0x0000481c,
-    GUEST_GS_AR                                 = 0x0000481e,
-    GUEST_LDTR_AR                               = 0x00004820,
-    GUEST_TR_AR                                 = 0x00004822,
-
-    GUEST_ES_BASE                               = 0x00006806,
-    GUEST_CS_BASE                               = 0x00006808,
-    GUEST_SS_BASE                               = 0x0000680a,
-    GUEST_DS_BASE                               = 0x0000680c,
-    GUEST_FS_BASE                               = 0x0000680e,
-    GUEST_GS_BASE                               = 0x00006810,
-    GUEST_LDTR_BASE                             = 0x00006812,
-    GUEST_TR_BASE                               = 0x00006814,
-    GUEST_GDTR_BASE                             = 0x00006816,
-    GUEST_IDTR_BASE                             = 0x00006818,
-
-    GUEST_ES_LIMIT                              = 0x00004800,
-    GUEST_CS_LIMIT                              = 0x00004802,
-    GUEST_SS_LIMIT                              = 0x00004804,
-    GUEST_DS_LIMIT                              = 0x00004806,
-    GUEST_FS_LIMIT                              = 0x00004808,
-    GUEST_GS_LIMIT                              = 0x0000480a,
-    GUEST_LDTR_LIMIT                            = 0x0000480c,
-    GUEST_TR_LIMIT                              = 0x0000480e,
-    GUEST_GDTR_LIMIT                            = 0x00004810,
-    GUEST_IDTR_LIMIT                            = 0x00004812,
-
-    GUEST_VMCS_LINK_PTR                         = 0x00002800,
-    GUEST_DEBUGCTL                              = 0x00002802,
-    GUEST_PAT                                   = 0x00002804,
-    GUEST_EFER                                  = 0x00002806,
-    GUEST_PERF_GLOBAL_CTRL                      = 0x00002808,
-    GUEST_PDPTE0                                = 0x0000280a,
-    GUEST_PDPTE1                                = 0x0000280c,
-    GUEST_PDPTE2                                = 0x0000280e,
-    GUEST_PDPTE3                                = 0x00002810,
-
-    GUEST_DR7                                   = 0x0000681a,
-    GUEST_PENDING_DBE                           = 0x00006822,
-    GUEST_SYSENTER_CS                           = 0x0000482a,
-    GUEST_SYSENTER_ESP                          = 0x00006824,
-    GUEST_SYSENTER_EIP                          = 0x00006826,
-    GUEST_SMBASE                                = 0x00004828,
-    GUEST_INTERRUPTIBILITY                      = 0x00004824,
-    GUEST_ACTIVITY_STATE                        = 0x00004826,
-
-    /* Invalid encoding */
-    VMCS_NO_COMPONENT                           = 0x0000ffff
+enum exit_status {
+    HAX_EXIT_IO = 1,
+    HAX_EXIT_MMIO,
+    HAX_EXIT_REALMODE,
+    HAX_EXIT_INTERRUPT,
+    HAX_EXIT_UNKNOWN,
+    HAX_EXIT_HLT,
+    HAX_EXIT_STATECHANGE,
+    HAX_EXIT_PAUSED,
+    HAX_EXIT_FAST_MMIO,
+    HAX_EXIT_PAGEFAULT,
+    HAX_EXIT_DEBUG
 };
 
-typedef enum component_index_t component_index_t;
-
-struct system_desc_t;
-
-// Signed Types
-typedef signed char         int8;
-typedef signed short        int16;
-typedef signed int          int32;
-typedef signed long long    int64;
-
-// Unsigned Types
-typedef unsigned char       uint8;
-typedef unsigned short      uint16;
-typedef unsigned int        uint32;
-typedef unsigned int        uint;
-typedef unsigned long long  uint64;
-typedef unsigned long       ulong;
-
-typedef unsigned char       uint8_t;
-typedef unsigned short      uint16_t;
-typedef unsigned int        uint32_t;
-typedef unsigned long long  uint64_t;
-typedef unsigned long       ulong_t;
-
-
-#define ALIGNED(x) __declspec(align(x))
-#define PACKED
-
-#if defined(ENVIRONMENT32)
-typedef uint32_t mword;
-#endif
-
-#if defined(ENVIRONMENT64)
-typedef uint64_t mword;
-#endif
-
-/* Common typedef for all platform */
-typedef uint64 hax_pa_t;
-typedef uint64 hax_pfn_t;
-typedef uint64 paddr_t;
-typedef uint64 vaddr_t;
-
-extern int32 hax_page_size;
-
-typedef mword vmx_error_t;
+enum {
+    VMX_EXIT_INT_EXCEPTION_NMI       =  0, // An SW interrupt, exception or NMI has occurred
+    VMX_EXIT_EXT_INTERRUPT           =  1, // An external interrupt has occurred
+    VMX_EXIT_TRIPLE_FAULT            =  2, // Triple fault occurred
+    VMX_EXIT_INIT_EVENT              =  3, // INIT signal arrived
+    VMX_EXIT_SIPI_EVENT              =  4, // SIPI signal arrived
+    VMX_EXIT_SMI_IO_EVENT            =  5,
+    VMX_EXIT_SMI_OTHER_EVENT         =  6,
+    VMX_EXIT_PENDING_INTERRUPT       =  7,
+    VMX_EXIT_PENDING_NMI             =  8,
+    VMX_EXIT_TASK_SWITCH             =  9, // Guest attempted a task switch
+    VMX_EXIT_CPUID                   = 10, // Guest executed CPUID instruction
+    VMX_EXIT_GETSEC                  = 11, // Guest executed GETSEC instruction
+    VMX_EXIT_HLT                     = 12, // Guest executed HLT instruction
+    VMX_EXIT_INVD                    = 13, // Guest executed INVD instruction
+    VMX_EXIT_INVLPG                  = 14, // Guest executed INVLPG instruction
+    VMX_EXIT_RDPMC                   = 15, // Guest executed RDPMC instruction
+    VMX_EXIT_RDTSC                   = 16, // Guest executed RDTSC instruction
+    VMX_EXIT_RSM                     = 17, // Guest executed RSM instruction in SMM
+    VMX_EXIT_VMCALL                  = 18,
+    VMX_EXIT_VMCLEAR                 = 19,
+    VMX_EXIT_VMLAUNCH                = 20,
+    VMX_EXIT_VMPTRLD                 = 21,
+    VMX_EXIT_VMPTRST                 = 22,
+    VMX_EXIT_VMREAD                  = 23,
+    VMX_EXIT_VMRESUME                = 24,
+    VMX_EXIT_VMWRITE                 = 25,
+    VMX_EXIT_VMXOFF                  = 26,
+    VMX_EXIT_VMXON                   = 27,
+    VMX_EXIT_CR_ACCESS               = 28, // Guest accessed a control register
+    VMX_EXIT_DR_ACCESS               = 29, // Guest attempted access to debug register
+    VMX_EXIT_IO                      = 30, // Guest attempted I/O
+    VMX_EXIT_MSR_READ                = 31, // Guest attempted to read an MSR
+    VMX_EXIT_MSR_WRITE               = 32, // Guest attempted to write an MSR
+    VMX_EXIT_FAILED_VMENTER_GS       = 33, // VMENTER failed due to guest state
+    VMX_EXIT_FAILED_VMENTER_MSR      = 34, // VMENTER failed due to MSR loading
+    VMX_EXIT_MWAIT                   = 36,
+    VMX_EXIT_MTF_EXIT                = 37,
+    VMX_EXIT_MONITOR                 = 39,
+    VMX_EXIT_PAUSE                   = 40,
+    VMX_EXIT_MACHINE_CHECK           = 41,
+    VMX_EXIT_TPR_BELOW_THRESHOLD     = 43,
+    VMX_EXIT_APIC_ACCESS             = 44,
+    VMX_EXIT_GDT_IDT_ACCESS          = 46,
+    VMX_EXIT_LDT_TR_ACCESS           = 47,
+    VMX_EXIT_EPT_VIOLATION           = 48,
+    VMX_EXIT_EPT_MISCONFIG           = 49,
+    VMX_EXIT_INVEPT                  = 50,
+    VMX_EXIT_RDTSCP                  = 51,
+    VMX_EXIT_VMX_TIMER_EXIT          = 52,
+    VMX_EXIT_INVVPID                 = 53,
+    VMX_EXIT_WBINVD                  = 54,
+    VMX_EXIT_XSETBV                  = 55,
+    VMX_EXIT_APIC_WRITE              = 56,
+    VMX_EXIT_RDRAND                  = 57,
+    VMX_EXIT_INVPCID                 = 58,
+    VMX_EXIT_VMFUNC                  = 59,
+    VMX_EXIT_ENCLS                   = 60,
+    VMX_EXIT_RDSEED                  = 61,
+    VMX_EXIT_XSAVES                  = 63,
+    VMX_EXIT_XRSTORS                 = 64
+};
 
 #endif  // HAX_TYPES_H_

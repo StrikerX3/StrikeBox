@@ -6,38 +6,63 @@
 #include <vector>
 
 enum HaxmStatus {
-	HXS_SUCCESS = 0,                 // HAXM module initialized and loaded successfully
-	HXS_NOT_FOUND = 0x80000000,      // HAXM module not found
-	HXS_INIT_FAILED,                 // HAXM initialization failed
+    HXS_SUCCESS = 0,                 // HAXM module initialized and loaded successfully
+    HXS_NOT_FOUND = 0x80000000,      // HAXM module not found
+    HXS_INIT_FAILED,                 // HAXM initialization failed
 
-	HXS_SET_MEM_LIMIT_FAILED,        // Could not set the global memory limit
+    HXS_SET_MEM_LIMIT_FAILED,        // Could not set the global memory limit
 };
 
 enum HaxmVMStatus {
-	HXVMS_SUCCESS = 0,               // VM created successfully or the operation completed without errors
-	HXVMS_UNSUPPORTED = 0x90000000,  // The operation is unsupported
+    HXVMS_SUCCESS = 0,               // VM created successfully or the operation completed without errors
+    HXVMS_UNSUPPORTED = 0x90000000,  // The operation is unsupported
 
-	HXVMS_CREATE_FAILED,             // Failed to create VM
+    HXVMS_CREATE_FAILED,             // Failed to create VM
 
-	HXVMS_MEM_MISALIGNED,            // Memory block is not aligned to 4 KB pages
-	HXVMS_MEMSIZE_MISALIGNED,        // Memory size is not aligned to 4 KB pages
-	HXVMS_ALLOC_MEM_FAILED,          // Failed to allocate memory
-	HXVMS_SET_MEM_FAILED,            // Failed to configure memory
-	HXVMS_FREE_MEM_FAILED,           // Failed to free memory
+    HXVMS_MEM_MISALIGNED,            // Memory block is not aligned to 4 KB pages
+    HXVMS_MEMSIZE_MISALIGNED,        // Memory size is not aligned to 4 KB pages
+    HXVMS_ALLOC_MEM_FAILED,          // Failed to allocate memory
+    HXVMS_SET_MEM_FAILED,            // Failed to configure memory
+    HXVMS_FREE_MEM_FAILED,           // Failed to free memory
 };
 
 enum HaxmVCPUStatus {
-	HXVCPUS_SUCCESS = 0,          // VCPU created successfully or the operation completed without errors
+    HXVCPUS_SUCCESS = 0,             // VCPU created successfully or the operation completed without errors
 
-	HXVCPUS_FAILED = 0xa0000000,  // The operation failed
+    HXVCPUS_FAILED = 0xa0000000,     // The operation failed
+    HXVCPUS_INVALID_PARAMETER,       // An invalid parameter was passed
 
-	HXVCPUS_CREATE_FAILED,        // Failed to create VCPU
-	HXVCPUS_TUNNEL_SETUP_FAILED,  // Failed to setup VCPU tunnel
+    HXVCPUS_CREATE_FAILED,           // Failed to create VCPU
+    HXVCPUS_TUNNEL_SETUP_FAILED,     // Failed to setup VCPU tunnel
+
+    HXVCPUS_SINGLE_STEP_FAILED,      // Failed to setup single stepping
 };
 
 enum HaxmVMMemoryType {
 	HXVM_MEM_RAM = 0,
 	HXVM_MEM_ROM,
+};
+
+enum HaxmHardwareBreakpointTrigger {
+    HXBPT_EXECUTION = 0,
+    HXBPT_DATA_WRITE,
+    HXBPT_8_BYTE_WIDE,
+    HXBPT_DATA_READ_WRITE,
+};
+
+enum HaxmHardwareBreakpointLength {
+    HXBPL_1_BYTE = 0,
+    HXBPL_2_BYTE,
+    HXBPL_8_BYTE,
+    HXBPL_4_BYTE,
+};
+
+struct HaxmHardwareBreakpoint {
+    uint64_t address;
+    bool localEnable;
+    bool globalEnable;
+    HaxmHardwareBreakpointTrigger trigger;
+    HaxmHardwareBreakpointLength length;
 };
 
 class HaxmVM;
@@ -119,8 +144,14 @@ public:
 	HaxmVCPUStatus SetMSRs(struct hax_msr_data *msrData);
 
 	HaxmVCPUStatus Run();
+    HaxmVCPUStatus Step();
 
 	HaxmVCPUStatus Interrupt(uint8_t vector);
+
+    HaxmVCPUStatus EnableSoftwareBreakpoints(bool enable);
+
+    HaxmVCPUStatus SetHardwareBreakpoints(HaxmHardwareBreakpoint breakpoints[4]);
+    HaxmVCPUStatus ClearHardwareBreakpoints();
 
 	HaxmVCPUStatus Close();
 
@@ -137,13 +168,16 @@ private:
 
 	HaxmVCPUStatus Initialize();
 
+    BOOLEAN SetDebug();
+
 	struct hax_tunnel *m_tunnel;
 	unsigned char *m_ioTunnel;
+    hax_debug_t m_debug;
 
 	uint32_t m_vcpuID;
 	HANDLE m_hVCPU;
 	DWORD m_lastError;
-//
+
 	HaxmVM& m_vm;
 
 	friend class HaxmVM;
