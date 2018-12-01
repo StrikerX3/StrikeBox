@@ -15,7 +15,7 @@ IDEDevice::~IDEDevice() {
 // PCI Device functions
 
 void IDEDevice::Init() {
-    RegisterBAR(0, 16, PCI_BAR_TYPE_IO); // 0xFF60 - 0xFF6F
+    RegisterBAR(4, 16, PCI_BAR_TYPE_IO); // 0xFF60 - 0xFF6F
 }
 
 void IDEDevice::Reset() {
