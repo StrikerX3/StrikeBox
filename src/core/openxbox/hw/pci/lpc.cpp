@@ -41,7 +41,7 @@ LPCDevice::~LPCDevice() {
 }
 
 void LPCDevice::HandleIRQ(uint8_t irqNum, int level) {
-    uint32_t routing = Read16(m_configSpace, XBOX_LPC_ACPI_IRQ_ROUT);
+    uint32_t routing = Read32(m_configSpace, XBOX_LPC_ACPI_IRQ_ROUT);
     
     int irq = (routing >> (irqNum * 8)) & 0xff;
     if (irq == 0 || irq >= XBOX_NUM_PIC_IRQS) {
@@ -137,7 +137,7 @@ void LPCIRQMapper::SetIRQ(uint8_t irqNum, int level) {
 
     if (irqNum < XBOX_NUM_INT_IRQS) {
         // Devices on the internal bus
-        uint32_t routing = m_lpc->Read16(m_lpc->m_configSpace, XBOX_LPC_INT_IRQ_ROUT);
+        uint32_t routing = m_lpc->Read32(m_lpc->m_configSpace, XBOX_LPC_INT_IRQ_ROUT);
         picIRQ = (routing >> (irqNum * 4)) & 0xF;
 
         if (picIRQ == 0) {
@@ -155,9 +155,7 @@ void LPCIRQMapper::SetIRQ(uint8_t irqNum, int level) {
     }
 
     IRQ *irq = &m_lpc->m_irqs[picIRQ];
-    if (irq->handler != nullptr) {
-        irq->handler->HandleIRQ(irq->num, level);
-    }
+    irq->Handle(level);
 }
 
 }
