@@ -8,10 +8,9 @@ namespace openxbox {
 
 class ISABus {
 public:
-    ISABus();
+    ISABus(IRQ* irqs);
     ~ISABus();
 
-    void ConfigureIRQs(IRQ* irqs);
     IRQ *GetIRQ(uint8_t isaIRQ);
 private:
     IRQ *m_irqs;

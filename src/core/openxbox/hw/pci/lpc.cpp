@@ -33,7 +33,7 @@ LPCDevice::LPCDevice(uint16_t vendorID, uint16_t deviceID, uint8_t revisionID, I
         /*TODO: subsystemVendorID*/0x00, /*TODO: subsystemID*/0x00)
     , m_irqs(irqs)
 {
-    m_isaBus = new ISABus();
+    m_isaBus = new ISABus(irqs);
 }
 
 LPCDevice::~LPCDevice() {

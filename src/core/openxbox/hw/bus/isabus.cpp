@@ -25,15 +25,12 @@
 
 namespace openxbox {
 
-ISABus::ISABus() {
-    m_irqs = nullptr;
+ISABus::ISABus(IRQ* irqs)
+    : m_irqs(irqs)
+{
 }
 
 ISABus::~ISABus() {
-}
-
-void ISABus::ConfigureIRQs(IRQ* irqs) {
-    m_irqs = irqs;
 }
 
 IRQ *ISABus::GetIRQ(uint8_t isaIRQ) {

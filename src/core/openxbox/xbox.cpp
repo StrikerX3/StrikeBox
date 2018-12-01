@@ -327,7 +327,6 @@ int Xbox::Initialize(OpenXBOXSettings *settings)
 
     // Configure IRQs
     m_acpiIRQs = AllocateIRQs(m_LPC, 2);
-    m_LPC->GetISABus()->ConfigureIRQs(m_IRQs);
     // TODO: do we need to create an IRQ for the CPU?
     // TODO: do we need to connect the i8259 to the ISA bus?
     m_i8259IRQs = AllocateIRQs(m_i8259, ISA_NUM_IRQS);
