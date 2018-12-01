@@ -89,31 +89,11 @@ void NV2ADevice::Init() {
 
     Write8(m_configSpace, PCI_INTERRUPT_PIN, 1);
 
-    m_PCRTC.pendingInterrupts = 0;
-    m_PCRTC.enabledInterrupts = 0;
-
-    m_PRAMDAC.core_clock_coeff = 0x00011c01; /* 189MHz...? */
-    m_PRAMDAC.core_clock_freq = 189000000;
-    m_PRAMDAC.memory_clock_coeff = 0;
-    m_PRAMDAC.video_clock_coeff = 0x0003C20D; /* 25182Khz...? */
-
     Reset();
  
     m_running = true;
-    m_PFIFO.puller_thread = std::thread(PFIFO_Puller_Thread, this);
+
     m_VblankThread = std::thread(VBlankThread, this);
-}
-
-void NV2ADevice::Reset() {
-    // RAMIN is just RAM, so we allocate it as such
-    if (m_pRAMIN == nullptr) {
-        m_pRAMIN = (uint8_t*)malloc(NV_PRAMIN_SIZE);
-    }
-
-    // VRAM IS System RAM, so we mark it as such
-    m_VRAM = m_pSystemRAM;
-
-    memset(m_pRAMIN, 0, NV_PRAMIN_SIZE);
 
     m_MemoryRegions.clear();
     m_MemoryRegions.push_back({ NV_PMC_ADDR, NV_PMC_SIZE, PMCRead, PMCWrite });
@@ -136,6 +116,29 @@ void NV2ADevice::Reset() {
     m_MemoryRegions.push_back({ NV_PRMDIO_ADDR, NV_PRMDIO_SIZE, PRMDIORead, PRMDIOWrite });
     m_MemoryRegions.push_back({ NV_PRAMIN_ADDR, NV_PRAMIN_SIZE, PRAMINRead, PRAMINWrite });
     m_MemoryRegions.push_back({ NV_USER_ADDR, NV_USER_SIZE, USERRead, USERWrite });
+}
+
+void NV2ADevice::Reset() {
+    // RAMIN is just RAM, so we allocate it as such
+    if (m_pRAMIN == nullptr) {
+        m_pRAMIN = (uint8_t*)malloc(NV_PRAMIN_SIZE);
+    }
+    memset(m_pRAMIN, 0, NV_PRAMIN_SIZE);
+
+    // VRAM IS System RAM, so we mark it as such
+    m_VRAM = m_pSystemRAM;
+
+    m_PFIFO.puller_thread = std::thread(PFIFO_Puller_Thread, this);
+
+    m_PCRTC.pendingInterrupts = 0;
+    m_PCRTC.enabledInterrupts = 0;
+
+    m_PRAMDAC.core_clock_coeff = 0x00011c01; /* 189MHz...? */
+    m_PRAMDAC.core_clock_freq = 189000000;
+    m_PRAMDAC.memory_clock_coeff = 0;
+    m_PRAMDAC.video_clock_coeff = 0x0003C20D; /* 25182Khz...? */
+
+    VGACommonState m_VGAState;
 }
 
 const NV2ABlockInfo* NV2ADevice::FindBlock(uint32_t addr) {
