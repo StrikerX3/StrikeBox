@@ -563,6 +563,9 @@ int Xbox::RunCpu()
                     log_fatal("/!\\                              /!\\\n");
                     log_fatal("/!\\ ---------------------------- /!\\\n");
                     lastBugCheckCode = bugCheckCode[0];
+
+                    DumpCPURegisters(m_cpu);
+                    DumpCPUStack(m_cpu, -0x10, 0x100);
                     
                     log_fatal("Press ENTER to continue\n");
                     getchar();
