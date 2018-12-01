@@ -63,17 +63,18 @@ void SMCDevice::Init() {
 }
 
 void SMCDevice::Reset() {
+    log_spew("SMCDevice::Reset:  Unimplemented!\n");
     // TODO
 }
 
 void SMCDevice::QuickCommand(bool read) {
-    log_spew("SMCDevice::QuickCommand:  %s\n", (read ? "read" : "write"));
+    log_spew("SMCDevice::QuickCommand:  Unimplemented!  %s\n", (read ? "read" : "write"));
 
     // TODO
 }
 
 uint8_t SMCDevice::ReceiveByte() {
-    log_spew("SMCDevice::ReceiveByte\n");
+    log_spew("SMCDevice::ReceiveByte  Unimplemented!\n");
 
     return 0; // TODO
 }
@@ -117,19 +118,19 @@ uint8_t SMCDevice::ReadByte(uint8_t command) {
 }
 
 uint16_t SMCDevice::ReadWord(uint8_t command) {
-    log_spew("SMCDevice::ReadWord:  command = 0x%x\n", command);
+    log_spew("SMCDevice::ReadWord:  Unimplemented!  command = 0x%x\n", command);
 
     return 0; // TODO
 }
 
 int SMCDevice::ReadBlock(uint8_t command, uint8_t *data) {
-    log_spew("SMCDevice::ReadBlock:  command = 0x%x\n", command);
+    log_spew("SMCDevice::ReadBlock:  Unimplemented!  command = 0x%x\n", command);
 
     return 0; // TODO
 }
 
 void SMCDevice::SendByte(uint8_t data) {
-    log_spew("SMCDevice::SendByte:  data = 0x%x\n", data);
+    log_spew("SMCDevice::SendByte:  Unimplemented!  data = 0x%x\n", data);
 
     // TODO
 }
@@ -187,13 +188,13 @@ void SMCDevice::WriteByte(uint8_t command, uint8_t value) {
 }
 
 void SMCDevice::WriteWord(uint8_t command, uint16_t value) {
-    log_spew("SMCDevice::WriteWord:  command = 0x%x,  value = 0x%x\n", command, value);
+    log_spew("SMCDevice::WriteWord:  Unimplemented!  command = 0x%x,  value = 0x%x\n", command, value);
 
     // TODO
 }
 
 void SMCDevice::WriteBlock(uint8_t command, uint8_t* data, int length) {
-    log_spew("SMCDevice::WriteBlock:  command = 0x%x,  length = 0x%x\n", command, length);
+    log_spew("SMCDevice::WriteBlock:  Unimplemented!  command = 0x%x,  length = 0x%x\n", command, length);
 
     // TODO
 }
