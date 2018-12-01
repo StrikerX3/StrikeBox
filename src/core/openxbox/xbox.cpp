@@ -481,14 +481,94 @@ int Xbox::RunCpu()
             break;
         }
 
-#if 0
+#if 1
 #ifdef _DEBUG
-        // Print CPU registers for debugging purposes
+#if 0
+        // Print CPU registers
         uint32_t eip;
         m_cpu->RegRead(REG_EIP, &eip);
         DumpCPURegisters(m_cpu);
 #endif
+
+#if 0
+        // Print current EIP
+        static bool printEIP = false;
+        uint32_t eip;
+        m_cpu->RegRead(REG_EIP, &eip);
+        log_debug("%08x\n", eip);
 #endif
+
+        // Print kernel bugchecks and wait for input
+        {
+            static bool kernelFound = false;
+            static uint32_t kernelBaseOfCode = 0;
+            static uint32_t kernelAddressOfFunctions = 0;
+            static uint32_t kiBugCheckDataAddress = 0;
+
+            // Check if the kernel has been extracted and decrypted
+            if (!kernelFound) {
+                uint16_t mzMagic = 0;
+                m_cpu->VMemRead(0x80010000, sizeof(uint16_t), &mzMagic);
+                if (mzMagic == 0x5a4d) {
+                    kernelFound = true;
+                }
+            }
+
+            // Find base of code and address of functions to locate the exports table
+            if (kernelFound && kernelBaseOfCode < 0x80000000) {
+                m_cpu->VMemRead(0x80010124, sizeof(uint32_t), &kernelBaseOfCode);
+                kernelBaseOfCode += 0x80010000;
+            }
+
+            // Find address of functions
+            if (kernelBaseOfCode >= 0x80000000 && kernelAddressOfFunctions < 0x80000000) {
+                m_cpu->VMemRead(kernelBaseOfCode + 0x1C, sizeof(uint32_t), &kernelAddressOfFunctions);
+                kernelAddressOfFunctions += 0x80010000;
+            }
+
+            // Find KiBugCheckData address
+            if (kernelAddressOfFunctions >= 0x80000000 && kiBugCheckDataAddress < 0x80000000) {
+                m_cpu->VMemRead(kernelAddressOfFunctions + ((162 - 1) * sizeof(uint32_t)), sizeof(uint32_t), &kiBugCheckDataAddress);
+                kiBugCheckDataAddress += 0x80010000;
+            }
+
+            if (kiBugCheckDataAddress >= 0x80000000) {
+                static bool printedKernelData = false;
+                if (!printedKernelData) {
+                    uint32_t pKernelBaseOfCode;
+                    uint32_t pKernelAddressOfFunctions;
+                    uint32_t pKiBugCheckDataAddress;
+                    m_cpu->VirtualToPhysical(kernelBaseOfCode, &pKernelBaseOfCode);
+                    m_cpu->VirtualToPhysical(kernelAddressOfFunctions, &pKernelAddressOfFunctions);
+                    m_cpu->VirtualToPhysical(kiBugCheckDataAddress, &pKiBugCheckDataAddress);
+                    log_debug("Kernel extracted and decrypted\n");
+                    log_debug("  Base of code        : 0x%08x  ->  0x%08x\n", kernelBaseOfCode, pKernelBaseOfCode);
+                    log_debug("  Address of functions: 0x%08x  ->  0x%08x\n", kernelAddressOfFunctions, pKernelAddressOfFunctions);
+                    log_debug("    KiBugCheckData    : 0x%08x  ->  0x%08x\n", kiBugCheckDataAddress, pKiBugCheckDataAddress);
+                    printedKernelData = true;
+                }
+
+                static uint32_t lastBugCheckCode = 0;
+                uint32_t bugCheckCode[5] = { 0 };
+                m_cpu->VMemRead(kiBugCheckDataAddress, 5 * sizeof(uint32_t), &bugCheckCode);
+                if (bugCheckCode[0] != 0 && lastBugCheckCode != bugCheckCode[0]) {
+                    log_fatal("/!\\ ---------------------------- /!\\\n");
+                    log_fatal("/!\\   System issued a BugCheck   /!\\\n");
+                    log_fatal("/!\\                              /!\\\n");
+                    log_fatal("/!\\  BugCheck code   0x%08x  /!\\\n", bugCheckCode[0]);
+                    log_fatal("/!\\  Parameter 1     0x%08x  /!\\\n", bugCheckCode[1]);
+                    log_fatal("/!\\  Parameter 2     0x%08x  /!\\\n", bugCheckCode[2]);
+                    log_fatal("/!\\  Parameter 3     0x%08x  /!\\\n", bugCheckCode[3]);
+                    log_fatal("/!\\  Parameter 4     0x%08x  /!\\\n", bugCheckCode[4]);
+                    log_fatal("/!\\                              /!\\\n");
+                    log_fatal("/!\\ ---------------------------- /!\\\n");
+                    lastBugCheckCode = bugCheckCode[0];
+                    
+                    log_fatal("Press ENTER to continue\n");
+                    getchar();
+                }
+            }
+        }
 
         // Handle reason for the CPU to exit
         exit_info = m_cpu->GetExitInfo();
@@ -498,6 +578,8 @@ int Xbox::RunCpu()
         default: break;
         }
     }
+#endif
+#endif
 
     return result;
 }
