@@ -443,7 +443,7 @@ void i8259::RaiseIRQ(int index) {
         SetIRQ(PIC_MASTER, index, true);
     }
     else {
-        SetIRQ(PIC_SLAVE, index - 7, true);
+        SetIRQ(PIC_SLAVE, index - 8, true);
     }
 }
 
@@ -452,7 +452,7 @@ void i8259::LowerIRQ(int index) {
         SetIRQ(PIC_MASTER, index, false);
     }
     else {
-        SetIRQ(PIC_SLAVE, index - 7, false);
+        SetIRQ(PIC_SLAVE, index - 8, false);
     }
 }
 
