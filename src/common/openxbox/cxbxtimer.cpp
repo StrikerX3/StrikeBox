@@ -54,7 +54,7 @@ static std::vector<TimerObject*> TimerList;
 
 
 // Returns the current time of the timer
-inline uint64_t GetTime_NS(TimerObject* Timer) {
+uint64_t GetTime_NS(TimerObject* Timer) {
     using namespace std::chrono;
     uint64_t Ret = high_resolution_clock::now().time_since_epoch().count();
     return Timer->Type == CLOCK_REALTIME ? Ret : Ret / Timer->SlowdownFactor;

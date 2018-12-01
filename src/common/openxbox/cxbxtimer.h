@@ -59,7 +59,7 @@ TimerObject* Timer_Create(pTimerCB Callback, void* Arg, unsigned int Factor);
 void Timer_Start(TimerObject* Timer, uint64_t Expire_MS);
 void Timer_Exit(TimerObject* Timer);
 void Timer_ChangeExpireTime(TimerObject* Timer, uint64_t Expire_ms);
-inline uint64_t GetTime_NS(TimerObject* Timer);
+uint64_t GetTime_NS(TimerObject* Timer);
 void Timer_Init();
 
 #endif
