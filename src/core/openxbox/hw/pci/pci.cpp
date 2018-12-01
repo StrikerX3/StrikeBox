@@ -159,13 +159,7 @@ bool PCIDevice::GetIOBar(uint32_t port, uint8_t* barIndex, uint32_t *baseAddress
             // BAR is not I/O
             continue;
         }
-
-        uint16_t cmd = Read16(m_configSpace, PCI_COMMAND);
-        if ((cmd & PCI_COMMAND_IO) == 0) {
-            // I/O space is disabled
-            continue;
-        }
-
+        
         uint32_t barAddr = bar->IO.address << 2;
         if (port >= barAddr && port < barAddr + m_BARSizes[i]) {
             *barIndex = i;
@@ -205,12 +199,6 @@ bool PCIDevice::GetMMIOBar(uint32_t addr, uint8_t* barIndex, uint32_t *baseAddre
         PCIBarRegister *bar = reinterpret_cast<PCIBarRegister *>(&barValue);
         if ((bar->Raw.type & PCI_BAR_TYPE_MASK) != PCI_BAR_TYPE_MEMORY) {
             // BAR is not memory
-            continue;
-        }
-        
-        uint16_t cmd = Read16(m_configSpace, PCI_COMMAND);
-        if ((cmd & PCI_COMMAND_MEMORY) == 0) {
-            // Memory space is disabled
             continue;
         }
 
