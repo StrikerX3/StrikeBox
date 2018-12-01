@@ -21,4 +21,12 @@ void NVAPUDevice::Init() {
 void NVAPUDevice::Reset() {
 }
 
+void NVAPUDevice::PCIMMIORead(int barIndex, uint32_t addr, uint32_t *value, uint8_t size) {
+    log_spew("NVAPUDevice::PCIMMIORead:   Unimplemented!  bar = %d,  address = 0x%x,  size = %u\n", barIndex, addr, size);
+}
+
+void NVAPUDevice::PCIMMIOWrite(int barIndex, uint32_t addr, uint32_t value, uint8_t size) {
+    log_spew("NVAPUDevice::PCIMMIOWrite:  Unimplemented!  bar = %d,  address = 0x%x,  value = 0x%x,  size = %u\n", barIndex, addr, value, size);
+}
+
 }

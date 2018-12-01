@@ -16,6 +16,9 @@ public:
     // PCI Device functions
     void Init();
     void Reset();
+
+    void PCIMMIORead(int barIndex, uint32_t addr, uint32_t *value, uint8_t size) override;
+    void PCIMMIOWrite(int barIndex, uint32_t addr, uint32_t value, uint8_t size) override;
 };
 
 }

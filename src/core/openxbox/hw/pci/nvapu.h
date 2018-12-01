@@ -17,7 +17,8 @@ public:
     void Init();
     void Reset();
 
-    // TODO: implement I/O
+    void PCIMMIORead(int barIndex, uint32_t addr, uint32_t *value, uint8_t size) override;
+    void PCIMMIOWrite(int barIndex, uint32_t addr, uint32_t value, uint8_t size) override;
 };
 
 }

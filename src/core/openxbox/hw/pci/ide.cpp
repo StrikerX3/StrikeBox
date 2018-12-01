@@ -21,4 +21,12 @@ void IDEDevice::Init() {
 void IDEDevice::Reset() {
 }
 
+void IDEDevice::PCIIORead(int barIndex, uint32_t port, uint32_t *value, uint8_t size) {
+    log_spew("IDEDevice::PCIIORead:   Unimplemented!  bar = %d,  port = 0x%x,  size = %u\n", barIndex, port, size);
+}
+
+void IDEDevice::PCIIOWrite(int barIndex, uint32_t port, uint32_t value, uint8_t size) {
+    log_spew("IDEDevice::PCIIOWrite:  Unimplemented!  bar = %d,  port = 0x%x,  value = 0x%x,  size = %u\n", barIndex, port, value, size);
+}
+
 }
