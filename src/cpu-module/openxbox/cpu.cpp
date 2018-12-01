@@ -61,7 +61,7 @@ int Cpu::Run() {
     return RunImpl();
 }
 
-int Cpu::Step(uint64_t num_instructions) {
+int Cpu::Step() {
     // Increment the credits available for the interrupt handler
     if (m_interruptHandlerCredits < kInterruptHandlerMaxCredits) {
         m_interruptHandlerCredits += kInterruptHandlerIncrement;
@@ -79,7 +79,7 @@ int Cpu::Step(uint64_t num_instructions) {
     }
 
     // Run the VCPU
-    return StepImpl(num_instructions);
+    return StepImpl();
 }
 
 InterruptResult Cpu::Interrupt(uint8_t vector) {
@@ -396,6 +396,22 @@ int Cpu::PopFlags() {
 
 int Cpu::Ret() {
 	return PopReg(REG_EIP);
+}
+
+int Cpu::EnableSoftwareBreakpoints(bool enable) {
+    return -1;
+}
+
+int Cpu::SetHardwareBreakpoints(HardwareBreakpoints breakpoints) {
+    return -1;
+}
+
+int Cpu::ClearHardwareBreakpoints() {
+    return -1;
+}
+
+bool Cpu::GetBreakpointAddress(uint32_t *address) {
+    return false;
 }
 
 void Cpu::InjectPendingInterrupt() {

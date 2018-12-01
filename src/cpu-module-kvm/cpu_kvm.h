@@ -20,7 +20,7 @@ public:
     int InitializeImpl();
 
     int RunImpl();
-    int StepImpl(uint64_t num_instructions);
+    int StepImpl();
     InterruptResult InterruptImpl(uint8_t vector);
 
     int MemMapSubregion(MemoryRegion *subregion);

@@ -94,20 +94,9 @@ int KvmCpu::RunImpl() {
     return 0;
 }
 
-int KvmCpu::StepImpl(uint64_t num_instructions) {
-    for(uint64_t i = 0; i < num_instructions; i++) {
-        SetFlags(TF_MASK);
-
-        int result = RunImpl();
-
-        if(result == KVMVCPUS_RUN_FAILED) {
-            return result;
-        }
-        if(m_exitInfo.reason != CPU_EXIT_NORMAL) {
-            return 0;
-        }
-    }
-    return 0;
+int KvmCpu::StepImpl() {
+    // TODO: implement guest debugging features
+    return RunImpl();
 }
 
 InterruptResult KvmCpu::InterruptImpl(uint8_t vector) {

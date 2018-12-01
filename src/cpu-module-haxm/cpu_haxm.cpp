@@ -69,40 +69,14 @@ int HaxmCpu::RunImpl() {
 		m_vcpu->SetFPURegisters(&m_fpuRegs);
 		m_fpuRegsChanged = false;
 	}
-
-    auto tunnel = m_vcpu->Tunnel();
  
     // Run CPU
 	auto status = m_vcpu->Run();
 
-	// Mark registers as dirty
-	m_regsDirty = true;
-	m_fpuRegsDirty = true;
-
-	// Check VM exit status
-	if (status == HXVCPUS_FAILED) {
-		return -1;
-	}
-
-	// Handle exit status using tunnel
-	switch (tunnel->_exit_status) {
-    case HAX_EXIT_HLT:         m_exitInfo.reason = CPU_EXIT_HLT;       break;  // HLT instruction
-	case HAX_EXIT_IO:          m_exitInfo.reason = CPU_EXIT_NORMAL;            // I/O (in / out instructions)
-		return HandleIO(tunnel->io._df, tunnel->io._port, tunnel->io._direction, tunnel->io._size, tunnel->io._count, m_vcpu->IOTunnel());
-	case HAX_EXIT_FAST_MMIO:   m_exitInfo.reason = CPU_EXIT_NORMAL;            // Fast MMIO
-        return HandleFastMMIO((struct hax_fastmmio *)m_vcpu->IOTunnel());
-	case HAX_EXIT_INTERRUPT:   m_exitInfo.reason = CPU_EXIT_NORMAL;    break;  // Let HAXM handle this
-	case HAX_EXIT_PAUSED:      m_exitInfo.reason = CPU_EXIT_NORMAL;    break;  // Let HAXM handle this
-    case HAX_EXIT_MMIO:        m_exitInfo.reason = CPU_EXIT_ERROR;     break;  // Regular MMIO (cannot be implemented)
-	case HAX_EXIT_REALMODE:    m_exitInfo.reason = CPU_EXIT_ERROR;     break;  // Real mode is not supported
-	case HAX_EXIT_UNKNOWN:     m_exitInfo.reason = CPU_EXIT_ERROR;     break;  // VM failed for an unknown reason
-	case HAX_EXIT_STATECHANGE: m_exitInfo.reason = CPU_EXIT_SHUTDOWN;  break;  // The VM is shutting down
-	}
-
-	return 0;
+    return HandleExecResult(status);
 }
 
-int HaxmCpu::StepImpl(uint64_t num_instructions) {
+int HaxmCpu::StepImpl() {
     // Update CPU state if registers were modified
     if (m_regsChanged) {
         m_vcpu->SetRegisters(&m_regs);
@@ -113,49 +87,51 @@ int HaxmCpu::StepImpl(uint64_t num_instructions) {
         m_fpuRegsChanged = false;
     }
 
-	for (uint64_t i = 0; i < num_instructions; i++) {
-        auto tunnel = m_vcpu->Tunnel();
+    // Run one instruction
+    auto status = m_vcpu->Step();
 
-        // Run one instruction
-        auto status = m_vcpu->Step();
+    return HandleExecResult(status);
+}
 
-        // Mark registers as dirty
-        m_regsDirty = true;
-        m_fpuRegsDirty = true;
+int HaxmCpu::HandleExecResult(HaxmVCPUStatus status) {
+    // Mark registers as dirty
+    m_regsDirty = true;
+    m_fpuRegsDirty = true;
 
-        // Check VM exit status
-        if (status == HXVCPUS_FAILED) {
-            return -1;
+    // Check VM exit status
+    if (status == HXVCPUS_FAILED) {
+        return -1;
+    }
+
+    auto tunnel = m_vcpu->Tunnel();
+  
+    // Handle exit status using tunnel
+    switch (tunnel->_exit_status) {
+    case HAX_EXIT_HLT:         m_exitInfo.reason = CPU_EXIT_HLT;       break;  // HLT instruction
+    case HAX_EXIT_IO:          m_exitInfo.reason = CPU_EXIT_NORMAL;            // I/O (in / out instructions)
+        return HandleIO(tunnel->io._df, tunnel->io._port, tunnel->io._direction, tunnel->io._size, tunnel->io._count, m_vcpu->IOTunnel());
+    case HAX_EXIT_FAST_MMIO:   m_exitInfo.reason = CPU_EXIT_NORMAL;            // Fast MMIO
+        return HandleFastMMIO((struct hax_fastmmio *)m_vcpu->IOTunnel());
+    case HAX_EXIT_INTERRUPT:   m_exitInfo.reason = CPU_EXIT_NORMAL;    break;  // Let HAXM handle this
+    case HAX_EXIT_PAUSED:      m_exitInfo.reason = CPU_EXIT_NORMAL;    break;  // Let HAXM handle this
+    case HAX_EXIT_MMIO:        m_exitInfo.reason = CPU_EXIT_ERROR;     break;  // Regular MMIO (cannot be implemented)
+    case HAX_EXIT_REALMODE:    m_exitInfo.reason = CPU_EXIT_ERROR;     break;  // Real mode is not supported
+    case HAX_EXIT_UNKNOWN:     m_exitInfo.reason = CPU_EXIT_ERROR;     break;  // VM failed for an unknown reason
+    case HAX_EXIT_STATECHANGE: m_exitInfo.reason = CPU_EXIT_SHUTDOWN;  break;  // The VM is shutting down
+    case HAX_EXIT_DEBUG:                                                       // A breakpoint was hit
+    {
+        // Determine if it was a software or hardware breakpoint
+        if (tunnel->debug.dr6 & 0xf) {
+            m_exitInfo.reason = CPU_EXIT_HW_BREAKPOINT;
         }
-
-        int result = 0;
-        // Handle exit status using tunnel
-        switch (tunnel->_exit_status) {
-        case HAX_EXIT_HLT:         m_exitInfo.reason = CPU_EXIT_HLT;       break;  // HLT instruction
-        case HAX_EXIT_IO:          m_exitInfo.reason = CPU_EXIT_NORMAL;            // I/O (in / out instructions)
-            result = HandleIO(tunnel->io._df, tunnel->io._port, tunnel->io._direction, tunnel->io._size, tunnel->io._count, m_vcpu->IOTunnel());
-            break;
-        case HAX_EXIT_FAST_MMIO:   m_exitInfo.reason = CPU_EXIT_NORMAL;            // Fast MMIO
-            result = HandleFastMMIO((struct hax_fastmmio *)m_vcpu->IOTunnel());
-            break;
-        case HAX_EXIT_INTERRUPT:   m_exitInfo.reason = CPU_EXIT_NORMAL;    break;  // Let HAXM handle this
-        case HAX_EXIT_PAUSED:      m_exitInfo.reason = CPU_EXIT_NORMAL;    break;  // Let HAXM handle this
-        case HAX_EXIT_MMIO:        m_exitInfo.reason = CPU_EXIT_ERROR;     break;  // Regular MMIO (cannot be implemented)
-        case HAX_EXIT_REALMODE:    m_exitInfo.reason = CPU_EXIT_ERROR;     break;  // Real mode is not supported
-        case HAX_EXIT_UNKNOWN:     m_exitInfo.reason = CPU_EXIT_ERROR;     break;  // VM failed for an unknown reason
-        case HAX_EXIT_STATECHANGE: m_exitInfo.reason = CPU_EXIT_SHUTDOWN;  break;  // The VM is shutting down
+        else {
+            m_exitInfo.reason = CPU_EXIT_SW_BREAKPOINT;
         }
+        break;
+    }
+    }
 
-		// Exit on failure or any other exit reason
-        if (result != 0) {
-            return result;
-        }
-		if (m_exitInfo.reason != CPU_EXIT_NORMAL) {
-			return 0;
-		}
-	}
-
-	return 0;
+    return 0;
 }
 
 InterruptResult HaxmCpu::InterruptImpl(uint8_t vector) {
@@ -295,6 +271,62 @@ int HaxmCpu::SetIDT(uint32_t addr, uint32_t size) {
 	m_regsChanged = true;
 
 	return 0;
+}
+
+int HaxmCpu::EnableSoftwareBreakpoints(bool enable) {
+    auto status = m_vcpu->EnableSoftwareBreakpoints(enable);
+    if (status != HXVCPUS_SUCCESS) {
+        return -1;
+    }
+
+    return 0;
+}
+
+int HaxmCpu::SetHardwareBreakpoints(HardwareBreakpoints breakpoints) {
+    HaxmHardwareBreakpoint bps[4];
+    for (int i = 0; i < 4; i++) {
+        bps[i].address = breakpoints.bp[0].address;
+        bps[i].localEnable = breakpoints.bp[0].localEnable;
+        bps[i].globalEnable = breakpoints.bp[0].globalEnable;
+        bps[i].trigger = (HaxmHardwareBreakpointTrigger) breakpoints.bp[0].trigger;
+        bps[i].length = (HaxmHardwareBreakpointLength) breakpoints.bp[0].length;
+    }
+
+    auto status = m_vcpu->SetHardwareBreakpoints(bps);
+    if (status != HXVCPUS_SUCCESS) {
+        return -1;
+    }
+
+    return 0;
+}
+
+int HaxmCpu::ClearHardwareBreakpoints() {
+    auto status = m_vcpu->ClearHardwareBreakpoints();
+    if (status != HXVCPUS_SUCCESS) {
+        return -1;
+    }
+
+    return 0;
+}
+
+bool HaxmCpu::GetBreakpointAddress(uint32_t *address) {
+    auto debugTunnel = &m_vcpu->Tunnel()->debug;
+    char hardwareBP = debugTunnel->dr6 & 0xF;
+
+    // No breakpoints were hit
+    if (hardwareBP == 0 && debugTunnel->rip == 0) {
+        return false;
+    }
+
+    // Get the appropriate breakpoint address
+    auto debug = m_vcpu->Debug();
+    /**/ if (hardwareBP & (1 << 0)) *address = debug->dr[0];
+    else if (hardwareBP & (1 << 1)) *address = debug->dr[1];
+    else if (hardwareBP & (1 << 2)) *address = debug->dr[2];
+    else if (hardwareBP & (1 << 3)) *address = debug->dr[3];
+    else /************************/ *address = (uint32_t)debugTunnel->rip;
+
+    return true;
 }
 
 int HaxmCpu::HandleIO(uint8_t df, uint16_t port, uint8_t direction, uint16_t size, uint16_t count, uint8_t *buffer) {

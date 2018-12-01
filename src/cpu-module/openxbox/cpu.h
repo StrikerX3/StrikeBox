@@ -125,11 +125,13 @@ enum CpuReg {
  * Exit Info
  */
 enum CpuExitReason {
-	CPU_EXIT_NORMAL,    // Exit due to time slice expiration
-	CPU_EXIT_ERROR,     // Exit due to non-specific error
-	CPU_EXIT_INTERRUPT, // Exit due to interrupt
-	CPU_EXIT_HLT,       // Exit due to HLT instruction
-	CPU_EXIT_SHUTDOWN,  // Exit due to system shutdown
+	CPU_EXIT_NORMAL,         // Time slice expiration
+	CPU_EXIT_ERROR,          // Non-specific error
+	CPU_EXIT_INTERRUPT,      // Interrupt
+	CPU_EXIT_HLT,            // HLT instruction
+    CPU_EXIT_SHUTDOWN,       // System shutdown
+    CPU_EXIT_SW_BREAKPOINT,  // Software breakpoint
+    CPU_EXIT_HW_BREAKPOINT,  // Hardware breakpoint
 };
 
 enum InterruptResult {
@@ -152,6 +154,30 @@ struct PhysicalMemoryRange {
     char *data;
     uint32_t startingAddress;
     uint32_t endingAddress;
+};
+
+enum HardwareBreakpointTrigger {
+    HWBP_TRIGGER_EXECUTION = 0,
+    HWBP_TRIGGER_DATA_WRITE,
+    HWBP_TRIGGER_8_BYTE_WIDE,
+    HWBP_TRIGGER_DATA_READ_WRITE,
+};
+
+enum HardwareBreakpointLength {
+    HWBP_LENGTH_1_BYTE = 0,
+    HWBP_LENGTH_2_BYTE,
+    HWBP_LENGTH_8_BYTE,
+    HWBP_LENGTH_4_BYTE,
+};
+
+struct HardwareBreakpoints {
+    struct {
+        uint64_t address;
+        bool localEnable;
+        bool globalEnable;
+        HardwareBreakpointTrigger trigger;
+        HardwareBreakpointLength length;
+    } bp[4];
 };
 
 /*!
@@ -181,10 +207,9 @@ public:
 	int Run();
 
 	/*!
-	 * Runs the specified number of instructions on the CPU.
-	 * By default, steps one instruction.
+	 * Runs one instruction on the CPU.
 	 */
-	int Step(uint64_t num_instructions = 1);
+	int Step();
 	
 	/*!
 	 * Sends an interrupt to the CPU, optionally making it non maskable.
@@ -381,6 +406,45 @@ public:
 	 */
 	int Ret();
 
+    // ----- Breakpoints ------------------------------------------------------
+
+    /*!
+     * Enables or disables software breakpoints.
+     *
+     * If the guest executes an INT 3h instruction while software breakpoints are enabled,
+     * the CPU emulator will stop and return CPU_EXIT_BREAKPOINT. The guest code will not
+     * have a chance to handle INT 3h while software breakpoints are enabled.
+     *
+     * This is an optional operation. TODO: implement capability checking.
+     */
+    virtual int EnableSoftwareBreakpoints(bool enable);
+
+    /*!
+     * Configures up to 4 hardware breakpoints.
+     *
+     * While these breakpoints are active, when the guest code triggers them, the CPU
+     * emulator will stop and return CPU_EXIT_BREAKPOINT.
+     *
+     * This is an optional operation. TODO: implement capability checking.
+     */
+    virtual int SetHardwareBreakpoints(HardwareBreakpoints breakpoints);
+
+    /*!
+     * Clears all hardware breakpoints.
+     *
+     * This is an optional operation. TODO: implement capability checking.
+     */
+    virtual int ClearHardwareBreakpoints();
+
+    /*!
+     * Retrieves the address of the most recently hit breakpoint. Must be invoked
+     * after the CPU emulator stops due to a breakpoint, and before running the CPU again.
+     * Returns false if a breakpoint was not hit as of the most recent execution.
+     *
+     * This is an optional operation. TODO: implement capability checking.
+     */
+    virtual bool GetBreakpointAddress(uint32_t *address);
+
 	// ----- Data -------------------------------------------------------------
 
 	/*!
@@ -414,10 +478,9 @@ protected:
 	virtual int RunImpl() = 0;
 
 	/*!
-	 * Runs the specified number of instructions on the CPU.
-	 * By default, steps one instruction.
+	 * Runs one instruction on the CPU.
 	 */
-	virtual int StepImpl(uint64_t num_instructions = 1) = 0;
+	virtual int StepImpl() = 0;
 
 	/*!
 	 * Sends an interrupt to the CPU.

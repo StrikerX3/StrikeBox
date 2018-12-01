@@ -94,25 +94,9 @@ int WhvpCpu::RunImpl() {
 	return 0;
 }
 
-int WhvpCpu::StepImpl(uint64_t num_instructions) {
-    // FIXME: would be nice if we didn't have to interfere with the VCPU state
-	for (uint64_t i = 0; i < num_instructions; i++) {
-		// Set the trap flag. This will be cleared on the next instruction
-		SetFlags(TF_MASK);
-
-		// Run CPU
-		int result = RunImpl();
-
-		// Exit on failure or any other exit reason
-		if (result) {
-			return result;
-		}
-		if (m_exitInfo.reason != CPU_EXIT_NORMAL) {
-			return 0;
-		}
-	}
-
-	return 0;
+int WhvpCpu::StepImpl() {
+    // FIXME: API does not support guest debugging
+    return RunImpl();
 }
 
 InterruptResult WhvpCpu::InterruptImpl(uint8_t vector) {

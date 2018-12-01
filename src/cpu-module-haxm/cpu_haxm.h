@@ -23,7 +23,7 @@ public:
     int InitializeImpl();
 
 	int RunImpl();
-	int StepImpl(uint64_t num_instructions);
+	int StepImpl();
 	InterruptResult InterruptImpl(uint8_t vector);
 
 	int MemMapSubregion(MemoryRegion *subregion);
@@ -36,6 +36,11 @@ public:
 
 	int GetIDT(uint32_t *addr, uint32_t *size);
 	int SetIDT(uint32_t addr, uint32_t size);
+
+    int EnableSoftwareBreakpoints(bool enable) override;
+    int SetHardwareBreakpoints(HardwareBreakpoints breakpoints) override;
+    int ClearHardwareBreakpoints() override;
+    bool GetBreakpointAddress(uint32_t *address) override;
 
 protected:
     int InjectInterrupt(uint8_t vector);
@@ -54,6 +59,8 @@ private:
 	bool m_regsChanged;      // set to true when general registers are modified by the host
 	bool m_fpuRegsChanged;   // set to true when floating point registers are modified by the host
 	
+    int HandleExecResult(HaxmVCPUStatus status);
+
 	int HandleIO(uint8_t df, uint16_t port, uint8_t direction, uint16_t size, uint16_t count, uint8_t *buffer);
 	int HandleFastMMIO(struct hax_fastmmio *info);
 

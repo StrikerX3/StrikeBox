@@ -157,6 +157,7 @@ public:
 
 	struct hax_tunnel* Tunnel() const { return m_tunnel; }
 	unsigned char* IOTunnel() const { return m_ioTunnel; }
+    const hax_debug_t* Debug() const { return &m_debug; }
 
 	const uint32_t ID() const { return m_vcpuID; }
 	const HANDLE Handle() const { return m_hVCPU; }
