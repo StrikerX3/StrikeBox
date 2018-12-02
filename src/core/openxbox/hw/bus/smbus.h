@@ -64,14 +64,14 @@ public:
     void ConnectDevice(uint8_t addr, SMDevice *device);
 
 private:
-    uint8_t m_Status;
-    uint8_t m_Control;
-    uint8_t m_Command;
-    uint8_t m_Address;
-    uint8_t m_Data0;
-    uint8_t m_Data1;
-    uint8_t m_Data[32];
-    uint8_t m_Index;
+    uint8_t m_Status = 0;
+    uint8_t m_Control = 0;
+    uint8_t m_Command = 0;
+    uint8_t m_Address = 0;
+    uint8_t m_Data0 = 0;
+    uint8_t m_Data1 = 0;
+    uint8_t m_Data[32] = { 0 };
+    uint8_t m_Index = 0;
 
     IRQ *m_irq;
 

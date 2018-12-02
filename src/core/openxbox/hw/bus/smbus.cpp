@@ -87,7 +87,7 @@ void SMBus::ExecuteTransaction() {
             m_Data0 = pDevice->ReceiveByte();
         }
         else {
-            pDevice->SendByte(m_Data0); // TODO: Was m_Command correct?
+            pDevice->SendByte(m_Command);
         }
         break;
     case AMD756_BYTE_DATA:
