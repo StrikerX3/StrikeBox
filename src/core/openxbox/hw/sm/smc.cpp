@@ -58,13 +58,17 @@ void SMCDevice::Init() {
     m_PICVersionStringIndex = 0;
     memset(m_buffer, 0, sizeof(m_buffer));
     m_buffer[SMCRegister::AVPack] = kSMC_AVPack_HDTV; // see http://xboxdevwiki.net/PIC#The_AV_Pack
-    m_buffer[SMCRegister::LEDSequence] = LED::GREEN;
-    m_buffer[SMCRegister::Scratch] = 0; // http://xboxdevwiki.net/PIC#Scratch_register_values
+    m_buffer[SMCRegister::LEDSequence] = LED::Sequence{ LED::Green,LED::Green,LED::Green,LED::Green };
+    m_buffer[SMCRegister::Scratch] = 0; // see http://xboxdevwiki.net/PIC#Scratch_register_values
 }
 
 void SMCDevice::Reset() {
     log_spew("SMCDevice::Reset:  Unimplemented!\n");
     // TODO
+}
+
+uint8_t SMCDevice::GetRegister(SMCRegister reg) {
+    return m_buffer[reg];
 }
 
 void SMCDevice::QuickCommand(bool read) {
@@ -165,9 +169,17 @@ void SMCDevice::WriteByte(uint8_t command, uint8_t value) {
             // and afterwards this will repeat with whatever y; ntstatus is always 0
             return;
         }
+    case SMCRegister::LEDSequence:
+    {
+        // Parse and display LED sequence
+        LED::Sequence seq = value;
+        log_info("SMCDevice::WriteByte: Changed LED flash sequence: %s %s %s %s\n", LED::Name(seq.phase0), LED::Name(seq.phase1), LED::Name(seq.phase2), LED::Name(seq.phase3));
+        break;
+    }
     // TODO: case SMCRegister::TrayEject:
     case SMCRegister::ErrorCode:
-        log_warning("SMCDevice::WriteByte: Wrote error code 0x%x\n", value);
+        log_warning("SMCDevice::WriteByte: Wrote fatal error code %d\n", value);
+        
         break;
     // TODO: case SMCRegister::ResetOnEject:
     // TODO: case SMCRegister::InterruptEnable:

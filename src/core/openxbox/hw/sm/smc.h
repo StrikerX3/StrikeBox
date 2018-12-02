@@ -95,6 +95,8 @@ public:
     void Init();
     void Reset();
 
+    uint8_t GetRegister(SMCRegister reg);
+
     void QuickCommand(bool read);
     uint8_t ReceiveByte();
     uint8_t ReadByte(uint8_t command);
