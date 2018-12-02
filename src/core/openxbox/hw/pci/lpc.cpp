@@ -22,6 +22,7 @@
  */
 #include "lpc.h"
 #include "openxbox/log.h"
+#include "openxbox/mem.h"
 
 #include <cassert>
 
@@ -65,17 +66,18 @@ void LPCDevice::Init() {
 }
 
 void LPCDevice::Reset() {
+    // TODO: move to an MCPX component
     // Load BIOS ROM image
     memcpy(m_rom, m_bios, m_biosSize);
 
-    if (m_initMcpxROM) {
-        // Overlay MCPX ROM image onto the last 512 bytes
-        memcpy(m_rom + m_biosSize - 512, m_mcpxROM, 512);
-    }
-
-    // Replicate resulting ROM image across the entire 16 MiB range
+    // Replicate BIOS ROM image across the entire 16 MiB range
     for (uint32_t addr = m_biosSize; addr < MiB(16); addr += m_biosSize) {
         memcpy(m_rom + addr, m_rom, m_biosSize);
+    }
+
+    if (m_initMcpxROM) {
+        // Overlay MCPX ROM image onto the last 512 bytes
+        memcpy(m_rom + XBOX_ROM_AREA_SIZE - 512, m_mcpxROM, 512);
     }
 }
 
@@ -123,13 +125,12 @@ void LPCDevice::PCIIOWrite(int barIndex, uint32_t port, uint32_t value, uint8_t 
 void LPCDevice::WriteConfig(uint32_t reg, uint32_t value, uint8_t size) {
     PCIDevice::WriteConfig(reg, value, size);
 
+    // TODO: move to an MCPX component
     // Disable MCPX ROM
     if (reg == 0x80 && (value & 2)) {
         log_debug("LPCDevice::WriteConfig:  Disabling MCPX ROM\n");
-        // Restore last 512 bytes of the original BIOS ROM image, replicating across the entire 16 MiB range
-        for (uint32_t addr = 0; addr < MiB(16); addr += m_biosSize) {
-            memcpy(m_rom + m_biosSize - 512 + addr, m_bios + m_biosSize - 512, 512);
-        }
+        // Restore last 512 bytes of the original BIOS ROM image
+        memcpy(m_rom + XBOX_ROM_AREA_SIZE - 512, m_bios + m_biosSize - 512, 512);
     }
 }
 
