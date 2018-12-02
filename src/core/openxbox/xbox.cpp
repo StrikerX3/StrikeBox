@@ -485,33 +485,31 @@ int Xbox::RunCpu()
         // See http://xboxdevwiki.net/Fatal_Error
         // See https://assemblergames.com/threads/xbox-error-codes-repair-reference-tips.62966/
         if (smcErrorCode != 0 && lastSMCErrorCode != smcErrorCode) {
-            if (m_settings.emu_logSMCFatalErrors) {
-                log_error("/!\\ --------------------------------- /!\\\n");
-                log_fatal("/!\\    System issued a Fatal Error    /!\\\n");
-                log_fatal("/!\\                                   /!\\\n");
-                log_fatal("/!\\        Fatal error code %02d        /!\\\n", smcErrorCode);
-                switch (smcErrorCode) {
-                case  2: log_fatal("/!\\      Invalid EEPROM checksum      /!\\\n"); break;
-                case  4: log_fatal("/!\\         RAM check failure         /!\\\n"); break;
-                case  5: log_fatal("/!\\       Hard drive not locked       /!\\\n"); break;
-                case  6: log_fatal("/!\\    Unable to unlock hard drive    /!\\\n"); break;
-                case  7: log_fatal("/!\\        Hard drive timeout         /!\\\n"); break;
-                case  8: log_fatal("/!\\        No hard drive found        /!\\\n"); break;
-                case  9: log_fatal("/!\\  Hard drive configuration failed  /!\\\n"); break;
-                case 10: log_fatal("/!\\         DVD drive timeout         /!\\\n"); break;
-                case 11: log_fatal("/!\\        No DVD drive found         /!\\\n"); break;
-                case 12: log_fatal("/!\\  DVD drive configuration failed   /!\\\n"); break;
-                case 13: log_fatal("/!\\    Dashboard failed to launch     /!\\\n"); break;
-                case 14: log_fatal("/!\\    Unspecified dashboard error    /!\\\n"); break;
-                case 16: log_fatal("/!\\     Dashboard settings error      /!\\\n"); break;
-                case 20: log_fatal("/!\\    Dashboard failed to launch     /!\\\n"); /* */
-                    /**/ log_fatal("/!\\    (DVD authentication passed)    /!\\\n"); break;
-                case 21: log_fatal("/!\\         Unspecified error         /!\\\n"); break;
-                default: log_fatal("/!\\              Unknown              /!\\\n"); break;
-                }
-                log_fatal("/!\\                                   /!\\\n");
-                log_fatal("/!\\ --------------------------------- /!\\\n");
+            log_error("/!\\ --------------------------------- /!\\\n");
+            log_fatal("/!\\    System issued a Fatal Error    /!\\\n");
+            log_fatal("/!\\                                   /!\\\n");
+            log_fatal("/!\\        Fatal error code %02d        /!\\\n", smcErrorCode);
+            switch (smcErrorCode) {
+            case  2: log_fatal("/!\\      Invalid EEPROM checksum      /!\\\n"); break;
+            case  4: log_fatal("/!\\         RAM check failure         /!\\\n"); break;
+            case  5: log_fatal("/!\\       Hard drive not locked       /!\\\n"); break;
+            case  6: log_fatal("/!\\    Unable to unlock hard drive    /!\\\n"); break;
+            case  7: log_fatal("/!\\        Hard drive timeout         /!\\\n"); break;
+            case  8: log_fatal("/!\\        No hard drive found        /!\\\n"); break;
+            case  9: log_fatal("/!\\  Hard drive configuration failed  /!\\\n"); break;
+            case 10: log_fatal("/!\\         DVD drive timeout         /!\\\n"); break;
+            case 11: log_fatal("/!\\        No DVD drive found         /!\\\n"); break;
+            case 12: log_fatal("/!\\  DVD drive configuration failed   /!\\\n"); break;
+            case 13: log_fatal("/!\\    Dashboard failed to launch     /!\\\n"); break;
+            case 14: log_fatal("/!\\    Unspecified dashboard error    /!\\\n"); break;
+            case 16: log_fatal("/!\\     Dashboard settings error      /!\\\n"); break;
+            case 20: log_fatal("/!\\    Dashboard failed to launch     /!\\\n"); /* */
+                /**/ log_fatal("/!\\    (DVD authentication passed)    /!\\\n"); break;
+            case 21: log_fatal("/!\\         Unspecified error         /!\\\n"); break;
+            default: log_fatal("/!\\              Unknown              /!\\\n"); break;
             }
+            log_fatal("/!\\                                   /!\\\n");
+            log_fatal("/!\\ --------------------------------- /!\\\n");
 
             // Stop emulation on fatal errors if configured to do so
             if (m_settings.emu_stopOnSMCFatalErrors) {
@@ -624,13 +622,6 @@ int Xbox::RunCpu()
                     log_debug("  Address of functions: 0x%08x  ->  0x%08x\n", kernelAddressOfFunctions, pKernelAddressOfFunctions);
                     log_debug("    KiBugCheckData    : 0x%08x  ->  0x%08x\n", kiBugCheckDataAddress, pKiBugCheckDataAddress);
                     printedKernelData = true;
-                 
-                    /*HardwareBreakpoints bps = { 0 };
-                    bps.bp[0].address = 0x8002f243; // RtlAssert entrypoint in complex 4627 BIOS
-                    bps.bp[0].globalEnable = true;
-                    bps.bp[0].length = HWBP_LENGTH_1_BYTE;
-                    bps.bp[0].trigger = HWBP_TRIGGER_EXECUTION;
-                    m_cpu->SetHardwareBreakpoints(bps);*/
                 }
 
                 static uint32_t lastBugCheckCode = 0;
@@ -648,12 +639,6 @@ int Xbox::RunCpu()
                     log_fatal("/!\\                              /!\\\n");
                     log_fatal("/!\\ ---------------------------- /!\\\n");
                     lastBugCheckCode = bugCheckCode[0];
-
-                    DumpCPURegisters(m_cpu);
-                    DumpCPUStack(m_cpu, -0x10, 0x100);
-                    
-                    log_fatal("Press ENTER to continue\n");
-                    getchar();
                 }
             }
         }
