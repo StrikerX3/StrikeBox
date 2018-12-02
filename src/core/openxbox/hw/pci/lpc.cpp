@@ -71,11 +71,11 @@ void LPCDevice::Reset() {
     if (m_initMcpxROM) {
         // Overlay MCPX ROM image onto the last 512 bytes
         memcpy(m_rom + m_biosSize - 512, m_mcpxROM, 512);
+    }
 
-        // Replicate resulting ROM image across the entire 16 MiB range
-        for (uint32_t addr = m_biosSize; addr < MiB(16); addr += m_biosSize) {
-            memcpy(m_rom + addr, m_rom, m_biosSize);
-        }
+    // Replicate resulting ROM image across the entire 16 MiB range
+    for (uint32_t addr = m_biosSize; addr < MiB(16); addr += m_biosSize) {
+        memcpy(m_rom + addr, m_rom, m_biosSize);
     }
 }
 
