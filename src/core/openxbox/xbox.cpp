@@ -128,8 +128,11 @@ void Xbox::CopySettings(OpenXBOXSettings *settings) {
     m_settings = *settings;
 }
 
-int Xbox::Run() {
-    Initialize();
+XboxStatus Xbox::Run() {
+    XboxStatus status = Initialize();
+    if (status != XBS_OK) {
+        return status;
+    }
 
     m_should_run = true;
 
@@ -142,7 +145,7 @@ int Xbox::Run() {
 
     Cleanup();
 
-    return result;
+    return XBS_OK;
 }
 
 void Xbox::Stop() {
@@ -155,39 +158,41 @@ void Xbox::Stop() {
 /*!
  * Perform basic system initialization
  */
-int Xbox::Initialize()
+XboxStatus Xbox::Initialize()
 {
-    int result;
-    InitFixupSettings();
-    result = InitMemory(); if (result) return result;
-    result = InitCPU(); if (result) return result;
-    result = InitHardware(); if (result) return result;
-    result = InitDebugger(); if (result) return result;
+    XboxStatus result;
+    result = InitFixupSettings(); if (result != XBS_OK) return result;
+    result = InitMemory(); if (result != XBS_OK) return result;
+    result = InitCPU(); if (result != XBS_OK) return result;
+    result = InitHardware(); if (result != XBS_OK) return result;
+    result = InitDebugger(); if (result != XBS_OK) return result;
 
-    return 0;
+    return XBS_OK;
 }
 
-void Xbox::InitFixupSettings() {
+XboxStatus Xbox::InitFixupSettings() {
     if (m_settings.hw_model == DebugKit) {
         m_settings.hw_enableSuperIO = true;
     }
+
+    return XBS_OK;
 }
 
-int Xbox::InitMemory() {
+XboxStatus Xbox::InitMemory() {
     // Initialize 4 GiB address space
     m_memRegion = new MemoryRegion(MEM_REGION_NONE, 0x00000000, 0x100000000ULL, NULL);
     if (m_memRegion == nullptr) {
-        return -1;
+        return XBS_INIT_ALLOC_MEM_RGN_FAILED;
     }
 
-    int result;
-    result = InitRAM(); if (result) return result;
-    result = InitROM(); if (result) return result;
+    XboxStatus result;
+    result = InitRAM(); if (result != XBS_OK) return result;
+    result = InitROM(); if (result != XBS_OK) return result;
 
-    return 0;
+    return XBS_OK;
 }
 
-int Xbox::InitRAM() {
+XboxStatus Xbox::InitRAM() {
     // Create RAM region
     m_ramSize = m_settings.hw_model == DebugKit ? XBOX_RAM_SIZE_DEBUG : XBOX_RAM_SIZE_RETAIL;
     log_debug("Allocating RAM (%d MiB)\n", m_ramSize >> 20);
@@ -202,21 +207,21 @@ int Xbox::InitRAM() {
 #endif
 
     if (m_ram == NULL) {
-        return -1;
+        return XBS_INIT_ALLOC_RAM_FAILED;
     }
     memset(m_ram, 0, m_ramSize);
 
     // Map RAM at address 0x00000000
     MemoryRegion *rgn = new MemoryRegion(MEM_REGION_RAM, 0x00000000, m_ramSize, m_ram);
     if (rgn == nullptr) {
-        return -1;
+        return XBS_INIT_ALLOC_RAM_RGN_FAILED;
     }
     m_memRegion->AddSubRegion(rgn);
 
-    return 0;
+    return XBS_OK;
 }
 
-int Xbox::InitROM() {
+XboxStatus Xbox::InitROM() {
     // Create ROM region
     log_debug("Allocating ROM (%d MiB)\n", XBOX_ROM_AREA_SIZE >> 20);
 
@@ -230,14 +235,14 @@ int Xbox::InitROM() {
 #endif
 
     if (m_rom == NULL) {
-        return -1;
+        return XBS_INIT_ALLOC_ROM_FAILED;
     }
     memset(m_rom, 0, XBOX_ROM_AREA_SIZE);
 
     // Map ROM to address 0xFF000000
     MemoryRegion *rgn = new MemoryRegion(MEM_REGION_ROM, 0xFF000000, XBOX_ROM_AREA_SIZE, m_rom);
     if (rgn == nullptr) {
-        return -1;
+        return XBS_INIT_ALLOC_ROM_RGN_FAILED;
     }
     m_memRegion->AddSubRegion(rgn);
 
@@ -250,14 +255,14 @@ int Xbox::InitROM() {
     fp = fopen(m_settings.rom_mcpx, "rb");
     if (fp == NULL) {
         log_debug("file %s could not be opened\n", m_settings.rom_mcpx);
-        return 1;
+        return XBS_INIT_MCPX_ROM_NOT_FOUND;
     }
     fseek(fp, 0, SEEK_END);
     sz = ftell(fp);
     fseek(fp, 0, SEEK_SET);
     if (sz != 512) {
         log_debug("incorrect file size: %d (must be 512 bytes)\n", sz);
-        return 2;
+        return XBS_INIT_MCPX_ROM_INVALID_SIZE;
     }
     m_mcpxROM = new uint8_t[sz];
     fread(m_mcpxROM, 1, sz, fp);
@@ -269,14 +274,14 @@ int Xbox::InitROM() {
     fp = fopen(m_settings.rom_bios, "rb");
     if (fp == NULL) {
         log_debug("file %s could not be opened\n", m_settings.rom_bios);
-        return 1;
+        return XBS_INIT_BIOS_ROM_NOT_FOUND;
     }
     fseek(fp, 0, SEEK_END);
     sz = ftell(fp);
     fseek(fp, 0, SEEK_SET);
     if (sz != KiB(256) && sz != MiB(1)) {
         log_debug("incorrect file size: %d (must be 256 KiB or 1024 KiB)\n", sz);
-        return 3;
+        return XBS_INIT_BIOS_ROM_INVALID_SIZE;
     }
     m_bios = new uint8_t[sz];
     fread(m_bios, 1, sz, fp);
@@ -285,32 +290,33 @@ int Xbox::InitROM() {
 
     m_biosSize = sz;
 
-    return 0;
+    return XBS_OK;
 }
 
-int Xbox::InitCPU() {
+XboxStatus Xbox::InitCPU() {
     log_debug("Initializing CPU\n");
     if (m_cpuModule == nullptr) {
         log_fatal("No CPU module specified\n");
-        return -1;
+        return XBS_INIT_NO_CPU_MODULE;
     }
     m_cpu = m_cpuModule->GetCPU();
     if (m_cpu == nullptr) {
         log_fatal("CPU instantiation failed\n");
-        return -1;
+        return XBS_INIT_CPU_CREATE_FAILED;
     }
     if (m_cpu->Initialize(&m_ioMapper)) {
         log_fatal("CPU initialization failed\n");
-        return -1;
+        return XBS_INIT_CPU_INIT_FAILED;
     }
 
     // Allow CPU to update memory map based on device allocation, etc
+    // TODO: handle result
     m_cpu->MemMap(m_memRegion);
 
-    return 0;
+    return XBS_OK;
 }
 
-int Xbox::InitHardware() {
+XboxStatus Xbox::InitHardware() {
     // Determine which revisions of which components should be used for the
     // specified hardware model
     MCPXRevision mcpxRevision = MCPXRevisionFromHardwareModel(m_settings.hw_model);
@@ -447,14 +453,18 @@ int Xbox::InitHardware() {
     // TODO: user-specified EEPROM
     m_EEPROM->SetEEPROM(kDefaultEEPROM);
 
-    return 0;
+    return XBS_OK;
 }
 
-int Xbox::InitDebugger() {
+XboxStatus Xbox::InitDebugger() {
     // GDB Server
     if (m_settings.gdb_enable) {
         m_gdb = new GdbServer(m_cpu, "127.0.0.1", 9269);
-        int result = m_gdb->Initialize(); if (result) return result;
+        // TODO: handle result properly
+        int result = m_gdb->Initialize();
+        if (result) {
+            return XBS_INIT_DEBUGGER_FAILED;
+        }
 
         // Allow debugging before running so client can setup breakpoints, etc
         log_debug("Starting GDB Server\n");
@@ -462,7 +472,7 @@ int Xbox::InitDebugger() {
         m_gdb->Debug(1);
     }
 
-    return 0;
+    return XBS_OK;
 }
 
 /*!

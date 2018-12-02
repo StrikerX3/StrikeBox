@@ -19,6 +19,7 @@
 #include "openxbox/util.h"
 #include "openxbox/thread.h"
 #include "openxbox/settings.h"
+#include "openxbox/status.h"
 
 #include "openxbox/hw/basic/irq.h"
 #include "openxbox/hw/basic/gsi.h"
@@ -74,19 +75,19 @@ public:
     OpenXBOXSettings *GetSettings() { return &m_settings; }
     void CopySettings(OpenXBOXSettings *settings);
 
-    int Run();
+    XboxStatus Run();
     void Stop();
 
 protected:
     // ----- Initialization and cleanup ---------------------------------------
-    int Initialize();
-    void InitFixupSettings();
-    int InitMemory();
-    int InitRAM();
-    int InitROM();
-    int InitCPU();
-    int InitHardware();
-    int InitDebugger();
+    XboxStatus Initialize();
+    XboxStatus InitFixupSettings();
+    XboxStatus InitMemory();
+    XboxStatus InitRAM();
+    XboxStatus InitROM();
+    XboxStatus InitCPU();
+    XboxStatus InitHardware();
+    XboxStatus InitDebugger();
 
     void Cleanup();
 
