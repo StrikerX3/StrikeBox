@@ -121,7 +121,7 @@ bool Xbox::LocateKernelData() {
     m_cpu->VirtualToPhysical(exportsTableAddress, &pKernelExportsTableAddress);
     m_cpu->VirtualToPhysical(m_kExp_KiBugCheckData, &pKiBugCheckData);
     m_cpu->VirtualToPhysical(m_kExp_XboxKrnlVersion, &pXboxKrnlVersion);
-    log_info("Kernel extracted and decrypted\n");
+    log_info("Microsoft Xbox Kernel detected\n");
     log_info("  PE header           0x%08x  ->  0x%p\n", peHeaderAddress, m_ram + pKernelPEHeaderPos);
     log_info("  Base of code        0x%08x  ->  0x%p\n", baseOfCode, m_ram + pKernelBaseOfCode);
     log_info("  Exports table       0x%08x  ->  0x%p\n", exportsTableAddress, m_ram + pKernelExportsTableAddress);
