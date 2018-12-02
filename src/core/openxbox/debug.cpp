@@ -59,36 +59,28 @@ static void parseCR4Flags(uint32_t flags, char *str) {
 
 void DumpCPURegisters(Cpu *cpu) {
 	char temp[128];
-	uint32_t value;
+
+    CpuReg regs[] = {
+        REG_CS, REG_EIP, REG_EBP,
+        REG_SS, REG_EAX, REG_ESP,
+        REG_DS, REG_ECX, REG_CR0,
+        REG_ES, REG_EDX, REG_CR2,
+        REG_FS, REG_EBX, REG_CR3,
+        REG_GS, REG_ESI, REG_CR4,
+        REG_TR, REG_EDI, REG_EFLAGS,
+    };
+    uint32_t vals[ARRAY_SIZE(regs)];
+
+    cpu->RegRead(regs, vals, ARRAY_SIZE(regs));
 	
-	log_debug("CPU registers:\n");
-	cpu->RegRead(REG_CS, &value); log_debug(" CS = %04x  ", value);
-	cpu->RegRead(REG_EIP, &value); log_debug("EIP = %08x  ", value);
-	cpu->RegRead(REG_EBP, &value); log_debug("EBP = %08x\n", value);
-
-	cpu->RegRead(REG_SS, &value); log_debug(" SS = %04x  ", value);
-	cpu->RegRead(REG_EAX, &value); log_debug("EAX = %08x  ", value);
-	cpu->RegRead(REG_ESP, &value); log_debug("ESP = %08x\n", value);
-
-	cpu->RegRead(REG_DS, &value); log_debug(" DS = %04x  ", value);
-	cpu->RegRead(REG_ECX, &value); log_debug("ECX = %08x  ", value);
-	cpu->RegRead(REG_CR0, &value); parseCR0Flags(value, temp); log_debug("CR0 = %08x  %s\n", value, temp);
-
-	cpu->RegRead(REG_ES, &value); log_debug(" ES = %04x  ", value);
-	cpu->RegRead(REG_EDX, &value); log_debug("EDX = %08x  ", value);
-	cpu->RegRead(REG_CR2, &value); log_debug("CR2 = %08x\n", value);
-
-	cpu->RegRead(REG_FS, &value); log_debug(" FS = %04x  ", value);
-	cpu->RegRead(REG_EBX, &value); log_debug("EBX = %08x  ", value);
-	cpu->RegRead(REG_CR3, &value); log_debug("CR3 = %08x\n", value);
-
-	cpu->RegRead(REG_GS, &value); log_debug(" GS = %04x  ", value);
-	cpu->RegRead(REG_ESI, &value); log_debug("ESI = %08x  ", value);
-	cpu->RegRead(REG_CR4, &value); parseCR4Flags(value, temp); log_debug("CR4 = %08x  %s\n", value, temp);
-
-	cpu->RegRead(REG_TR, &value); log_debug(" TR = %04x  ", value);
-	cpu->RegRead(REG_EDI, &value); log_debug("EDI = %08x  ", value);
-	cpu->RegRead(REG_EFLAGS, &value); parseEFlags(value, temp); log_debug("EFL = %08x  %s\n", value, temp);
+	/*                          */ log_debug("CPU registers:\n");
+    /*                          */ log_debug(" CS = %04x  EIP = %08x  EBP = %08x\n", vals[0], vals[1], vals[2]);
+    /*                          */ log_debug(" SS = %04x  EAX = %08x  ESP = %08x\n", vals[3], vals[4], vals[5]);
+    parseCR0Flags(vals[8], temp);  log_debug(" DS = %04x  ECX = %08x  CR0 = %08x  %s\n", vals[6], vals[7], vals[8], temp);
+    /*                          */ log_debug(" ES = %04x  EDX = %08x  CR2 = %08x\n", vals[9], vals[10], vals[11]);
+    /*                          */ log_debug(" FS = %04x  EBX = %08x  CR3 = %08x\n", vals[12], vals[13], vals[14]);
+    parseCR4Flags(vals[17], temp); log_debug(" GS = %04x  ESI = %08x  CR4 = %08x  %s\n", vals[15], vals[16], vals[17], temp);
+    parseEFlags(vals[20], temp);   log_debug(" TR = %04x  EDI = %08x  EFL = %08x  %s\n", vals[18], vals[19], vals[20], temp);
 
 
 	uint32_t base;

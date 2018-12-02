@@ -75,19 +75,19 @@ public:
     OpenXBOXSettings *GetSettings() { return &m_settings; }
     void CopySettings(OpenXBOXSettings *settings);
 
-    XboxStatus Run();
+    EmulatorStatus Run();
     void Stop();
 
 protected:
     // ----- Initialization and cleanup ---------------------------------------
-    XboxStatus Initialize();
-    XboxStatus InitFixupSettings();
-    XboxStatus InitMemory();
-    XboxStatus InitRAM();
-    XboxStatus InitROM();
-    XboxStatus InitCPU();
-    XboxStatus InitHardware();
-    XboxStatus InitDebugger();
+    EmulatorStatus Initialize();
+    EmulatorStatus InitFixupSettings();
+    EmulatorStatus InitMemory();
+    EmulatorStatus InitRAM();
+    EmulatorStatus InitROM();
+    EmulatorStatus InitCPU();
+    EmulatorStatus InitHardware();
+    EmulatorStatus InitDebugger();
 
     void Cleanup();
 

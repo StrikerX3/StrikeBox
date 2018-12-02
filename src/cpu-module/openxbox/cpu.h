@@ -10,7 +10,7 @@
 #include "openxbox/gdt.h"
 #include "openxbox/idt.h"
 #include "openxbox/io.h"
-#include "openxbox/bitmap.h"
+#include "openxbox/status.h"
 
 namespace openxbox {
 
@@ -199,17 +199,19 @@ public:
 	/*!
 	 * Initializes the CPU.
 	 */
-	int Initialize(IOMapper *ioMapper);
+    CPUInitStatus Initialize(IOMapper *ioMapper);
 
 	/*!
 	 * Runs the CPU until interrupted.
 	 */
-	int Run();
+	CPUStatus Run();
 
 	/*!
 	 * Runs one instruction on the CPU.
-	 */
-	int Step();
+     *
+     * This is an optional operation. TODO: implement capability checking.
+     */
+	CPUStatus Step();
 	
 	/*!
 	 * Sends an interrupt to the CPU, optionally making it non maskable.
@@ -226,116 +228,135 @@ public:
 	/*!
 	 * Maps memory regions, including optional memory access handlers.
 	 */
-	int MemMap(MemoryRegion *mem);
+	CPUMemMapStatus MemMap(MemoryRegion *mem);
 
 	/*!
 	 * Maps a memory subregion.
 	 */
-	virtual int MemMapSubregion(MemoryRegion *subregion) = 0;
+	virtual CPUMemMapStatus MemMapSubregion(MemoryRegion *subregion) = 0;
 
 	/*!
 	 * Reads a portion of physical memory into the specified value.
 	 */
-	int MemRead(uint32_t addr, uint32_t size, void *value);
+    CPUOperationStatus MemRead(uint32_t addr, uint32_t size, void *value);
 
 	/*!
 	 * Writes the specified value into physical memory.
 	 */
-	int MemWrite(uint32_t addr, uint32_t size, void *value);
+    CPUOperationStatus MemWrite(uint32_t addr, uint32_t size, void *value);
 
 	// ----- Virtual memory ---------------------------------------------------
 
 	/*!
-	 * Maps a virtual address to a physical address.
+	 * Maps a virtual address to a physical address. Returns true if the
+     * mapping is valid.
 	 */
 	bool VirtualToPhysical(uint32_t vaddr, uint32_t *paddr);
 
 	/*!
 	 * Reads a portion of virtual memory into the specified value. x86 virtual
 	 * address translation is performed based on the current registers and
-	 * memory contents.
+	 * memory contents. Optionally, the caller may receive the number of bytes
+     * read during the operation.
 	 */
-	int VMemRead(uint32_t vaddr, uint32_t size, void *value);
+    CPUOperationStatus VMemRead(uint32_t vaddr, uint32_t size, void *value, uint32_t *bytesRead = nullptr);
 
 	/*!
 	 * Writes the specified value into virtual memory. x86 virtual address
 	 * translation is performed based on the current registers and memory
-	 * contents.
+	 * contents. Optionally, the caller may receive the number of bytes written
+     * during the operation.
 	 */
-	int VMemWrite(uint32_t vaddr, uint32_t size, void *value);
+    CPUOperationStatus VMemWrite(uint32_t vaddr, uint32_t size, void *value, uint32_t *bytesWritten = nullptr);
 	
 	// ----- Stack ------------------------------------------------------------
 
 	/*!
 	 * Creates space in the stack by subtracting the size from ESP.
 	 */
-	int CreateStackSpace(uint32_t size);
+    CPUOperationStatus CreateStackSpace(uint32_t size);
 
 	/*
 	 * Reclaims space in the stack by adding the size to ESP.
 	 */
-	int ReclaimStackSpace(uint32_t size);
+    CPUOperationStatus ReclaimStackSpace(uint32_t size);
 
 	// ----- Registers --------------------------------------------------------
-	
-	/*!
-	 * Reads from a register.
-	 */
-	virtual int RegRead(enum CpuReg reg, uint32_t *value) = 0;
 
-	/*!
-	 * Writes to a register.
-	 */
-	virtual int RegWrite(enum CpuReg reg, uint32_t value) = 0;
+    /*!
+     * Reads from a register.
+     */
+    virtual CPUOperationStatus RegRead(enum CpuReg reg, uint32_t *value) = 0;
 
-	/*!
-	 * Copies the value from the source register to the destinatioon register.
-	 */
-	int RegCopy(enum CpuReg dst, enum CpuReg src);
+    /*!
+     * Writes to a register.
+     */
+    virtual CPUOperationStatus RegWrite(enum CpuReg reg, uint32_t value) = 0;
+
+    /*!
+     * Copies the value from the source register to the destination register.
+     */
+    CPUOperationStatus RegCopy(enum CpuReg dst, enum CpuReg src);
+
+    /*!
+     * Reads from registers in bulk.
+     */
+    virtual CPUOperationStatus RegRead(enum CpuReg regs[], uint32_t values[], uint8_t numRegs);
+
+    /*!
+     * Writes to registers in bulk.
+     */
+    virtual CPUOperationStatus RegWrite(enum CpuReg regs[], uint32_t values[], uint8_t numRegs);
+
+    /*!
+     * Copies the values from the source registers to the destination registers
+     * in bulk.
+     */
+    CPUOperationStatus RegCopy(enum CpuReg dsts[], enum CpuReg srcs[], uint8_t numRegs);
 
 	/*!
 	 * Gets the Global Descriptor Table.
 	 */
-	virtual int GetGDT(uint32_t *base, uint32_t *limit) = 0;
+	virtual CPUOperationStatus GetGDT(uint32_t *base, uint32_t *limit) = 0;
 
 	/*!
 	 * Sets the Global Descriptor Table.
 	 */
-	virtual int SetGDT(uint32_t base, uint32_t limit) = 0;
+	virtual CPUOperationStatus SetGDT(uint32_t base, uint32_t limit) = 0;
 
 	/*!
 	 * Retrieves an entry in the Global Descriptor Table.
 	 * Returns zero on success, non-zero if the index is out of bounds.
 	 */
-	int GetGDTEntry(uint16_t selector, GDTEntry *entry);
+    CPUOperationStatus GetGDTEntry(uint16_t selector, GDTEntry *entry);
 
 	/*!
 	 * Modifies an entry in the Global Descriptor Table.
 	 * Returns zero on success, non-zero if the index is out of bounds.
 	 */
-	int SetGDTEntry(uint16_t selector, GDTEntry *entry);
+    CPUOperationStatus SetGDTEntry(uint16_t selector, GDTEntry *entry);
 
 	/*!
 	 * Gets the Interrupt Descriptor Table.
 	 */
-	virtual int GetIDT(uint32_t *base, uint32_t *limit) = 0;
+	virtual CPUOperationStatus GetIDT(uint32_t *base, uint32_t *limit) = 0;
 
 	/*!
 	 * Sets the Interrupt Descriptor Table.
 	 */
-	virtual int SetIDT(uint32_t base, uint32_t limit) = 0;
+	virtual CPUOperationStatus SetIDT(uint32_t base, uint32_t limit) = 0;
 
 	/*!
 	 * Retrieves an entry in the Interrupt Descriptor Table.
 	 * Returns zero on success, non-zero if the index is out of bounds.
 	 */
-	int GetIDTEntry(uint8_t vector, IDTEntry *entry);
+    CPUOperationStatus GetIDTEntry(uint8_t vector, IDTEntry *entry);
 	
 	/*!
 	 * Modifies an entry in the Interrupt Descriptor Table.
 	 * Returns zero on success, non-zero if the index is out of bounds.
 	 */
-	int SetIDTEntry(uint8_t vector, IDTEntry *entry);
+    CPUOperationStatus SetIDTEntry(uint8_t vector, IDTEntry *entry);
 
 	/*!
 	 * Enables or disables interrupts by changing the IF flag of the EFLAGS
@@ -343,17 +364,17 @@ public:
 	 *
 	 * Equivalent to the `cli` and `sti` instructions.
 	 */
-	void SetInterruptsEnabled(bool enabled);
+    CPUOperationStatus SetInterruptsEnabled(bool enabled);
 
 	/*!
 	 * Sets the specified bits of the EFLAGS register.
 	 */
-	int SetFlags(uint32_t flagsBits);
+    CPUOperationStatus SetFlags(uint32_t flagsBits);
 
 	/*!
 	 * Clears the specified bits of the EFLAGS register.
 	 */
-	int ClearFlags(uint32_t flagsBits);
+    CPUOperationStatus ClearFlags(uint32_t flagsBits);
 
 	// ----- Instructions -----------------------------------------------------
 
@@ -362,49 +383,49 @@ public:
 	 *
 	 * Equivalent to "push <value>".
 	 */
-	int Push(uint32_t value);
+    CPUOperationStatus Push(uint32_t value);
 
 	/*!
 	 * Pushes a CPU register onto the stack.
 	 *
 	 * Equivalent to "push <reg>".
 	 */
-	int PushReg(enum CpuReg reg);
+    CPUOperationStatus PushReg(enum CpuReg reg);
 
 	/*!
 	 * Pushes the CPU's flags onto the stack.
 	 *
 	 * Equivalent to "pushfd".
 	 */
-	int PushFlags();
+    CPUOperationStatus PushFlags();
 
 	/*!
 	 * Pops an immediate 32-bit value from the stack.
 	 *
 	 * Equivalent to "pop", except the value is written to the specified variable.
 	 */
-	int Pop(uint32_t *value);
+    CPUOperationStatus Pop(uint32_t *value);
 
 	/*!
 	 * Pops a value from the stack into the specified CPU register.
 	 *
 	 * Equivalent to "pop <reg>".
 	 */
-	int PopReg(enum CpuReg reg);
+    CPUOperationStatus PopReg(enum CpuReg reg);
 
 	/*!
 	 * Pops the CPU's flags from the stack.
 	 *
 	 * Equivalent to "popfd".
 	 */
-	int PopFlags();
+    CPUOperationStatus PopFlags();
 
 	/*!
 	 * Returns to the address at the top of the stack.
 	 *
 	 * Equivalent to "ret", or "pop eip" (if it was possible).
 	 */
-	int Ret();
+    CPUOperationStatus Ret();
 
     // ----- Breakpoints ------------------------------------------------------
 
@@ -417,7 +438,7 @@ public:
      *
      * This is an optional operation. TODO: implement capability checking.
      */
-    virtual int EnableSoftwareBreakpoints(bool enable);
+    virtual CPUOperationStatus EnableSoftwareBreakpoints(bool enable);
 
     /*!
      * Configures up to 4 hardware breakpoints.
@@ -427,23 +448,26 @@ public:
      *
      * This is an optional operation. TODO: implement capability checking.
      */
-    virtual int SetHardwareBreakpoints(HardwareBreakpoints breakpoints);
+    virtual CPUOperationStatus SetHardwareBreakpoints(HardwareBreakpoints breakpoints);
 
     /*!
      * Clears all hardware breakpoints.
      *
      * This is an optional operation. TODO: implement capability checking.
      */
-    virtual int ClearHardwareBreakpoints();
+    virtual CPUOperationStatus ClearHardwareBreakpoints();
 
     /*!
-     * Retrieves the address of the most recently hit breakpoint. Must be invoked
-     * after the CPU emulator stops due to a breakpoint, and before running the CPU again.
-     * Returns false if a breakpoint was not hit as of the most recent execution.
+     * Retrieves the address of the most recently hit breakpoint. Must be
+     * invoked after the CPU emulator stops due to a breakpoint, and before
+     * running the CPU again.
+     *
+     * Returns CPUS_OP_BREAKPOINT_NEVER_HIT if a breakpoint was not hit as of
+     * the most recent execution.
      *
      * This is an optional operation. TODO: implement capability checking.
      */
-    virtual bool GetBreakpointAddress(uint32_t *address);
+    virtual CPUOperationStatus GetBreakpointAddress(uint32_t *address);
 
 	// ----- Data -------------------------------------------------------------
 
@@ -465,17 +489,19 @@ protected:
 	/*!
 	 * Allows the implementation to do further initialization.
 	 */
-	virtual int InitializeImpl() = 0;
+	virtual CPUInitStatus InitializeImpl() = 0;
 
 	/*!
 	 * Runs the CPU until interrupted.
 	 */
-	virtual int RunImpl() = 0;
+	virtual CPUStatus RunImpl() = 0;
 
 	/*!
 	 * Runs one instruction on the CPU.
-	 */
-	virtual int StepImpl() = 0;
+     *
+     * This is an optional operation. TODO: implement capability checking.
+     */
+	virtual CPUStatus StepImpl();
 
 	/*!
 	 * Sends an interrupt to the CPU.
@@ -485,7 +511,7 @@ protected:
     /*!
      * Injects an interrupt into the VCPU.
      */
-    virtual int InjectInterrupt(uint8_t vector) = 0;
+    virtual CPUOperationStatus InjectInterrupt(uint8_t vector) = 0;
 
     /*!
      * Determines if an interrupt can be injected into the VCPU.
@@ -506,6 +532,7 @@ private:
     std::queue<uint8_t> m_pendingInterrupts;
     uint8_t m_interruptHandlerCredits;
 
+    void HandleInterruptQueue();
     void InjectPendingInterrupt();
 };
 

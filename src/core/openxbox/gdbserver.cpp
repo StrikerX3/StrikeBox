@@ -219,22 +219,37 @@ int GdbServer::Debug(int signal)
     m_dbg_state.signum = signal;
 
     // Load Registers
-    m_cpu->RegRead(REG_EAX,     &m_dbg_state.registers[DBG_CPU_I386_REG_EAX]);
-    m_cpu->RegRead(REG_ECX,     &m_dbg_state.registers[DBG_CPU_I386_REG_ECX]);
-    m_cpu->RegRead(REG_EDX,     &m_dbg_state.registers[DBG_CPU_I386_REG_EDX]);
-    m_cpu->RegRead(REG_EBX,     &m_dbg_state.registers[DBG_CPU_I386_REG_EBX]);
-    m_cpu->RegRead(REG_ESP,     &m_dbg_state.registers[DBG_CPU_I386_REG_ESP]);
-    m_cpu->RegRead(REG_EBP,     &m_dbg_state.registers[DBG_CPU_I386_REG_EBP]);
-    m_cpu->RegRead(REG_ESI,     &m_dbg_state.registers[DBG_CPU_I386_REG_ESI]);
-    m_cpu->RegRead(REG_EDI,     &m_dbg_state.registers[DBG_CPU_I386_REG_EDI]);
-    m_cpu->RegRead(REG_EIP,     &m_dbg_state.registers[DBG_CPU_I386_REG_PC]);
-    m_cpu->RegRead(REG_CS,      &m_dbg_state.registers[DBG_CPU_I386_REG_CS]);
-    m_cpu->RegRead(REG_EFLAGS,  &m_dbg_state.registers[DBG_CPU_I386_REG_PS]);
-    m_cpu->RegRead(REG_SS,      &m_dbg_state.registers[DBG_CPU_I386_REG_SS]);
-    m_cpu->RegRead(REG_DS,      &m_dbg_state.registers[DBG_CPU_I386_REG_DS]);
-    m_cpu->RegRead(REG_ES,      &m_dbg_state.registers[DBG_CPU_I386_REG_ES]);
-    m_cpu->RegRead(REG_FS,      &m_dbg_state.registers[DBG_CPU_I386_REG_FS]);
-    m_cpu->RegRead(REG_GS,      &m_dbg_state.registers[DBG_CPU_I386_REG_GS]);
+    {
+        CpuReg regs[] = {
+            REG_EAX, REG_ECX, REG_EDX, REG_EBX,
+            REG_ESP, REG_EBP, REG_ESI, REG_EDI,
+            REG_EIP, REG_EFLAGS,
+            REG_CS, REG_SS, REG_DS, REG_ES, REG_FS, REG_GS
+        };
+        uint32_t vals[ARRAY_SIZE(regs)];
+
+        m_cpu->RegRead(regs, vals, ARRAY_SIZE(regs));
+
+        m_dbg_state.registers[DBG_CPU_I386_REG_EAX] = vals[0];
+        m_dbg_state.registers[DBG_CPU_I386_REG_ECX] = vals[1];
+        m_dbg_state.registers[DBG_CPU_I386_REG_EDX] = vals[2];
+        m_dbg_state.registers[DBG_CPU_I386_REG_EBX] = vals[3];
+
+        m_dbg_state.registers[DBG_CPU_I386_REG_ESP] = vals[4];
+        m_dbg_state.registers[DBG_CPU_I386_REG_EBP] = vals[5];
+        m_dbg_state.registers[DBG_CPU_I386_REG_ESI] = vals[6];
+        m_dbg_state.registers[DBG_CPU_I386_REG_EDI] = vals[7];
+
+        m_dbg_state.registers[DBG_CPU_I386_REG_PC] = vals[8];
+        m_dbg_state.registers[DBG_CPU_I386_REG_PS] = vals[9];
+
+        m_dbg_state.registers[DBG_CPU_I386_REG_CS] = vals[10];
+        m_dbg_state.registers[DBG_CPU_I386_REG_SS] = vals[11];
+        m_dbg_state.registers[DBG_CPU_I386_REG_DS] = vals[12];
+        m_dbg_state.registers[DBG_CPU_I386_REG_ES] = vals[13];
+        m_dbg_state.registers[DBG_CPU_I386_REG_FS] = vals[14];
+        m_dbg_state.registers[DBG_CPU_I386_REG_GS] = vals[15];
+    }
 
     // If interrupt was caused by a soft breakpoint (int3 = CCh), EIP will point
     // to the instruction *after* the int3 instruction, which is probably in
@@ -252,23 +267,30 @@ int GdbServer::Debug(int signal)
     }
 
 #if 1
-    // Restore registers
-    m_cpu->RegWrite(REG_EAX,     m_dbg_state.registers[DBG_CPU_I386_REG_EAX]);
-    m_cpu->RegWrite(REG_ECX,     m_dbg_state.registers[DBG_CPU_I386_REG_ECX]);
-    m_cpu->RegWrite(REG_EDX,     m_dbg_state.registers[DBG_CPU_I386_REG_EDX]);
-    m_cpu->RegWrite(REG_EBX,     m_dbg_state.registers[DBG_CPU_I386_REG_EBX]);
-    m_cpu->RegWrite(REG_ESP,     m_dbg_state.registers[DBG_CPU_I386_REG_ESP]);
-    m_cpu->RegWrite(REG_EBP,     m_dbg_state.registers[DBG_CPU_I386_REG_EBP]);
-    m_cpu->RegWrite(REG_ESI,     m_dbg_state.registers[DBG_CPU_I386_REG_ESI]);
-    m_cpu->RegWrite(REG_EDI,     m_dbg_state.registers[DBG_CPU_I386_REG_EDI]);
-    m_cpu->RegWrite(REG_EIP,     m_dbg_state.registers[DBG_CPU_I386_REG_PC]);
-    // m_cpu->RegWrite(REG_CS,      m_dbg_state.registers[DBG_CPU_I386_REG_CS]);
-    m_cpu->RegWrite(REG_EFLAGS,  m_dbg_state.registers[DBG_CPU_I386_REG_PS]);
-    // m_cpu->RegWrite(REG_SS,      m_dbg_state.registers[DBG_CPU_I386_REG_SS]);
-    // m_cpu->RegWrite(REG_DS,      m_dbg_state.registers[DBG_CPU_I386_REG_DS]);
-    // m_cpu->RegWrite(REG_ES,      m_dbg_state.registers[DBG_CPU_I386_REG_ES]);
-    // m_cpu->RegWrite(REG_FS,      m_dbg_state.registers[DBG_CPU_I386_REG_FS]);
-    // m_cpu->RegWrite(REG_GS,      m_dbg_state.registers[DBG_CPU_I386_REG_GS]);
+    {
+        // Restore Registers
+        CpuReg regs[] = {
+           REG_EAX, REG_ECX, REG_EDX, REG_EBX,
+           REG_ESP, REG_EBP, REG_ESI, REG_EDI,
+           REG_EIP, REG_EFLAGS
+        };
+        uint32_t vals[] = {
+            m_dbg_state.registers[DBG_CPU_I386_REG_EAX],
+            m_dbg_state.registers[DBG_CPU_I386_REG_ECX],
+            m_dbg_state.registers[DBG_CPU_I386_REG_EDX],
+            m_dbg_state.registers[DBG_CPU_I386_REG_EBX],
+
+            m_dbg_state.registers[DBG_CPU_I386_REG_ESP],
+            m_dbg_state.registers[DBG_CPU_I386_REG_EBP],
+            m_dbg_state.registers[DBG_CPU_I386_REG_ESI],
+            m_dbg_state.registers[DBG_CPU_I386_REG_EDI],
+
+            m_dbg_state.registers[DBG_CPU_I386_REG_PC],
+            m_dbg_state.registers[DBG_CPU_I386_REG_PS]
+        };
+
+        m_cpu->RegWrite(regs, vals, ARRAY_SIZE(regs));
+    }
 #endif
 
     return 0;

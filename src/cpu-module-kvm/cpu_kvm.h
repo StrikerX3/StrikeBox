@@ -17,25 +17,27 @@ public:
     KvmCpu();
     ~KvmCpu();
 
-    int InitializeImpl();
+    CPUInitStatus InitializeImpl();
 
-    int RunImpl();
-    int StepImpl();
+    CPUStatus RunImpl();
     InterruptResult InterruptImpl(uint8_t vector);
 
-    int MemMapSubregion(MemoryRegion *subregion);
+    CPUMemMapStatus MemMapSubregion(MemoryRegion *subregion);
 
-    int RegRead(enum CpuReg reg, uint32_t *value);
-    int RegWrite(enum CpuReg reg, uint32_t value);
+    CPUOperationStatus RegRead(enum CpuReg reg, uint32_t *value);
+    CPUOperationStatus RegWrite(enum CpuReg reg, uint32_t value);
 
-    int GetGDT(uint32_t *addr, uint32_t *size);
-    int SetGDT(uint32_t addr, uint32_t size);
+    CPUOperationStatus RegRead(enum CpuReg regs[], uint32_t values[], uint8_t numRegs) override;
+    CPUOperationStatus RegWrite(enum CpuReg regs[], uint32_t values[], uint8_t numRegs) override;
 
-    int GetIDT(uint32_t *addr, uint32_t *size);
-    int SetIDT(uint32_t addr, uint32_t size);
+    CPUOperationStatus GetGDT(uint32_t *addr, uint32_t *size);
+    CPUOperationStatus SetGDT(uint32_t addr, uint32_t size);
+
+    CPUOperationStatus GetIDT(uint32_t *addr, uint32_t *size);
+    CPUOperationStatus SetIDT(uint32_t addr, uint32_t size);
 
 protected:
-	int InjectInterrupt(uint8_t vector);
+    CPUOperationStatus InjectInterrupt(uint8_t vector);
     bool CanInjectInterrupt();
     void RequestInterruptWindow();
 
@@ -53,10 +55,13 @@ private:
     struct kvm_sregs m_sregs;
     struct kvm_fpu m_fpuRegs;
 
-    int HandleIO(uint8_t direction, uint16_t port, uint8_t size, uint32_t count, uint64_t dataOffset);
-    int HandleMMIO(uint32_t physAddress, uint32_t *data, uint8_t size, uint8_t isWrite);
+    void UpdateRegisters();
+    CPUStatus HandleExecResult(KvmVCPUStatus status);
 
-    int RefreshRegisters(bool refreshFPU);
+    CPUOperationStatus HandleIO(uint8_t direction, uint16_t port, uint8_t size, uint32_t count, uint64_t dataOffset);
+    CPUOperationStatus HandleMMIO(uint32_t physAddress, uint32_t *data, uint8_t size, uint8_t isWrite);
+
+    CPUOperationStatus RefreshRegisters(bool refreshFPU);
 
     int LoadSegmentSelector(uint16_t selector, struct kvm_segment* segment);
 

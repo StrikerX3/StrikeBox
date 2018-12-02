@@ -20,30 +20,33 @@ public:
     HaxmCpu();
     ~HaxmCpu();
 
-    int InitializeImpl();
+    CPUInitStatus InitializeImpl();
 
-	int RunImpl();
-	int StepImpl();
+    CPUStatus RunImpl();
+    CPUStatus StepImpl();
 	InterruptResult InterruptImpl(uint8_t vector);
 
-	int MemMapSubregion(MemoryRegion *subregion);
+	CPUMemMapStatus MemMapSubregion(MemoryRegion *subregion);
 
-	int RegRead(enum CpuReg reg, uint32_t *value);
-    int RegWrite(enum CpuReg reg, uint32_t value);
+    CPUOperationStatus RegRead(enum CpuReg reg, uint32_t *value);
+    CPUOperationStatus RegWrite(enum CpuReg reg, uint32_t value);
 
-	int GetGDT(uint32_t *addr, uint32_t *size);
-	int SetGDT(uint32_t addr, uint32_t size);
+    CPUOperationStatus RegRead(enum CpuReg regs[], uint32_t values[], uint8_t numRegs) override;
+    CPUOperationStatus RegWrite(enum CpuReg regs[], uint32_t values[], uint8_t numRegs) override;
 
-	int GetIDT(uint32_t *addr, uint32_t *size);
-	int SetIDT(uint32_t addr, uint32_t size);
+    CPUOperationStatus GetGDT(uint32_t *addr, uint32_t *size);
+    CPUOperationStatus SetGDT(uint32_t addr, uint32_t size);
 
-    int EnableSoftwareBreakpoints(bool enable) override;
-    int SetHardwareBreakpoints(HardwareBreakpoints breakpoints) override;
-    int ClearHardwareBreakpoints() override;
-    bool GetBreakpointAddress(uint32_t *address) override;
+    CPUOperationStatus GetIDT(uint32_t *addr, uint32_t *size);
+    CPUOperationStatus SetIDT(uint32_t addr, uint32_t size);
+
+    CPUOperationStatus EnableSoftwareBreakpoints(bool enable) override;
+    CPUOperationStatus SetHardwareBreakpoints(HardwareBreakpoints breakpoints) override;
+    CPUOperationStatus ClearHardwareBreakpoints() override;
+    CPUOperationStatus GetBreakpointAddress(uint32_t *address) override;
 
 protected:
-    int InjectInterrupt(uint8_t vector);
+    CPUOperationStatus InjectInterrupt(uint8_t vector);
     bool CanInjectInterrupt();
     void RequestInterruptWindow();
 
@@ -59,12 +62,13 @@ private:
 	bool m_regsChanged;      // set to true when general registers are modified by the host
 	bool m_fpuRegsChanged;   // set to true when floating point registers are modified by the host
 	
-    int HandleExecResult(HaxmVCPUStatus status);
+    void UpdateRegisters();
+    CPUStatus HandleExecResult(HaxmVCPUStatus status);
 
-	int HandleIO(uint8_t df, uint16_t port, uint8_t direction, uint16_t size, uint16_t count, uint8_t *buffer);
-	int HandleFastMMIO(struct hax_fastmmio *info);
+    CPUStatus HandleIO(uint8_t df, uint16_t port, uint8_t direction, uint16_t size, uint16_t count, uint8_t *buffer);
+    CPUStatus HandleFastMMIO(struct hax_fastmmio *info);
 
-	int RefreshRegisters(bool refreshFPU);
+    CPUOperationStatus RefreshRegisters(bool refreshFPU);
 
 	int LoadSegmentSelector(uint16_t selector, segment_desc_t *segment);
 };

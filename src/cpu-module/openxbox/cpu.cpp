@@ -26,7 +26,7 @@ Cpu::~Cpu() {
 
 // ----- Basic CPU operations -------------------------------------------------
 
-int Cpu::Initialize(IOMapper *ioMapper) {
+CPUInitStatus Cpu::Initialize(IOMapper *ioMapper) {
     m_ioMapper = ioMapper;
 	
     m_interruptHandlerCredits = kInterruptHandlerMaxCredits;
@@ -34,47 +34,15 @@ int Cpu::Initialize(IOMapper *ioMapper) {
     return InitializeImpl();
 }
 
-#define CHECK_RESULT(expr) result = (expr); { if (result) return result; }
+#define CHECK_RESULT(expr) do { CPUOperationStatus result = (expr); { if (result != CPUS_OP_OK) return result; } } while (0)
 
-int Cpu::Run() {
-    // Increment the credits available for the interrupt handler
-    if (m_interruptHandlerCredits < kInterruptHandlerMaxCredits) {
-        m_interruptHandlerCredits += kInterruptHandlerIncrement;
-    }
-
-    // Inject an interrupt if available and possible
-    if (m_pendingInterrupts.size() > 0) {
-        if (CanInjectInterrupt()) {
-            InjectPendingInterrupt();
-        }
-        // Request an interrupt window if the VCPU is not ready
-        else {
-            RequestInterruptWindow();
-        }
-    }
-
-    // Run the VCPU
+CPUStatus Cpu::Run() {
+    HandleInterruptQueue();
     return RunImpl();
 }
 
-int Cpu::Step() {
-    // Increment the credits available for the interrupt handler
-    if (m_interruptHandlerCredits < kInterruptHandlerMaxCredits) {
-        m_interruptHandlerCredits += kInterruptHandlerIncrement;
-    }
-
-    // Inject an interrupt if available and possible
-    if (m_pendingInterrupts.size() > 0) {
-        if (CanInjectInterrupt()) {
-            InjectPendingInterrupt();
-        }
-        // Request an interrupt window if the VCPU is not ready
-        else {
-            RequestInterruptWindow();
-        }
-    }
-
-    // Run the VCPU
+CPUStatus Cpu::Step() {
+    HandleInterruptQueue();
     return StepImpl();
 }
 
@@ -90,7 +58,7 @@ InterruptResult Cpu::Interrupt(uint8_t vector) {
 
 // ----- Physical memory ------------------------------------------------------
 
-int Cpu::MemMap(MemoryRegion *mem) {
+CPUMemMapStatus Cpu::MemMap(MemoryRegion *mem) {
 	// FIXME: We should flatten out the address space to handle sub-sub regions
 
 	assert(mem->m_start == 0);
@@ -98,40 +66,42 @@ int Cpu::MemMap(MemoryRegion *mem) {
 	for (auto it = mem->m_subregions; it != nullptr; it = it->next) {
 		auto subregion = it->curr;
 		log_debug("Mapping Region %08x - %08zx\n", subregion->m_start, subregion->m_start + subregion->m_size - 1);
-        if (MemMapSubregion(subregion)) {
+        CPUMemMapStatus status = MemMapSubregion(subregion);
+        if (status != CPUS_MMAP_OK) {
             log_error("  Failed to map subregion\n");
-            return -1;
+            return status;
         }
+        
+        // Map the physical address range if valid
         if (subregion->m_type == MEM_REGION_RAM || subregion->m_type == MEM_REGION_ROM) {
-            // Map the physical address range
             m_physMemMap.push_back(new PhysicalMemoryRange{ (char *)subregion->m_data, subregion->m_start, subregion->m_start + (uint32_t)subregion->m_size - 1 });
         }
 	}
-	return 0;
+	return CPUS_MMAP_OK;
 }
 
-int Cpu::MemRead(uint32_t addr, uint32_t size, void *value) {
+CPUOperationStatus Cpu::MemRead(uint32_t addr, uint32_t size, void *value) {
     for (auto it = m_physMemMap.begin(); it != m_physMemMap.end(); it++) {
         auto physMemRegion = *it;
-        if (addr >= physMemRegion->startingAddress && addr <= physMemRegion->endingAddress) {
+        if (addr >= physMemRegion->startingAddress && addr + size - 1 <= physMemRegion->endingAddress) {
             memcpy(value, &physMemRegion->data[addr - physMemRegion->startingAddress], size);
-            return 0;
+            return CPUS_OP_OK;
         }
     }
 
-    return -1;
+    return CPUS_OP_INVALID_ADDRESS;
 }
 
-int Cpu::MemWrite(uint32_t addr, uint32_t size, void *value) {
+CPUOperationStatus Cpu::MemWrite(uint32_t addr, uint32_t size, void *value) {
     for (auto it = m_physMemMap.begin(); it != m_physMemMap.end(); it++) {
         auto physMemRegion = *it;
-        if (addr >= physMemRegion->startingAddress && addr <= physMemRegion->endingAddress) {
+        if (addr >= physMemRegion->startingAddress && addr + size - 1 <= physMemRegion->endingAddress) {
             memcpy(&physMemRegion->data[addr - physMemRegion->startingAddress], value, size);
-            return 0;
+            return CPUS_OP_OK;
         }
     }
 
-    return -1;
+    return CPUS_OP_INVALID_ADDRESS;
 }
 
 // ----- Virtual memory -------------------------------------------------------
@@ -177,7 +147,7 @@ bool Cpu::VirtualToPhysical(uint32_t vaddr, uint32_t *paddr) {
 	return true;
 }
 
-int Cpu::VMemRead(uint32_t vaddr, uint32_t size, void *value) {
+CPUOperationStatus Cpu::VMemRead(uint32_t vaddr, uint32_t size, void *value, uint32_t *bytesRead) {
 	uint32_t srcAddrStart = vaddr;
 	uint32_t srcAddrEnd = ((srcAddrStart + PAGE_SIZE) & ~(PAGE_SIZE - 1)) - 1;
 	uint32_t pos = 0;
@@ -187,10 +157,14 @@ int Cpu::VMemRead(uint32_t vaddr, uint32_t size, void *value) {
 	}
 	while (pos < size) {
 		uint32_t physAddr;
-		if (!VirtualToPhysical(srcAddrStart, &physAddr)) { return -1; }
+		if (!VirtualToPhysical(srcAddrStart, &physAddr)) {
+            return CPUS_OP_INVALID_ADDRESS;
+        }
 
-		int result = MemRead(physAddr, copySize, &((char*)value)[pos]);
-		if (result) { return result; }
+        CPUOperationStatus result = MemRead(physAddr, copySize, &((char*)value)[pos]);
+		if (result != CPUS_OP_OK) {
+            return result;
+        }
 
 		pos += copySize;
 		srcAddrStart = srcAddrEnd + 1;
@@ -200,10 +174,14 @@ int Cpu::VMemRead(uint32_t vaddr, uint32_t size, void *value) {
 			copySize = PAGE_SIZE;
 		}
 	}
-	return 0;
+
+    if (bytesRead != nullptr) {
+        *bytesRead = pos;
+    }
+	return CPUS_OP_OK;
 }
 
-int Cpu::VMemWrite(uint32_t vaddr, uint32_t size, void *value) {
+CPUOperationStatus Cpu::VMemWrite(uint32_t vaddr, uint32_t size, void *value, uint32_t *bytesWritten) {
 	uint32_t srcAddrStart = vaddr;
 	uint32_t srcAddrEnd = ((srcAddrStart + PAGE_SIZE) & ~(PAGE_SIZE - 1)) - 1;
 	uint32_t pos = 0;
@@ -213,10 +191,14 @@ int Cpu::VMemWrite(uint32_t vaddr, uint32_t size, void *value) {
 	}
 	while (pos < size) {
 		uint32_t physAddr;
-		if (!VirtualToPhysical(srcAddrStart, &physAddr)) { return -1; }
+		if (!VirtualToPhysical(srcAddrStart, &physAddr)) {
+            return CPUS_OP_INVALID_ADDRESS;
+        }
 
-		int result = MemWrite(physAddr, copySize, &((char*)value)[pos]);
-		if (result) { return result; }
+		CPUOperationStatus result = MemWrite(physAddr, copySize, &((char*)value)[pos]);
+		if (result != CPUS_OP_OK) {
+            return result;
+        }
 
 		pos += copySize;
 		srcAddrStart = srcAddrEnd + 1;
@@ -226,181 +208,221 @@ int Cpu::VMemWrite(uint32_t vaddr, uint32_t size, void *value) {
 			copySize = PAGE_SIZE;
 		}
 	}
-	return 0;
+
+    if (bytesWritten != nullptr) {
+        *bytesWritten = pos;
+    }
+	return CPUS_OP_OK;
 }
 
 // ----- Stack ----------------------------------------------------------------
 
-int Cpu::CreateStackSpace(uint32_t size) {
-	int result;
+CPUOperationStatus Cpu::CreateStackSpace(uint32_t size) {
 	uint32_t esp;
 	CHECK_RESULT(RegRead(REG_ESP, &esp));
 	esp -= size;
 	CHECK_RESULT(RegWrite(REG_ESP, esp));
-	return 0;
+	return CPUS_OP_OK;
 }
 
-int Cpu::ReclaimStackSpace(uint32_t size) {
-	int result;
+CPUOperationStatus Cpu::ReclaimStackSpace(uint32_t size) {
 	uint32_t esp;
 	CHECK_RESULT(RegRead(REG_ESP, &esp));
 	esp += size;
 	CHECK_RESULT(RegWrite(REG_ESP, esp));
-	return 0;
+	return CPUS_OP_OK;
 }
 
 // ----- Registers ------------------------------------------------------------
 
-int Cpu::RegCopy(enum CpuReg dst, enum CpuReg src) {
-	int result;
+CPUOperationStatus Cpu::RegCopy(enum CpuReg dst, enum CpuReg src) {
 	uint32_t tmp;
 	CHECK_RESULT(RegRead(src, &tmp));
 	CHECK_RESULT(RegWrite(dst, tmp));
-	return 0;
+	return CPUS_OP_OK;
 }
 
-int Cpu::GetGDTEntry(uint16_t selector, GDTEntry *entry) {
-	int result;
+CPUOperationStatus Cpu::RegRead(CpuReg regs[], uint32_t values[], uint8_t numRegs) {
+    for (uint8_t i = 0; i < numRegs; i++) {
+        CPUOperationStatus status = RegRead(regs[i], &values[i]);
+        if (status != CPUS_OP_OK) {
+            return status;
+        }
+    }
+    return CPUS_OP_OK;
+}
+
+CPUOperationStatus Cpu::RegWrite(CpuReg regs[], uint32_t values[], uint8_t numRegs) {
+    for (uint8_t i = 0; i < numRegs; i++) {
+        CPUOperationStatus status = RegWrite(regs[i], values[i]);
+        if (status != CPUS_OP_OK) {
+            return status;
+        }
+    }
+    return CPUS_OP_OK;
+}
+
+CPUOperationStatus Cpu::RegCopy(CpuReg dsts[], CpuReg srcs[], uint8_t numRegs) {
+    for (uint8_t i = 0; i < numRegs; i++) {
+        CPUOperationStatus status = RegCopy(dsts[i], srcs[i]);
+        if (status != CPUS_OP_OK) {
+            return status;
+        }
+    }
+    return CPUS_OP_OK;
+}
+
+CPUOperationStatus Cpu::GetGDTEntry(uint16_t selector, GDTEntry *entry) {
 	uint32_t base;
 	uint32_t limit;
 	CHECK_RESULT(GetGDT(&base, &limit));
 	if (selector + sizeof(GDTEntry) > limit) {
-		return -1;
+		return CPUS_OP_INVALID_SELECTOR;
 	}
 	CHECK_RESULT(MemRead(base + selector, sizeof(GDTEntry), entry));
-	return 0;
+	return CPUS_OP_OK;
 }
 
-int Cpu::SetGDTEntry(uint16_t selector, GDTEntry *entry) {
-	int result;
+CPUOperationStatus Cpu::SetGDTEntry(uint16_t selector, GDTEntry *entry) {
 	uint32_t base;
 	uint32_t limit;
 	CHECK_RESULT(GetGDT(&base, &limit));
 	if (selector + sizeof(GDTEntry) > limit) {
-		return -1;
+		return CPUS_OP_INVALID_SELECTOR;
 	}
 	CHECK_RESULT(MemWrite(base + selector, sizeof(GDTEntry), entry));
-	return 0;
+	return CPUS_OP_OK;
 }
 
-int Cpu::GetIDTEntry(uint8_t vector, IDTEntry *entry) {
-	int result;
+CPUOperationStatus Cpu::GetIDTEntry(uint8_t vector, IDTEntry *entry) {
 	uint32_t base;
 	uint32_t limit;
 	CHECK_RESULT(GetIDT(&base, &limit));
 	if (vector * sizeof(IDTEntry) > limit) {
-		return -1;
+		return CPUS_OP_INVALID_SELECTOR;
 	}
 	CHECK_RESULT(MemRead(base + vector * sizeof(IDTEntry), sizeof(IDTEntry), entry));
-	return 0;
+	return CPUS_OP_OK;
 }
 
-int Cpu::SetIDTEntry(uint8_t vector, IDTEntry *entry) {
-	int result;
+CPUOperationStatus Cpu::SetIDTEntry(uint8_t vector, IDTEntry *entry) {
 	uint32_t base;
 	uint32_t limit;
 	CHECK_RESULT(GetIDT(&base, &limit));
 	if (vector * sizeof(IDTEntry) > limit) {
-		return -1;
+		return CPUS_OP_INVALID_SELECTOR;
 	}
 	CHECK_RESULT(MemWrite(base + vector * sizeof(IDTEntry), sizeof(IDTEntry), entry));
-	return 0;
+	return CPUS_OP_OK;
 }
 
-void Cpu::SetInterruptsEnabled(bool enabled) {
+CPUOperationStatus Cpu::SetInterruptsEnabled(bool enabled) {
 	uint32_t flags;
-	RegRead(REG_EFLAGS, &flags);
+	CHECK_RESULT(RegRead(REG_EFLAGS, &flags));
 	if (enabled) {
 		flags |= IF_MASK;
 	}
 	else {
 		flags &= ~IF_MASK;
 	}
-	RegWrite(REG_EFLAGS, flags);
+	CHECK_RESULT(RegWrite(REG_EFLAGS, flags));
+    return CPUS_OP_OK;
 }
 
-int Cpu::SetFlags(uint32_t flagsBits) {
-	int result;
+CPUOperationStatus Cpu::SetFlags(uint32_t flagsBits) {
 	uint32_t flags;
 	CHECK_RESULT(RegRead(REG_EFLAGS, &flags));
 	flags |= flagsBits;
 	CHECK_RESULT(RegWrite(REG_EFLAGS, flags));
-	return 0;
+	return CPUS_OP_OK;
 }
 
-int Cpu::ClearFlags(uint32_t flagsBits) {
-	int result;
+CPUOperationStatus Cpu::ClearFlags(uint32_t flagsBits) {
 	uint32_t flags;
 	CHECK_RESULT(RegRead(REG_EFLAGS, &flags));
 	flags &= ~flagsBits;
 	CHECK_RESULT(RegWrite(REG_EFLAGS, flags));
-	return 0;
+	return CPUS_OP_OK;
 }
 
 // ----- Instructions ---------------------------------------------------------
 
-int Cpu::Push(uint32_t value) {
-	int result;
+CPUOperationStatus Cpu::Push(uint32_t value) {
 	uint32_t esp;
 	CHECK_RESULT(RegRead(REG_ESP, &esp));
 	esp -= 4;
 	CHECK_RESULT(VMemWrite(esp, 4, &value));
 	CHECK_RESULT(RegWrite(REG_ESP, esp));
-	return 0;
+	return CPUS_OP_OK;
 }
 
-int Cpu::PushReg(enum CpuReg reg) {
-	int result;
+CPUOperationStatus Cpu::PushReg(enum CpuReg reg) {
 	uint32_t value;
 	CHECK_RESULT(RegRead(reg, &value));
 	CHECK_RESULT(Push(value));
-	return 0;
+	return CPUS_OP_OK;
 }
 
-int Cpu::PushFlags() {
+CPUOperationStatus Cpu::PushFlags() {
 	return PushReg(REG_EFLAGS);
 }
 
-int Cpu::Pop(uint32_t *value) {
-	int result;
+CPUOperationStatus Cpu::Pop(uint32_t *value) {
 	uint32_t esp;
 	CHECK_RESULT(RegRead(REG_ESP, &esp));
 	CHECK_RESULT(VMemRead(esp, 4, value));
 	esp += 4;
 	CHECK_RESULT(RegWrite(REG_ESP, esp));
-	return 0;
+	return CPUS_OP_OK;
 }
 
-int Cpu::PopReg(enum CpuReg reg) {
-	int result;
+CPUOperationStatus Cpu::PopReg(enum CpuReg reg) {
 	uint32_t value;
 	CHECK_RESULT(Pop(&value));
 	CHECK_RESULT(RegWrite(reg, value));
-	return 0;
+	return CPUS_OP_OK;
 }
 
-int Cpu::PopFlags() {
+CPUOperationStatus Cpu::PopFlags() {
 	return PopReg(REG_EFLAGS);
 }
 
-int Cpu::Ret() {
+CPUOperationStatus Cpu::Ret() {
 	return PopReg(REG_EIP);
 }
 
-int Cpu::EnableSoftwareBreakpoints(bool enable) {
-    return -1;
+CPUOperationStatus Cpu::EnableSoftwareBreakpoints(bool enable) {
+    return CPUS_OP_UNSUPPORTED;
 }
 
-int Cpu::SetHardwareBreakpoints(HardwareBreakpoints breakpoints) {
-    return -1;
+CPUOperationStatus Cpu::SetHardwareBreakpoints(HardwareBreakpoints breakpoints) {
+    return CPUS_OP_UNSUPPORTED;
 }
 
-int Cpu::ClearHardwareBreakpoints() {
-    return -1;
+CPUOperationStatus Cpu::ClearHardwareBreakpoints() {
+    return CPUS_OP_UNSUPPORTED;
 }
 
-bool Cpu::GetBreakpointAddress(uint32_t *address) {
-    return false;
+CPUOperationStatus Cpu::GetBreakpointAddress(uint32_t *address) {
+    return CPUS_OP_UNSUPPORTED;
+}
+
+void Cpu::HandleInterruptQueue() {
+    // Increment the credits available for the interrupt handler
+    if (m_interruptHandlerCredits < kInterruptHandlerMaxCredits) {
+        m_interruptHandlerCredits += kInterruptHandlerIncrement;
+    }
+
+    // Inject an interrupt if available and possible
+    if (m_pendingInterrupts.size() > 0) {
+        if (CanInjectInterrupt()) {
+            InjectPendingInterrupt();
+        }
+        // Request an interrupt window if the VCPU is not ready
+        else {
+            RequestInterruptWindow();
+        }
+    }
 }
 
 void Cpu::InjectPendingInterrupt() {
@@ -429,5 +451,8 @@ void Cpu::InjectPendingInterrupt() {
     InjectInterrupt(vector);
 
     return;
+}
+CPUStatus Cpu::StepImpl() {
+    return CPUS_UNSUPPORTED;
 }
 }

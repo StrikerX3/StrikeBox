@@ -128,9 +128,9 @@ void Xbox::CopySettings(OpenXBOXSettings *settings) {
     m_settings = *settings;
 }
 
-XboxStatus Xbox::Run() {
-    XboxStatus status = Initialize();
-    if (status != XBS_OK) {
+EmulatorStatus Xbox::Run() {
+    EmulatorStatus status = Initialize();
+    if (status != EMUS_OK) {
         return status;
     }
 
@@ -145,7 +145,7 @@ XboxStatus Xbox::Run() {
 
     Cleanup();
 
-    return XBS_OK;
+    return EMUS_OK;
 }
 
 void Xbox::Stop() {
@@ -158,41 +158,41 @@ void Xbox::Stop() {
 /*!
  * Perform basic system initialization
  */
-XboxStatus Xbox::Initialize()
+EmulatorStatus Xbox::Initialize()
 {
-    XboxStatus result;
-    result = InitFixupSettings(); if (result != XBS_OK) return result;
-    result = InitMemory(); if (result != XBS_OK) return result;
-    result = InitCPU(); if (result != XBS_OK) return result;
-    result = InitHardware(); if (result != XBS_OK) return result;
-    result = InitDebugger(); if (result != XBS_OK) return result;
+    EmulatorStatus result;
+    result = InitFixupSettings(); if (result != EMUS_OK) return result;
+    result = InitMemory(); if (result != EMUS_OK) return result;
+    result = InitCPU(); if (result != EMUS_OK) return result;
+    result = InitHardware(); if (result != EMUS_OK) return result;
+    result = InitDebugger(); if (result != EMUS_OK) return result;
 
-    return XBS_OK;
+    return EMUS_OK;
 }
 
-XboxStatus Xbox::InitFixupSettings() {
+EmulatorStatus Xbox::InitFixupSettings() {
     if (m_settings.hw_model == DebugKit) {
         m_settings.hw_enableSuperIO = true;
     }
 
-    return XBS_OK;
+    return EMUS_OK;
 }
 
-XboxStatus Xbox::InitMemory() {
+EmulatorStatus Xbox::InitMemory() {
     // Initialize 4 GiB address space
     m_memRegion = new MemoryRegion(MEM_REGION_NONE, 0x00000000, 0x100000000ULL, NULL);
     if (m_memRegion == nullptr) {
-        return XBS_INIT_ALLOC_MEM_RGN_FAILED;
+        return EMUS_INIT_ALLOC_MEM_RGN_FAILED;
     }
 
-    XboxStatus result;
-    result = InitRAM(); if (result != XBS_OK) return result;
-    result = InitROM(); if (result != XBS_OK) return result;
+    EmulatorStatus result;
+    result = InitRAM(); if (result != EMUS_OK) return result;
+    result = InitROM(); if (result != EMUS_OK) return result;
 
-    return XBS_OK;
+    return EMUS_OK;
 }
 
-XboxStatus Xbox::InitRAM() {
+EmulatorStatus Xbox::InitRAM() {
     // Create RAM region
     m_ramSize = m_settings.hw_model == DebugKit ? XBOX_RAM_SIZE_DEBUG : XBOX_RAM_SIZE_RETAIL;
     log_debug("Allocating RAM (%d MiB)\n", m_ramSize >> 20);
@@ -207,21 +207,21 @@ XboxStatus Xbox::InitRAM() {
 #endif
 
     if (m_ram == NULL) {
-        return XBS_INIT_ALLOC_RAM_FAILED;
+        return EMUS_INIT_ALLOC_RAM_FAILED;
     }
     memset(m_ram, 0, m_ramSize);
 
     // Map RAM at address 0x00000000
     MemoryRegion *rgn = new MemoryRegion(MEM_REGION_RAM, 0x00000000, m_ramSize, m_ram);
     if (rgn == nullptr) {
-        return XBS_INIT_ALLOC_RAM_RGN_FAILED;
+        return EMUS_INIT_ALLOC_RAM_RGN_FAILED;
     }
     m_memRegion->AddSubRegion(rgn);
 
-    return XBS_OK;
+    return EMUS_OK;
 }
 
-XboxStatus Xbox::InitROM() {
+EmulatorStatus Xbox::InitROM() {
     // Create ROM region
     log_debug("Allocating ROM (%d MiB)\n", XBOX_ROM_AREA_SIZE >> 20);
 
@@ -235,14 +235,14 @@ XboxStatus Xbox::InitROM() {
 #endif
 
     if (m_rom == NULL) {
-        return XBS_INIT_ALLOC_ROM_FAILED;
+        return EMUS_INIT_ALLOC_ROM_FAILED;
     }
     memset(m_rom, 0, XBOX_ROM_AREA_SIZE);
 
     // Map ROM to address 0xFF000000
     MemoryRegion *rgn = new MemoryRegion(MEM_REGION_ROM, 0xFF000000, XBOX_ROM_AREA_SIZE, m_rom);
     if (rgn == nullptr) {
-        return XBS_INIT_ALLOC_ROM_RGN_FAILED;
+        return EMUS_INIT_ALLOC_ROM_RGN_FAILED;
     }
     m_memRegion->AddSubRegion(rgn);
 
@@ -255,14 +255,14 @@ XboxStatus Xbox::InitROM() {
     fp = fopen(m_settings.rom_mcpx, "rb");
     if (fp == NULL) {
         log_debug("file %s could not be opened\n", m_settings.rom_mcpx);
-        return XBS_INIT_MCPX_ROM_NOT_FOUND;
+        return EMUS_INIT_MCPX_ROM_NOT_FOUND;
     }
     fseek(fp, 0, SEEK_END);
     sz = ftell(fp);
     fseek(fp, 0, SEEK_SET);
     if (sz != 512) {
         log_debug("incorrect file size: %d (must be 512 bytes)\n", sz);
-        return XBS_INIT_MCPX_ROM_INVALID_SIZE;
+        return EMUS_INIT_MCPX_ROM_INVALID_SIZE;
     }
     m_mcpxROM = new uint8_t[sz];
     fread(m_mcpxROM, 1, sz, fp);
@@ -274,14 +274,14 @@ XboxStatus Xbox::InitROM() {
     fp = fopen(m_settings.rom_bios, "rb");
     if (fp == NULL) {
         log_debug("file %s could not be opened\n", m_settings.rom_bios);
-        return XBS_INIT_BIOS_ROM_NOT_FOUND;
+        return EMUS_INIT_BIOS_ROM_NOT_FOUND;
     }
     fseek(fp, 0, SEEK_END);
     sz = ftell(fp);
     fseek(fp, 0, SEEK_SET);
     if (sz != KiB(256) && sz != MiB(1)) {
         log_debug("incorrect file size: %d (must be 256 KiB or 1024 KiB)\n", sz);
-        return XBS_INIT_BIOS_ROM_INVALID_SIZE;
+        return EMUS_INIT_BIOS_ROM_INVALID_SIZE;
     }
     m_bios = new uint8_t[sz];
     fread(m_bios, 1, sz, fp);
@@ -290,33 +290,35 @@ XboxStatus Xbox::InitROM() {
 
     m_biosSize = sz;
 
-    return XBS_OK;
+    return EMUS_OK;
 }
 
-XboxStatus Xbox::InitCPU() {
+EmulatorStatus Xbox::InitCPU() {
     log_debug("Initializing CPU\n");
     if (m_cpuModule == nullptr) {
         log_fatal("No CPU module specified\n");
-        return XBS_INIT_NO_CPU_MODULE;
+        return EMUS_INIT_NO_CPU_MODULE;
     }
     m_cpu = m_cpuModule->GetCPU();
     if (m_cpu == nullptr) {
         log_fatal("CPU instantiation failed\n");
-        return XBS_INIT_CPU_CREATE_FAILED;
+        return EMUS_INIT_CPU_CREATE_FAILED;
     }
     if (m_cpu->Initialize(&m_ioMapper)) {
         log_fatal("CPU initialization failed\n");
-        return XBS_INIT_CPU_INIT_FAILED;
+        return EMUS_INIT_CPU_INIT_FAILED;
     }
 
-    // Allow CPU to update memory map based on device allocation, etc
-    // TODO: handle result
-    m_cpu->MemMap(m_memRegion);
+    // Allow CPU to update memory map
+    auto result = m_cpu->MemMap(m_memRegion);
+    if (result != CPUS_MMAP_OK) {
+        return EMUS_INIT_CPU_MEM_MAP_FAILED;
+    }
 
-    return XBS_OK;
+    return EMUS_OK;
 }
 
-XboxStatus Xbox::InitHardware() {
+EmulatorStatus Xbox::InitHardware() {
     // Determine which revisions of which components should be used for the
     // specified hardware model
     MCPXRevision mcpxRevision = MCPXRevisionFromHardwareModel(m_settings.hw_model);
@@ -453,17 +455,17 @@ XboxStatus Xbox::InitHardware() {
     // TODO: user-specified EEPROM
     m_EEPROM->SetEEPROM(kDefaultEEPROM);
 
-    return XBS_OK;
+    return EMUS_OK;
 }
 
-XboxStatus Xbox::InitDebugger() {
+EmulatorStatus Xbox::InitDebugger() {
     // GDB Server
     if (m_settings.gdb_enable) {
         m_gdb = new GdbServer(m_cpu, "127.0.0.1", 9269);
         // TODO: handle result properly
         int result = m_gdb->Initialize();
         if (result) {
-            return XBS_INIT_DEBUGGER_FAILED;
+            return EMUS_INIT_DEBUGGER_FAILED;
         }
 
         // Allow debugging before running so client can setup breakpoints, etc
@@ -472,7 +474,7 @@ XboxStatus Xbox::InitDebugger() {
         m_gdb->Debug(1);
     }
 
-    return XBS_OK;
+    return EMUS_OK;
 }
 
 /*!

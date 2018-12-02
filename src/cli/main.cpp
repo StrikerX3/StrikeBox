@@ -122,25 +122,26 @@ int main(int argc, const char *argv[]) {
     settings->rom_mcpx = mcpx_path;
     settings->rom_bios = bios_path;
 
-    XboxStatus status = xbox->Run();
-    if (status == XBS_OK) {
+    EmulatorStatus status = xbox->Run();
+    if (status == EMUS_OK) {
         log_info("Emulator exited successfully\n");
     } else {
         log_fatal("Emulator exited with error: ");
         switch (status) {
-        case XBS_INIT_ALLOC_MEM_RGN_FAILED: log_fatal("Could not allocate memory for the global memory region\n"); break;
-        case XBS_INIT_ALLOC_RAM_FAILED: log_fatal("Could not allocate memory for the guest RAM\n"); break;
-        case XBS_INIT_ALLOC_RAM_RGN_FAILED: log_fatal("Could not allocate memory for the RAM region"); break;
-        case XBS_INIT_ALLOC_ROM_FAILED: log_fatal("Could not allocate memory for the guest ROM"); break;
-        case XBS_INIT_ALLOC_ROM_RGN_FAILED: log_fatal("Could not allocate memory for the ROM region"); break;
-        case XBS_INIT_MCPX_ROM_NOT_FOUND: log_fatal("MCPX ROM file not found"); break;
-        case XBS_INIT_MCPX_ROM_INVALID_SIZE: log_fatal("MCPX ROM provided has incorrect size (must be 512 bytes)"); break;
-        case XBS_INIT_BIOS_ROM_NOT_FOUND: log_fatal("BIOS ROM file not found"); break;
-        case XBS_INIT_BIOS_ROM_INVALID_SIZE: log_fatal("BIOS ROM provided has incorrect size (must be 256 KiB or 1 MiB)"); break;
-        case XBS_INIT_NO_CPU_MODULE: log_fatal("No CPU module specified"); break;
-        case XBS_INIT_CPU_CREATE_FAILED: log_fatal("CPU instantiation failed"); break;
-        case XBS_INIT_CPU_INIT_FAILED: log_fatal("CPU initialization failed"); break;
-        case XBS_INIT_DEBUGGER_FAILED: log_fatal("Debugger initialization failed"); break;
+        case EMUS_INIT_ALLOC_MEM_RGN_FAILED: log_fatal("Could not allocate memory for the global memory region\n"); break;
+        case EMUS_INIT_ALLOC_RAM_FAILED: log_fatal("Could not allocate memory for the guest RAM\n"); break;
+        case EMUS_INIT_ALLOC_RAM_RGN_FAILED: log_fatal("Could not allocate memory for the RAM region"); break;
+        case EMUS_INIT_ALLOC_ROM_FAILED: log_fatal("Could not allocate memory for the guest ROM"); break;
+        case EMUS_INIT_ALLOC_ROM_RGN_FAILED: log_fatal("Could not allocate memory for the ROM region"); break;
+        case EMUS_INIT_MCPX_ROM_NOT_FOUND: log_fatal("MCPX ROM file not found"); break;
+        case EMUS_INIT_MCPX_ROM_INVALID_SIZE: log_fatal("MCPX ROM provided has incorrect size (must be 512 bytes)"); break;
+        case EMUS_INIT_BIOS_ROM_NOT_FOUND: log_fatal("BIOS ROM file not found"); break;
+        case EMUS_INIT_BIOS_ROM_INVALID_SIZE: log_fatal("BIOS ROM provided has incorrect size (must be 256 KiB or 1 MiB)"); break;
+        case EMUS_INIT_NO_CPU_MODULE: log_fatal("No CPU module specified"); break;
+        case EMUS_INIT_CPU_CREATE_FAILED: log_fatal("CPU instantiation failed"); break;
+        case EMUS_INIT_CPU_INIT_FAILED: log_fatal("CPU initialization failed"); break;
+        case EMUS_INIT_CPU_MEM_MAP_FAILED: log_fatal("Memory mapping failed"); break;
+        case EMUS_INIT_DEBUGGER_FAILED: log_fatal("Debugger initialization failed"); break;
         default: log_fatal("Unspecified error\n"); break;
         }
     }

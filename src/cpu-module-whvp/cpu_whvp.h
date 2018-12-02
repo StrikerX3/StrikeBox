@@ -16,25 +16,27 @@ public:
     WhvpCpu();
     ~WhvpCpu();
 
-    int InitializeImpl();
+    CPUInitStatus InitializeImpl();
 
-	int RunImpl();
-	int StepImpl();
+    CPUStatus RunImpl();
 	InterruptResult InterruptImpl(uint8_t vector);
 
-	int MemMapSubregion(MemoryRegion *subregion);
+    CPUMemMapStatus MemMapSubregion(MemoryRegion *subregion);
 
-	int RegRead(enum CpuReg reg, uint32_t *value);
-    int RegWrite(enum CpuReg reg, uint32_t value);
+    CPUOperationStatus RegRead(enum CpuReg reg, uint32_t *value);
+    CPUOperationStatus RegWrite(enum CpuReg reg, uint32_t value);
 
-	int GetGDT(uint32_t *addr, uint32_t *size);
-	int SetGDT(uint32_t addr, uint32_t size);
+    CPUOperationStatus RegRead(enum CpuReg regs[], uint32_t values[], uint8_t numRegs) override;
+    CPUOperationStatus RegWrite(enum CpuReg regs[], uint32_t values[], uint8_t numRegs) override;
 
-	int GetIDT(uint32_t *addr, uint32_t *size);
-	int SetIDT(uint32_t addr, uint32_t size);
+    CPUOperationStatus GetGDT(uint32_t *addr, uint32_t *size);
+    CPUOperationStatus SetGDT(uint32_t addr, uint32_t size);
+
+    CPUOperationStatus GetIDT(uint32_t *addr, uint32_t *size);
+    CPUOperationStatus SetIDT(uint32_t addr, uint32_t size);
 
 protected:
-    int InjectInterrupt(uint8_t vector);
+    CPUOperationStatus InjectInterrupt(uint8_t vector);
     bool CanInjectInterrupt();
     void RequestInterruptWindow();
 
