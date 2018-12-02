@@ -52,6 +52,16 @@
 namespace openxbox {
 
 /*!
+ * Xbox kernel version data structure exported by Microsoft kernels.
+ */
+struct XboxKernelVersion {
+    uint16_t major;
+    uint16_t minor;
+    uint16_t build;
+    uint16_t rev;
+};
+
+/*!
  * Top-level Xbox machine class
  *
  * This class is the top-level class, will perform initialization and high-level
@@ -128,10 +138,13 @@ protected:
     bool     m_should_run;
 
     uint8_t  m_lastSMCErrorCode = 0;
+    uint32_t m_lastBugCheckCode = 0x00000000;
+    
+    XboxKernelVersion m_kernelVersion = { 0 };
 
     bool     m_kernelDataFound = false;
-    uint32_t m_kiBugCheckDataAddress = 0x00000000;
-    uint32_t m_lastBugCheckCode = 0x00000000;
+    uint32_t m_kExp_KiBugCheckData = 0x00000000;
+    uint32_t m_kExp_XboxKrnlVersion = 0x00000000;
 
     bool LocateKernelData();
 

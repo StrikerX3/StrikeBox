@@ -105,24 +105,32 @@ bool Xbox::LocateKernelData() {
     if (m_cpu->VMemRead(baseOfCode + 0x1c, sizeof(uint32_t), &exportsTableAddress)) return false;
     exportsTableAddress += 0x80010000;
 
-    // Get addresses of relevant data
-    if (m_cpu->VMemRead(exportsTableAddress + ((162 - 1) * sizeof(uint32_t)), sizeof(uint32_t), &m_kiBugCheckDataAddress)) return false;
-    m_kiBugCheckDataAddress += 0x80010000;
+    // Get addresses of relevant exports
+#define GET_EXPORT(name, num) do { if (m_cpu->VMemRead(exportsTableAddress + ((num - 1) * sizeof(uint32_t)), sizeof(uint32_t), &m_kExp_##name)) { return false; } m_kExp_##name += 0x80010000; } while (0)
+    GET_EXPORT(KiBugCheckData, 162);
+    GET_EXPORT(XboxKrnlVersion, 324);
+#undef GET_EXPORT
 
     uint32_t pKernelPEHeaderPos;
     uint32_t pKernelBaseOfCode;
     uint32_t pKernelExportsTableAddress;
-    uint32_t pKiBugCheckDataAddress;
+    uint32_t pKiBugCheckData;
+    uint32_t pXboxKrnlVersion;
     m_cpu->VirtualToPhysical(peHeaderAddress, &pKernelPEHeaderPos);
     m_cpu->VirtualToPhysical(baseOfCode, &pKernelBaseOfCode);
     m_cpu->VirtualToPhysical(exportsTableAddress, &pKernelExportsTableAddress);
-    m_cpu->VirtualToPhysical(m_kiBugCheckDataAddress, &pKiBugCheckDataAddress);
-    log_debug("Kernel extracted and decrypted\n");
-    log_debug("  PE header          0x%08x  ->  0x%p\n", peHeaderAddress, m_ram + pKernelPEHeaderPos);
-    log_debug("  Base of code       0x%08x  ->  0x%p\n", baseOfCode, m_ram + pKernelBaseOfCode);
-    log_debug("  Exports table      0x%08x  ->  0x%p\n", exportsTableAddress, m_ram + pKernelExportsTableAddress);
-    log_debug("    KiBugCheckData   0x%08x  ->  0x%p\n", m_kiBugCheckDataAddress, m_ram + pKiBugCheckDataAddress);
+    m_cpu->VirtualToPhysical(m_kExp_KiBugCheckData, &pKiBugCheckData);
+    m_cpu->VirtualToPhysical(m_kExp_XboxKrnlVersion, &pXboxKrnlVersion);
+    log_info("Kernel extracted and decrypted\n");
+    log_info("  PE header           0x%08x  ->  0x%p\n", peHeaderAddress, m_ram + pKernelPEHeaderPos);
+    log_info("  Base of code        0x%08x  ->  0x%p\n", baseOfCode, m_ram + pKernelBaseOfCode);
+    log_info("  Exports table       0x%08x  ->  0x%p\n", exportsTableAddress, m_ram + pKernelExportsTableAddress);
+    log_info("    KiBugCheckData    0x%08x  ->  0x%p\n", m_kExp_KiBugCheckData, m_ram + pKiBugCheckData);
+    log_info("    XboxKrnlVersion   0x%08x  ->  0x%p\n", m_kExp_XboxKrnlVersion, m_ram + pXboxKrnlVersion);
     m_kernelDataFound = true;
+
+    m_cpu->VMemRead(m_kExp_XboxKrnlVersion, sizeof(XboxKernelVersion), &m_kernelVersion);
+    log_info("Xbox kernel version: %d.%d.%d.%d\n", m_kernelVersion.major, m_kernelVersion.minor, m_kernelVersion.build, m_kernelVersion.rev);
 
     return true;
 }
@@ -620,7 +628,7 @@ int Xbox::RunCpu()
         // Print kernel bugchecks and wait for input
         if (m_settings.emu_stopOnBugChecks && LocateKernelData()) {
             uint32_t bugCheckCode[5] = { 0 };
-            if (m_cpu->VMemRead(m_kiBugCheckDataAddress, 5 * sizeof(uint32_t), &bugCheckCode) == 0) {
+            if (m_cpu->VMemRead(m_kExp_KiBugCheckData, 5 * sizeof(uint32_t), &bugCheckCode) == 0) {
                 if (bugCheckCode[0] != 0 && m_lastBugCheckCode != bugCheckCode[0]) {
                     log_fatal("/!\\ ---------------------------- /!\\\n");
                     log_fatal("/!\\   System issued a BugCheck   /!\\\n");
