@@ -146,7 +146,6 @@ int main(int argc, const char *argv[]) {
         }
     }
 
-exit:
-	delete xbox;
+    delete xbox;
     return status;
 }
