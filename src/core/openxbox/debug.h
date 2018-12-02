@@ -5,6 +5,8 @@
 
 namespace openxbox {
 
+using namespace openxbox::cpu;
+
 /*!
  * Print the CPU registers
  */
@@ -21,8 +23,8 @@ void DumpCPUStack(Cpu *cpu, int32_t offsetStart = -0x20, int32_t offsetEnd = 0x1
 void DumpCPUMemory(Cpu *cpu, uint32_t address, uint32_t size, bool physical);
 
 /*!
-* Disassemble memory region
-*/
+ * Disassemble memory region
+ */
 void DumpCPUDisassembly(Cpu *cpu, uint32_t address, uint32_t size, bool physical);
 
 }

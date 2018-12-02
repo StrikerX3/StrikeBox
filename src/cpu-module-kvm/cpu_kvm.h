@@ -10,6 +10,7 @@
 #include <openxbox/bitmap.h>
 
 namespace openxbox {
+namespace cpu {
 
 class KvmCpu : public Cpu {
 
@@ -67,4 +68,5 @@ private:
 
 };
 
+}
 }

@@ -13,6 +13,7 @@
 #include "openxbox/status.h"
 
 namespace openxbox {
+namespace cpu {
 
 // These constants control how often the CPU can handle interrupts, while
 // giving some affordance to handle short bursts.
@@ -93,29 +94,29 @@ static const uint8_t kInterruptHandlerIncrement = 1;     // Credits recovered wh
  * Enumeration type for standard registers
  */
 enum CpuReg {
-	REG_EIP,
-	REG_EFLAGS,
-	REG_EAX,
-	REG_ECX,
-	REG_EDX,
-	REG_EBX,
-	REG_ESI,
-	REG_EDI,
-	REG_ESP,
-	REG_EBP,
-	REG_CS,
-	REG_SS,
-	REG_DS,
-	REG_ES,
-	REG_FS,
-	REG_GS,
-	REG_TR,
-	REG_CR0,
-	REG_CR2,
-	REG_CR3,
-	REG_CR4,
-	// TODO: add floating-point, MMX and SSE registers
-	REG_MAX,
+    REG_EIP,
+    REG_EFLAGS,
+    REG_EAX,
+    REG_ECX,
+    REG_EDX,
+    REG_EBX,
+    REG_ESI,
+    REG_EDI,
+    REG_ESP,
+    REG_EBP,
+    REG_CS,
+    REG_SS,
+    REG_DS,
+    REG_ES,
+    REG_FS,
+    REG_GS,
+    REG_TR,
+    REG_CR0,
+    REG_CR2,
+    REG_CR3,
+    REG_CR4,
+    // TODO: add floating-point, MMX and SSE registers
+    REG_MAX,
 };
 
 // Last register to save in CpuContext
@@ -125,27 +126,27 @@ enum CpuReg {
  * Exit Info
  */
 enum CpuExitReason {
-	CPU_EXIT_NORMAL,         // Time slice expiration
-	CPU_EXIT_ERROR,          // Non-specific error
-	CPU_EXIT_INTERRUPT,      // Interrupt
-	CPU_EXIT_HLT,            // HLT instruction
+    CPU_EXIT_NORMAL,         // Time slice expiration
+    CPU_EXIT_ERROR,          // Non-specific error
+    CPU_EXIT_INTERRUPT,      // Interrupt
+    CPU_EXIT_HLT,            // HLT instruction
     CPU_EXIT_SHUTDOWN,       // System shutdown
     CPU_EXIT_SW_BREAKPOINT,  // Software breakpoint
     CPU_EXIT_HW_BREAKPOINT,  // Hardware breakpoint
 };
 
 enum InterruptResult {
-	INTR_SUCCESS,      // The interrupt was successfully delivered to the CPU
-	INTR_DISABLED,     // The interrupt was not delivered because interrupts are disabled
-	INTR_MASKED,       // The interrupt was masked by the CPU
-	INTR_PENDING,      // There is an unhandled pending interrupt from a previous interrupt call
-	INTR_FAILED,       // Interrupt handling failed
-	INTR_NO_HANDLER,   // No interrupt handler was specified
+    INTR_SUCCESS,      // The interrupt was successfully delivered to the CPU
+    INTR_DISABLED,     // The interrupt was not delivered because interrupts are disabled
+    INTR_MASKED,       // The interrupt was masked by the CPU
+    INTR_PENDING,      // There is an unhandled pending interrupt from a previous interrupt call
+    INTR_FAILED,       // Interrupt handling failed
+    INTR_NO_HANDLER,   // No interrupt handler was specified
 };
 
 struct CpuExitInfo {
-	enum CpuExitReason reason;
-	uint8_t            intr_vector;
+    enum CpuExitReason reason;
+    uint8_t            intr_vector;
 };
 
 typedef void (*InterruptHandlerFunc)(uint8_t vector, void *data);
@@ -188,100 +189,100 @@ struct HardwareBreakpoints {
  */
 class Cpu {
 public:
-	// Constructor.
-	Cpu();
+    // Constructor.
+    Cpu();
 
-	// Destructor.
-	virtual ~Cpu();
+    // Destructor.
+    virtual ~Cpu();
 
-	// ----- Basic CPU operations ---------------------------------------------
+    // ----- Basic CPU operations ---------------------------------------------
 
-	/*!
-	 * Initializes the CPU.
-	 */
+    /*!
+     * Initializes the CPU.
+     */
     CPUInitStatus Initialize(IOMapper *ioMapper);
 
-	/*!
-	 * Runs the CPU until interrupted.
-	 */
-	CPUStatus Run();
+    /*!
+     * Runs the CPU until interrupted.
+     */
+    CPUStatus Run();
 
-	/*!
-	 * Runs one instruction on the CPU.
+    /*!
+     * Runs one instruction on the CPU.
      *
      * This is an optional operation. TODO: implement capability checking.
      */
-	CPUStatus Step();
-	
-	/*!
-	 * Sends an interrupt to the CPU, optionally making it non maskable.
-	 *
-	 * If interrupts are disabled, returns INTR_DISABLED.
-	 * If the interrupt was masked, returns INTR_MASKED.
-	 * Otherwise it enqueues the interrupt request, stops CPU emulation and
-	 * returns INTR_SUCCESS.
-	 */
-	InterruptResult Interrupt(uint8_t vector);
+    CPUStatus Step();
 
-	// ----- Physical memory --------------------------------------------------
+    /*!
+     * Sends an interrupt to the CPU, optionally making it non maskable.
+     *
+     * If interrupts are disabled, returns INTR_DISABLED.
+     * If the interrupt was masked, returns INTR_MASKED.
+     * Otherwise it enqueues the interrupt request, stops CPU emulation and
+     * returns INTR_SUCCESS.
+     */
+    InterruptResult Interrupt(uint8_t vector);
 
-	/*!
-	 * Maps memory regions, including optional memory access handlers.
-	 */
-	CPUMemMapStatus MemMap(MemoryRegion *mem);
+    // ----- Physical memory --------------------------------------------------
 
-	/*!
-	 * Maps a memory subregion.
-	 */
-	virtual CPUMemMapStatus MemMapSubregion(MemoryRegion *subregion) = 0;
+    /*!
+     * Maps memory regions, including optional memory access handlers.
+     */
+    CPUMemMapStatus MemMap(MemoryRegion *mem);
 
-	/*!
-	 * Reads a portion of physical memory into the specified value.
-	 */
+    /*!
+     * Maps a memory subregion.
+     */
+    virtual CPUMemMapStatus MemMapSubregion(MemoryRegion *subregion) = 0;
+
+    /*!
+     * Reads a portion of physical memory into the specified value.
+     */
     CPUOperationStatus MemRead(uint32_t addr, uint32_t size, void *value);
 
-	/*!
-	 * Writes the specified value into physical memory.
-	 */
+    /*!
+     * Writes the specified value into physical memory.
+     */
     CPUOperationStatus MemWrite(uint32_t addr, uint32_t size, void *value);
 
-	// ----- Virtual memory ---------------------------------------------------
+    // ----- Virtual memory ---------------------------------------------------
 
-	/*!
-	 * Maps a virtual address to a physical address. Returns true if the
+    /*!
+     * Maps a virtual address to a physical address. Returns true if the
      * mapping is valid.
-	 */
-	bool VirtualToPhysical(uint32_t vaddr, uint32_t *paddr);
+     */
+    bool VirtualToPhysical(uint32_t vaddr, uint32_t *paddr);
 
-	/*!
-	 * Reads a portion of virtual memory into the specified value. x86 virtual
-	 * address translation is performed based on the current registers and
-	 * memory contents. Optionally, the caller may receive the number of bytes
+    /*!
+     * Reads a portion of virtual memory into the specified value. x86 virtual
+     * address translation is performed based on the current registers and
+     * memory contents. Optionally, the caller may receive the number of bytes
      * read during the operation.
-	 */
+     */
     CPUOperationStatus VMemRead(uint32_t vaddr, uint32_t size, void *value, uint32_t *bytesRead = nullptr);
 
-	/*!
-	 * Writes the specified value into virtual memory. x86 virtual address
-	 * translation is performed based on the current registers and memory
-	 * contents. Optionally, the caller may receive the number of bytes written
+    /*!
+     * Writes the specified value into virtual memory. x86 virtual address
+     * translation is performed based on the current registers and memory
+     * contents. Optionally, the caller may receive the number of bytes written
      * during the operation.
-	 */
+     */
     CPUOperationStatus VMemWrite(uint32_t vaddr, uint32_t size, void *value, uint32_t *bytesWritten = nullptr);
-	
-	// ----- Stack ------------------------------------------------------------
 
-	/*!
-	 * Creates space in the stack by subtracting the size from ESP.
-	 */
+    // ----- Stack ------------------------------------------------------------
+
+    /*!
+     * Creates space in the stack by subtracting the size from ESP.
+     */
     CPUOperationStatus CreateStackSpace(uint32_t size);
 
-	/*
-	 * Reclaims space in the stack by adding the size to ESP.
-	 */
+    /*
+     * Reclaims space in the stack by adding the size to ESP.
+     */
     CPUOperationStatus ReclaimStackSpace(uint32_t size);
 
-	// ----- Registers --------------------------------------------------------
+    // ----- Registers --------------------------------------------------------
 
     /*!
      * Reads from a register.
@@ -314,117 +315,117 @@ public:
      */
     CPUOperationStatus RegCopy(enum CpuReg dsts[], enum CpuReg srcs[], uint8_t numRegs);
 
-	/*!
-	 * Gets the Global Descriptor Table.
-	 */
-	virtual CPUOperationStatus GetGDT(uint32_t *base, uint32_t *limit) = 0;
+    /*!
+     * Gets the Global Descriptor Table.
+     */
+    virtual CPUOperationStatus GetGDT(uint32_t *base, uint32_t *limit) = 0;
 
-	/*!
-	 * Sets the Global Descriptor Table.
-	 */
-	virtual CPUOperationStatus SetGDT(uint32_t base, uint32_t limit) = 0;
+    /*!
+     * Sets the Global Descriptor Table.
+     */
+    virtual CPUOperationStatus SetGDT(uint32_t base, uint32_t limit) = 0;
 
-	/*!
-	 * Retrieves an entry in the Global Descriptor Table.
-	 * Returns zero on success, non-zero if the index is out of bounds.
-	 */
+    /*!
+     * Retrieves an entry in the Global Descriptor Table.
+     * Returns zero on success, non-zero if the index is out of bounds.
+     */
     CPUOperationStatus GetGDTEntry(uint16_t selector, GDTEntry *entry);
 
-	/*!
-	 * Modifies an entry in the Global Descriptor Table.
-	 * Returns zero on success, non-zero if the index is out of bounds.
-	 */
+    /*!
+     * Modifies an entry in the Global Descriptor Table.
+     * Returns zero on success, non-zero if the index is out of bounds.
+     */
     CPUOperationStatus SetGDTEntry(uint16_t selector, GDTEntry *entry);
 
-	/*!
-	 * Gets the Interrupt Descriptor Table.
-	 */
-	virtual CPUOperationStatus GetIDT(uint32_t *base, uint32_t *limit) = 0;
+    /*!
+     * Gets the Interrupt Descriptor Table.
+     */
+    virtual CPUOperationStatus GetIDT(uint32_t *base, uint32_t *limit) = 0;
 
-	/*!
-	 * Sets the Interrupt Descriptor Table.
-	 */
-	virtual CPUOperationStatus SetIDT(uint32_t base, uint32_t limit) = 0;
+    /*!
+     * Sets the Interrupt Descriptor Table.
+     */
+    virtual CPUOperationStatus SetIDT(uint32_t base, uint32_t limit) = 0;
 
-	/*!
-	 * Retrieves an entry in the Interrupt Descriptor Table.
-	 * Returns zero on success, non-zero if the index is out of bounds.
-	 */
+    /*!
+     * Retrieves an entry in the Interrupt Descriptor Table.
+     * Returns zero on success, non-zero if the index is out of bounds.
+     */
     CPUOperationStatus GetIDTEntry(uint8_t vector, IDTEntry *entry);
-	
-	/*!
-	 * Modifies an entry in the Interrupt Descriptor Table.
-	 * Returns zero on success, non-zero if the index is out of bounds.
-	 */
+
+    /*!
+     * Modifies an entry in the Interrupt Descriptor Table.
+     * Returns zero on success, non-zero if the index is out of bounds.
+     */
     CPUOperationStatus SetIDTEntry(uint8_t vector, IDTEntry *entry);
 
-	/*!
-	 * Enables or disables interrupts by changing the IF flag of the EFLAGS
-	 * register.
-	 *
-	 * Equivalent to the `cli` and `sti` instructions.
-	 */
+    /*!
+     * Enables or disables interrupts by changing the IF flag of the EFLAGS
+     * register.
+     *
+     * Equivalent to the `cli` and `sti` instructions.
+     */
     CPUOperationStatus SetInterruptsEnabled(bool enabled);
 
-	/*!
-	 * Sets the specified bits of the EFLAGS register.
-	 */
+    /*!
+     * Sets the specified bits of the EFLAGS register.
+     */
     CPUOperationStatus SetFlags(uint32_t flagsBits);
 
-	/*!
-	 * Clears the specified bits of the EFLAGS register.
-	 */
+    /*!
+     * Clears the specified bits of the EFLAGS register.
+     */
     CPUOperationStatus ClearFlags(uint32_t flagsBits);
 
-	// ----- Instructions -----------------------------------------------------
+    // ----- Instructions -----------------------------------------------------
 
-	/*!
-	 * Pushes an immediate 32-bit value onto the stack.
-	 *
-	 * Equivalent to "push <value>".
-	 */
+    /*!
+     * Pushes an immediate 32-bit value onto the stack.
+     *
+     * Equivalent to "push <value>".
+     */
     CPUOperationStatus Push(uint32_t value);
 
-	/*!
-	 * Pushes a CPU register onto the stack.
-	 *
-	 * Equivalent to "push <reg>".
-	 */
+    /*!
+     * Pushes a CPU register onto the stack.
+     *
+     * Equivalent to "push <reg>".
+     */
     CPUOperationStatus PushReg(enum CpuReg reg);
 
-	/*!
-	 * Pushes the CPU's flags onto the stack.
-	 *
-	 * Equivalent to "pushfd".
-	 */
+    /*!
+     * Pushes the CPU's flags onto the stack.
+     *
+     * Equivalent to "pushfd".
+     */
     CPUOperationStatus PushFlags();
 
-	/*!
-	 * Pops an immediate 32-bit value from the stack.
-	 *
-	 * Equivalent to "pop", except the value is written to the specified variable.
-	 */
+    /*!
+     * Pops an immediate 32-bit value from the stack.
+     *
+     * Equivalent to "pop", except the value is written to the specified variable.
+     */
     CPUOperationStatus Pop(uint32_t *value);
 
-	/*!
-	 * Pops a value from the stack into the specified CPU register.
-	 *
-	 * Equivalent to "pop <reg>".
-	 */
+    /*!
+     * Pops a value from the stack into the specified CPU register.
+     *
+     * Equivalent to "pop <reg>".
+     */
     CPUOperationStatus PopReg(enum CpuReg reg);
 
-	/*!
-	 * Pops the CPU's flags from the stack.
-	 *
-	 * Equivalent to "popfd".
-	 */
+    /*!
+     * Pops the CPU's flags from the stack.
+     *
+     * Equivalent to "popfd".
+     */
     CPUOperationStatus PopFlags();
 
-	/*!
-	 * Returns to the address at the top of the stack.
-	 *
-	 * Equivalent to "ret", or "pop eip" (if it was possible).
-	 */
+    /*!
+     * Returns to the address at the top of the stack.
+     *
+     * Equivalent to "ret", or "pop eip" (if it was possible).
+     */
     CPUOperationStatus Ret();
 
     // ----- Breakpoints ------------------------------------------------------
@@ -469,45 +470,45 @@ public:
      */
     virtual CPUOperationStatus GetBreakpointAddress(uint32_t *address);
 
-	// ----- Data -------------------------------------------------------------
+    // ----- Data -------------------------------------------------------------
 
-	/*!
-	 * Retrieves information about why the CPU emulation exited.
-	 */
-	struct CpuExitInfo* GetExitInfo() { return &m_exitInfo; }
+    /*!
+     * Retrieves information about why the CPU emulation exited.
+     */
+    struct CpuExitInfo* GetExitInfo() { return &m_exitInfo; }
 protected:
-	/*!
-	 * The CPU exit information.
-	 */
-	struct CpuExitInfo m_exitInfo;
+    /*!
+     * The CPU exit information.
+     */
+    struct CpuExitInfo m_exitInfo;
 
     /*!
      * The I/O mapper that handles I/O and MMIO for the CPU.
      */
     IOMapper *m_ioMapper;
 
-	/*!
-	 * Allows the implementation to do further initialization.
-	 */
-	virtual CPUInitStatus InitializeImpl() = 0;
+    /*!
+     * Allows the implementation to do further initialization.
+     */
+    virtual CPUInitStatus InitializeImpl() = 0;
 
-	/*!
-	 * Runs the CPU until interrupted.
-	 */
-	virtual CPUStatus RunImpl() = 0;
+    /*!
+     * Runs the CPU until interrupted.
+     */
+    virtual CPUStatus RunImpl() = 0;
 
-	/*!
-	 * Runs one instruction on the CPU.
+    /*!
+     * Runs one instruction on the CPU.
      *
      * This is an optional operation. TODO: implement capability checking.
      */
-	virtual CPUStatus StepImpl();
+    virtual CPUStatus StepImpl();
 
-	/*!
-	 * Sends an interrupt to the CPU.
-	 */
-	virtual InterruptResult InterruptImpl(uint8_t vector) = 0;
-	
+    /*!
+     * Sends an interrupt to the CPU.
+     */
+    virtual InterruptResult InterruptImpl(uint8_t vector) = 0;
+
     /*!
      * Injects an interrupt into the VCPU.
      */
@@ -536,4 +537,5 @@ private:
     void InjectPendingInterrupt();
 };
 
+}
 }

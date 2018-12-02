@@ -8,10 +8,11 @@
 #include <queue>
 
 namespace openxbox {
+namespace cpu {
 
 /*!
  * Intel HAXM CPU implementation.
- * 
+ *
  * This is the implementation of the CPU interface using
  * [Intel HAXM](https://software.intel.com/en-us/articles/intel-hardware-accelerated-execution-manager-intel-haxm).
  */
@@ -24,9 +25,9 @@ public:
 
     CPUStatus RunImpl();
     CPUStatus StepImpl();
-	InterruptResult InterruptImpl(uint8_t vector);
+    InterruptResult InterruptImpl(uint8_t vector);
 
-	CPUMemMapStatus MemMapSubregion(MemoryRegion *subregion);
+    CPUMemMapStatus MemMapSubregion(MemoryRegion *subregion);
 
     CPUOperationStatus RegRead(enum CpuReg reg, uint32_t *value);
     CPUOperationStatus RegWrite(enum CpuReg reg, uint32_t value);
@@ -51,17 +52,17 @@ protected:
     void RequestInterruptWindow();
 
 private:
-	Haxm *m_haxm;
-	HaxmVM *m_vm;
-	HaxmVCPU *m_vcpu;
+    Haxm *m_haxm;
+    HaxmVM *m_vm;
+    HaxmVCPU *m_vcpu;
 
-	vcpu_state_t m_regs;
-	fx_layout m_fpuRegs;
-	bool m_regsDirty;        // set to true on VM exit to indicate that general registers need to be refreshed
-	bool m_fpuRegsDirty;     // set to true on VM exit to indicate that floating point registers need to be refreshed
-	bool m_regsChanged;      // set to true when general registers are modified by the host
-	bool m_fpuRegsChanged;   // set to true when floating point registers are modified by the host
-	
+    vcpu_state_t m_regs;
+    fx_layout m_fpuRegs;
+    bool m_regsDirty;        // set to true on VM exit to indicate that general registers need to be refreshed
+    bool m_fpuRegsDirty;     // set to true on VM exit to indicate that floating point registers need to be refreshed
+    bool m_regsChanged;      // set to true when general registers are modified by the host
+    bool m_fpuRegsChanged;   // set to true when floating point registers are modified by the host
+
     void UpdateRegisters();
     CPUStatus HandleExecResult(HaxmVCPUStatus status);
 
@@ -70,7 +71,8 @@ private:
 
     CPUOperationStatus RefreshRegisters(bool refreshFPU);
 
-	int LoadSegmentSelector(uint16_t selector, segment_desc_t *segment);
+    int LoadSegmentSelector(uint16_t selector, segment_desc_t *segment);
 };
 
+}
 }

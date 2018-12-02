@@ -46,6 +46,7 @@
 
 namespace openxbox {
 
+using namespace openxbox::cpu;
 
 // Abbreviations used:
 // OHCI: Open Host Controller Interface; the standard used on the Xbox to comunicate with the usb devices

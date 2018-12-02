@@ -20,6 +20,8 @@
 
 namespace openxbox {
 
+using namespace openxbox::cpu;
+
 #ifdef _WIN32
 	int inet_aton(const char *cp, struct in_addr *inp) { return InetPton(AF_INET, cp, inp); }
 	int close(SOCKET socket) { return closesocket(socket); }

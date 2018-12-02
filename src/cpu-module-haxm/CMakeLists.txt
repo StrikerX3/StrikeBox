@@ -15,8 +15,8 @@ set(SOURCES ${SOURCES}
     )
 
 
-# Export OpenXBOX module
-add_definitions(-DOPENXBOX_MODULE_EXPORTS)
+# Export module
+add_definitions(-DMODULE_EXPORTS)
 
 # Add Visual Studio filters to better organize the code
 vs_set_filters("${SOURCES}")
@@ -28,7 +28,7 @@ endif()
 add_library(cpu-module-haxm SHARED "${SOURCES}")
 target_include_directories(cpu-module-haxm PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
-# Include OpenXBOX common module code
+# Include common module code
 target_link_libraries(cpu-module-haxm common cpu-module)
 
 # Make the Debug and RelWithDebInfo targets use Program Database for Edit and Continue for easier debugging

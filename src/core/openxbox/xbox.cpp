@@ -63,7 +63,7 @@ const static uint8_t kDefaultEEPROM[] = {
 /*!
  * Constructor
  */
-Xbox::Xbox(IOpenXBOXCPUModule *cpuModule)
+Xbox::Xbox(openxbox::modules::cpu::ICPUModule *cpuModule)
     : m_cpuModule(cpuModule)
 {
 }

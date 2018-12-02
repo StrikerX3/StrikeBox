@@ -4,8 +4,12 @@
 #include "cpu_kvm.h"
 
 namespace openxbox {
+namespace modules {
+namespace cpu {
 
-class KvmCPUModule: public IOpenXBOXCPUModule {
+using namespace openxbox::cpu;
+
+class KvmCPUModule : public ICPUModule {
 public:
     Cpu *GetCPU();
     void FreeCPU(Cpu *cpu);
@@ -14,4 +18,6 @@ private:
     KvmCpu m_cpu;
 };
 
+}
+}
 }

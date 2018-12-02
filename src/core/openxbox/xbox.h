@@ -69,7 +69,7 @@ struct XboxKernelVersion {
  */
 class Xbox : Emulator {
 public:
-    Xbox(IOpenXBOXCPUModule *cpuModule);
+    Xbox(openxbox::modules::cpu::ICPUModule *cpuModule);
     virtual ~Xbox();
 
     OpenXBOXSettings *GetSettings() { return &m_settings; }
@@ -98,10 +98,10 @@ protected:
     static uint32_t EmuCpuThreadFunc(void *data);
 
     // ----- Modules ----------------------------------------------------------
-    IOpenXBOXCPUModule *m_cpuModule;
+    openxbox::modules::cpu::ICPUModule *m_cpuModule;
 
     // ----- Hardware ---------------------------------------------------------
-    Cpu              *m_cpu;
+    cpu::Cpu         *m_cpu;
     uint32_t          m_ramSize;
     uint8_t          *m_ram;
     uint8_t          *m_rom;

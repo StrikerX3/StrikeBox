@@ -1,48 +1,53 @@
 #pragma once
 
 namespace openxbox {
+namespace modules {
 
 // Shared library export/import specs
 #ifdef _WIN32
-	#if defined(OPENXBOX_MODULE_EXPORTS)
-		#define OPENXBOX_MODULE_API __declspec(dllexport)
+	#if defined(MODULE_EXPORTS)
+		#define MODULE_API __declspec(dllexport)
 	#else
-		#define OPENXBOX_MODULE_API __declspec(dllimport)
+		#define MODULE_API __declspec(dllimport)
 	#endif
 #else
-	#define OPENXBOX_MODULE_API
+	#define MODULE_API
 #endif
 
 
 #ifdef _WIN32
-	#define OPENXBOX_MODULE_EXPORT __declspec(dllexport)
+	#define MODULE_EXPORT __declspec(dllexport)
 #else
-	#define OPENXBOX_MODULE_EXPORT
+	#define MODULE_EXPORT
 #endif
 
 
-// OpenXBOX module types
-enum OpenXBOXModuleType {
-	OX_MODULE_CPU,
+// Module types
+enum Type {
+	TYPE_CPU,
 };
+
+// The API version type
+typedef unsigned long APIVersion;
 
 // The common module API version
 // Increment this if there are any ABI breaking changes
-#define OPENXBOX_MODULE_API_VERSION 1
+const APIVersion apiVersion = 1;
 
 // Base module information exposed to the emulator core.
 // This struct MUST remain backwards-compatible -- existing fields MUST NOT be
 // modified, moved or removed.
-struct OpenXBOXModuleInfo {
-	int moduleAPIVersion;
-	OpenXBOXModuleType moduleType;
+struct Info {
+    APIVersion apiVersion;
+	Type type;
 };
 
 // Field values for the above struct.
 // Every derived module struct must define these values
-#define COMMON_OPENXBOX_MODULE_INFO(moduleType) {\
-	OPENXBOX_MODULE_API_VERSION, \
-	moduleType \
+#define COMMON_MODULE_INFO(type) {\
+	apiVersion, \
+	type \
 }
 
+}
 }

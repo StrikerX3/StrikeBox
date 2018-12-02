@@ -4,35 +4,36 @@
 #include "openxbox/log.h"
 
 namespace openxbox {
+namespace cpu {
 
 WhvpCpu::WhvpCpu() {
-	m_whvp = nullptr;
-	m_partition = nullptr;
-	m_vcpu = nullptr;
+    m_whvp = nullptr;
+    m_partition = nullptr;
+    m_vcpu = nullptr;
 }
 
 WhvpCpu::~WhvpCpu() {
-	if (m_whvp != nullptr) {
-		// Deleting this object will automatically delete the partition and VCPU
-		delete m_whvp;
-		m_whvp = nullptr;
-	}
+    if (m_whvp != nullptr) {
+        // Deleting this object will automatically delete the partition and VCPU
+        delete m_whvp;
+        m_whvp = nullptr;
+    }
 }
 
 CPUInitStatus WhvpCpu::InitializeImpl() {
-	if (m_whvp == nullptr) {
+    if (m_whvp == nullptr) {
         m_whvp = new WinHvPlatform();
 
-		if (!m_whvp->IsPresent()) {
-			return CPUS_INIT_PLATFORM_INIT_FAILED;
-		}
+        if (!m_whvp->IsPresent()) {
+            return CPUS_INIT_PLATFORM_INIT_FAILED;
+        }
 
-		auto partStatus = m_whvp->CreatePartition(&m_partition);
-		if (partStatus != WHVPS_SUCCESS) {
-			delete m_whvp;
-			m_whvp = nullptr;
-			return CPUS_INIT_CREATE_VM_FAILED;
-		}
+        auto partStatus = m_whvp->CreatePartition(&m_partition);
+        if (partStatus != WHVPS_SUCCESS) {
+            delete m_whvp;
+            m_whvp = nullptr;
+            return CPUS_INIT_CREATE_VM_FAILED;
+        }
 
         // Give one processor to the partition
         WHV_PARTITION_PROPERTY partitionProperty;
@@ -48,12 +49,12 @@ CPUInitStatus WhvpCpu::InitializeImpl() {
             return CPUS_INIT_CREATE_VM_FAILED;
         }
 
-		auto vcpuStatus = m_partition->CreateVCPU(&m_vcpu, 0);
-		if (vcpuStatus != WHVVCPUS_SUCCESS) {
-			delete m_whvp;
-			m_whvp = nullptr;
-			return CPUS_INIT_CREATE_CPU_FAILED;
-		}
+        auto vcpuStatus = m_partition->CreateVCPU(&m_vcpu, 0);
+        if (vcpuStatus != WHVVCPUS_SUCCESS) {
+            delete m_whvp;
+            m_whvp = nullptr;
+            return CPUS_INIT_CREATE_CPU_FAILED;
+        }
 
         m_vcpu->SetIoPortCallback(IoPortCallback);
         m_vcpu->SetMemoryCallback(MemoryCallback);
@@ -64,102 +65,105 @@ CPUInitStatus WhvpCpu::InitializeImpl() {
         RegWrite(REG_EIP, 0xFFFFFFF0);
     }
 
-	return CPUS_INIT_OK;
+    return CPUS_INIT_OK;
 }
 
 CPUStatus WhvpCpu::RunImpl() {
-	// Run CPU
-	auto status = m_vcpu->Run();
+    // Run CPU
+    auto status = m_vcpu->Run();
 
-	// Check VM exit status
-	if (status != WHVVCPUS_SUCCESS) {
-		return CPUS_FAILED;
-	}
+    // Check VM exit status
+    if (status != WHVVCPUS_SUCCESS) {
+        return CPUS_FAILED;
+    }
 
-	// Handle exit status using tunnel
-	switch (m_vcpu->ExitContext()->ExitReason) {
+    // Handle exit status using tunnel
+    switch (m_vcpu->ExitContext()->ExitReason) {
     case WHvRunVpExitReasonX64Halt:                  m_exitInfo.reason = CPU_EXIT_HLT;       break;  // HLT instruction
     case WHvRunVpExitReasonX64IoPortAccess:          m_exitInfo.reason = CPU_EXIT_NORMAL;    break;  // I/O (in / out instructions)
     case WHvRunVpExitReasonMemoryAccess:             m_exitInfo.reason = CPU_EXIT_NORMAL;    break;  // MMIO
-	case WHvRunVpExitReasonX64InterruptWindow:       m_exitInfo.reason = CPU_EXIT_NORMAL;    break;  // Interrupt window (never requested, should never happen)
+    case WHvRunVpExitReasonX64InterruptWindow:       m_exitInfo.reason = CPU_EXIT_NORMAL;    break;  // Interrupt window (never requested, should never happen)
     case WHvRunVpExitReasonCanceled:                 m_exitInfo.reason = CPU_EXIT_NORMAL;    break;  // Execution cancelled
     case WHvRunVpExitReasonNone:                     m_exitInfo.reason = CPU_EXIT_NORMAL;    break;  // VM exited for no reason
     case WHvRunVpExitReasonException:                m_exitInfo.reason = CPU_EXIT_ERROR;     break;  // VCPU threw an unhandled exception (the kernel should handle them)
     case WHvRunVpExitReasonX64Cpuid:                 m_exitInfo.reason = CPU_EXIT_ERROR;     break;  // CPUID instruction (not enabled, should never happen)
     case WHvRunVpExitReasonX64MsrAccess:             m_exitInfo.reason = CPU_EXIT_ERROR;     break;  // MSR access (not enabled, should never happen)
-	case WHvRunVpExitReasonUnsupportedFeature:       m_exitInfo.reason = CPU_EXIT_ERROR;     break;  // Host CPU does not support a feature needed by the VM
-	case WHvRunVpExitReasonInvalidVpRegisterValue:   m_exitInfo.reason = CPU_EXIT_ERROR;     break;  // VCPU has an invalid register
+    case WHvRunVpExitReasonUnsupportedFeature:       m_exitInfo.reason = CPU_EXIT_ERROR;     break;  // Host CPU does not support a feature needed by the VM
+    case WHvRunVpExitReasonInvalidVpRegisterValue:   m_exitInfo.reason = CPU_EXIT_ERROR;     break;  // VCPU has an invalid register
     case WHvRunVpExitReasonUnrecoverableException:   m_exitInfo.reason = CPU_EXIT_ERROR;     break;  // Unrecoverable exception
-	}
+    }
 
-	return CPUS_OK;
+    return CPUS_OK;
 }
 
 InterruptResult WhvpCpu::InterruptImpl(uint8_t vector) {
     // Cancel execution of the VCPU to give the emulator a chance to inject the interrupt request
     m_vcpu->CancelRun();
 
-	return INTR_SUCCESS;
+    return INTR_SUCCESS;
 }
 
 CPUMemMapStatus WhvpCpu::MemMapSubregion(MemoryRegion *subregion) {
-	switch (subregion->m_type) {
-	case MEM_REGION_MMIO: {
-		// All unmapped regions in a Windows Hypervisor Platform VM are MMIO, no need to allocate
-		return CPUS_MMAP_OK;
-	}
-	case MEM_REGION_NONE: {
-		// This should not happen
-		assert(0);
-		return CPUS_MMAP_INVALID_TYPE;
-	}
-	case MEM_REGION_RAM:
-	case MEM_REGION_ROM: {
-		// Region is either RAM or ROM, map it accordingly
-		WHV_MAP_GPA_RANGE_FLAGS flags = WHvMapGpaRangeFlagRead | WHvMapGpaRangeFlagExecute | ((subregion->m_type == MEM_REGION_RAM) ? WHvMapGpaRangeFlagWrite : WHvMapGpaRangeFlagNone);
-		auto status = m_partition->MapGpaRange(subregion->m_data, subregion->m_start, subregion->m_size, flags);
-		switch (status) {
+    switch (subregion->m_type) {
+    case MEM_REGION_MMIO:
+    {
+        // All unmapped regions in a Windows Hypervisor Platform VM are MMIO, no need to allocate
+        return CPUS_MMAP_OK;
+    }
+    case MEM_REGION_NONE:
+    {
+        // This should not happen
+        assert(0);
+        return CPUS_MMAP_INVALID_TYPE;
+    }
+    case MEM_REGION_RAM:
+    case MEM_REGION_ROM:
+    {
+        // Region is either RAM or ROM, map it accordingly
+        WHV_MAP_GPA_RANGE_FLAGS flags = WHvMapGpaRangeFlagRead | WHvMapGpaRangeFlagExecute | ((subregion->m_type == MEM_REGION_RAM) ? WHvMapGpaRangeFlagWrite : WHvMapGpaRangeFlagNone);
+        auto status = m_partition->MapGpaRange(subregion->m_data, subregion->m_start, subregion->m_size, flags);
+        switch (status) {
         case WHVPS_SUCCESS: return CPUS_MMAP_OK;
         case WHVPS_UNINITIALIZED: return CPUS_MMAP_CPU_UNINITIALIZED;
         case WHVPS_FAILED: return CPUS_MMAP_MAPPING_FAILED;
         default: return CPUS_MMAP_UNHANDLED_ERROR;
         }
-	}
+    }
     default:
         // This should not happen
         assert(0);
         return CPUS_MMAP_INVALID_TYPE;
-	}
+    }
 }
 
 CPUOperationStatus WhvpCpu::RegRead(enum CpuReg reg, uint32_t *value) {
     WHV_REGISTER_NAME regs[1];
     WHV_REGISTER_VALUE vals[1];
 
-	switch (reg) {
+    switch (reg) {
     case REG_EIP:    regs[0] = WHvX64RegisterRip;    break;
     case REG_EFLAGS: regs[0] = WHvX64RegisterRflags; break;
     case REG_EAX:    regs[0] = WHvX64RegisterRax;    break;
-	case REG_ECX:    regs[0] = WHvX64RegisterRcx;    break;
-	case REG_EDX:    regs[0] = WHvX64RegisterRdx;    break;
-	case REG_EBX:    regs[0] = WHvX64RegisterRbx;    break;
+    case REG_ECX:    regs[0] = WHvX64RegisterRcx;    break;
+    case REG_EDX:    regs[0] = WHvX64RegisterRdx;    break;
+    case REG_EBX:    regs[0] = WHvX64RegisterRbx;    break;
     case REG_ESI:    regs[0] = WHvX64RegisterRsi;    break;
     case REG_EDI:    regs[0] = WHvX64RegisterRdi;    break;
     case REG_ESP:    regs[0] = WHvX64RegisterRsp;    break;
     case REG_EBP:    regs[0] = WHvX64RegisterRbp;    break;
-	case REG_CS:     regs[0] = WHvX64RegisterCs;     break;
-	case REG_SS:     regs[0] = WHvX64RegisterSs;     break;
-	case REG_DS:     regs[0] = WHvX64RegisterDs;     break;
-	case REG_ES:     regs[0] = WHvX64RegisterEs;     break;
-	case REG_FS:     regs[0] = WHvX64RegisterFs;     break;
-	case REG_GS:     regs[0] = WHvX64RegisterGs;     break;
+    case REG_CS:     regs[0] = WHvX64RegisterCs;     break;
+    case REG_SS:     regs[0] = WHvX64RegisterSs;     break;
+    case REG_DS:     regs[0] = WHvX64RegisterDs;     break;
+    case REG_ES:     regs[0] = WHvX64RegisterEs;     break;
+    case REG_FS:     regs[0] = WHvX64RegisterFs;     break;
+    case REG_GS:     regs[0] = WHvX64RegisterGs;     break;
     case REG_TR:     regs[0] = WHvX64RegisterTr;     break;
     case REG_CR0:    regs[0] = WHvX64RegisterCr0;    break;
     case REG_CR2:    regs[0] = WHvX64RegisterCr2;    break;
     case REG_CR3:    regs[0] = WHvX64RegisterCr3;    break;
     case REG_CR4:    regs[0] = WHvX64RegisterCr4;    break;
-	default:                                         return CPUS_OP_INVALID_REGISTER;
-	}
+    default:                                         return CPUS_OP_INVALID_REGISTER;
+    }
 
     auto status = m_vcpu->GetRegisters(regs, 1, vals);
     if (status != WHVVCPUS_SUCCESS) {
@@ -178,7 +182,7 @@ CPUOperationStatus WhvpCpu::RegRead(enum CpuReg reg, uint32_t *value) {
         return CPUS_OP_INVALID_REGISTER;
     }
 
-	return CPUS_OP_OK;
+    return CPUS_OP_OK;
 }
 
 CPUOperationStatus WhvpCpu::RegWrite(enum CpuReg reg, uint32_t value) {
@@ -307,7 +311,7 @@ CPUOperationStatus WhvpCpu::RegRead(CpuReg regs[], uint32_t values[], uint8_t nu
 CPUOperationStatus WhvpCpu::RegWrite(CpuReg regs[], uint32_t values[], uint8_t numRegs) {
     WHV_REGISTER_NAME *whvpRegs = new WHV_REGISTER_NAME[numRegs];
     WHV_REGISTER_VALUE *whvpVals = new WHV_REGISTER_VALUE[numRegs];
-    
+
     for (uint8_t i = 0; i < numRegs; i++) {
         switch (regs[i]) {
         case REG_EIP:    whvpRegs[i] = WHvX64RegisterRip;    break;
@@ -379,10 +383,10 @@ CPUOperationStatus WhvpCpu::GetGDT(uint32_t *addr, uint32_t *size) {
     if (status != WHVVCPUS_SUCCESS) {
         return CPUS_OP_FAILED;
     }
-	*addr = val[0].Table.Base;
-	*size = val[0].Table.Limit;
+    *addr = val[0].Table.Base;
+    *size = val[0].Table.Limit;
 
-	return CPUS_OP_OK;
+    return CPUS_OP_OK;
 }
 
 CPUOperationStatus WhvpCpu::SetGDT(uint32_t addr, uint32_t size) {
@@ -445,7 +449,7 @@ void WhvpCpu::RequestInterruptWindow() {
 }
 
 HRESULT WhvpCpu::IoPortCallback(PVOID context, WHV_EMULATOR_IO_ACCESS_INFO *io) {
-    WhvpCpu *cpu = (WhvpCpu *) context;
+    WhvpCpu *cpu = (WhvpCpu *)context;
     if (io->Direction == WHV_IO_OUT) {
         cpu->m_ioMapper->IOWrite(io->Port, io->Data, io->AccessSize);
     }
@@ -466,4 +470,5 @@ HRESULT WhvpCpu::MemoryCallback(PVOID context, WHV_EMULATOR_MEMORY_ACCESS_INFO *
     return S_OK;
 }
 
+}
 }

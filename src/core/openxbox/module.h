@@ -39,7 +39,7 @@ const ModuleLoadStatus kModuleInvalidType = 0xF0000003;
 
 struct CPUModuleInstance {
 	SharedLibrary *library;
-	IOpenXBOXCPUModule *cpuModule;
+	openxbox::modules::cpu::ICPUModule *cpuModule;
 	~CPUModuleInstance();
 };
 

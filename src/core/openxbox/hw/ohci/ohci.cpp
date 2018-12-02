@@ -42,6 +42,8 @@
 
 namespace openxbox {
 
+using namespace openxbox::cpu;
+
 // Compute (a*b)/c with a 96 bit intermediate result
 static inline uint64_t Muldiv64(uint64_t a, uint32_t b, uint32_t c) {
     union {

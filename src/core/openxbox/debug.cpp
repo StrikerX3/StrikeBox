@@ -3,6 +3,8 @@
 
 namespace openxbox {
 
+using namespace openxbox::cpu;
+
 static void parseEFlags(uint32_t flags, char *str) {
 	str[0] = 0;
 	if (flags & CF_MASK ) { strcat(str, "CF "); }

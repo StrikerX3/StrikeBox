@@ -4,10 +4,11 @@
 #include "openxbox/cpu.h"
 
 namespace openxbox {
+namespace cpu {
 
 /*!
  * Windows Hypervisor Platform CPU implementation.
- * 
+ *
  * This is the implementation of the CPU interface using
  * [Windows Hypervisor Platform](https://docs.microsoft.com/en-us/virtualization/api/).
  */
@@ -19,7 +20,7 @@ public:
     CPUInitStatus InitializeImpl();
 
     CPUStatus RunImpl();
-	InterruptResult InterruptImpl(uint8_t vector);
+    InterruptResult InterruptImpl(uint8_t vector);
 
     CPUMemMapStatus MemMapSubregion(MemoryRegion *subregion);
 
@@ -41,12 +42,13 @@ protected:
     void RequestInterruptWindow();
 
 private:
-	WinHvPlatform *m_whvp;
-	WHvPartition *m_partition;
-	WHvVCPU *m_vcpu;
+    WinHvPlatform *m_whvp;
+    WHvPartition *m_partition;
+    WHvVCPU *m_vcpu;
 
     static HRESULT IoPortCallback(PVOID context, WHV_EMULATOR_IO_ACCESS_INFO *io);
     static HRESULT MemoryCallback(PVOID context, WHV_EMULATOR_MEMORY_ACCESS_INFO *mem);
 };
 
+}
 }

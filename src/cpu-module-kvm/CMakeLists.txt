@@ -15,15 +15,15 @@ set(SOURCES ${SOURCES}
     )
 
 
-# Export OpenXBOX module
-add_definitions(-DOPENXBOX_MODULE_EXPORTS)
+# Export  module
+add_definitions(-DMODULE_EXPORTS)
 
 # Main Executable
 add_definitions("-Wall -Werror -O0 -g")
 add_library(cpu-module-kvm SHARED "${SOURCES}")
 target_include_directories(cpu-module-kvm PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
-# Include OpenXBOX common module code
+# Include common module code
 target_link_libraries(cpu-module-kvm common cpu-module)
 
 # Copy SO to CLI output directory

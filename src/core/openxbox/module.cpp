@@ -40,26 +40,26 @@ void ModuleRepository::Enumerate(std::wstring modulePath) {
             }
 
             // Retrieve CPU module info
-            auto moduleInfo = (OpenXBOXModuleInfo *)library->GetExport("oxModuleInfo");
+            auto moduleInfo = (openxbox::modules::Info *)library->GetExport("oxModuleInfo");
             if (moduleInfo == nullptr) {
                 delete library;
                 continue;
             }
 
             // Check if module API version matches
-            if (moduleInfo->moduleAPIVersion != OPENXBOX_MODULE_API_VERSION) {
-                log_debug("%S: Module API version mismatch: expected %d, found %d\n", wsEntry.c_str(), OPENXBOX_MODULE_API_VERSION, moduleInfo->moduleAPIVersion);
+            if (moduleInfo->apiVersion != openxbox::modules::apiVersion) {
+                log_debug("%S: Module API version mismatch: expected %d, found %d\n", wsEntry.c_str(), openxbox::modules::apiVersion, moduleInfo->apiVersion);
                 delete library;
                 continue;
             }
 
             // Handle each specific type of module
-            switch (moduleInfo->moduleType) {
-            case OX_MODULE_CPU: {
-                OpenXBOXCPUModuleInfo *cpuModuleInfo = (OpenXBOXCPUModuleInfo *)moduleInfo;
+            switch (moduleInfo->type) {
+            case openxbox::modules::TYPE_CPU: {
+                openxbox::modules::cpu::Info *cpuModuleInfo = (openxbox::modules::cpu::Info *)moduleInfo;
 
                 // Check if the CPU module API version matches
-                if (cpuModuleInfo->cpuModuleAPIVersion == OPENXBOX_CPU_MODULE_API_VERSION) {
+                if (cpuModuleInfo->cpuModuleAPIVersion == openxbox::modules::cpu::apiVersion) {
                     // Fill in module data and add it to the list
                     CPUModuleInfo info = {
                         wsEntry.c_str(),
@@ -68,9 +68,16 @@ void ModuleRepository::Enumerate(std::wstring modulePath) {
                     };
                     m_cpuModules.push_back(info);
                     log_debug("Found %s %s in %S\n", info.moduleName.c_str(), info.moduleVersion.c_str(), wsEntry.c_str());
+
+                    // Retrieve CPU module capabilities
+                    auto moduleCaps = (openxbox::modules::cpu::Capabilities *)library->GetExport("oxModuleCaps");
+                    if (moduleCaps != nullptr) {
+                        log_debug("Capabilities:\n");
+                        log_debug("  Guest debugging: %s\n", ((moduleCaps->guestDebugging) ? "yes" : "no"));
+                    }
                 }
                 else {
-                    log_debug("%S: CPU module API version mismatch: expected %d, found %d\n", wsEntry.c_str(), OPENXBOX_CPU_MODULE_API_VERSION, cpuModuleInfo->cpuModuleAPIVersion);
+                    log_debug("%S: CPU module API version mismatch: expected %d, found %d\n", wsEntry.c_str(), openxbox::modules::cpu::apiVersion, cpuModuleInfo->cpuModuleAPIVersion);
                 }
                 break;
             }
@@ -92,26 +99,26 @@ ModuleLoadStatus LoadCPUModule(std::wstring libraryPath, CPUModuleInstance *inst
         return kModuleLibraryLoadFailed;
     }
 
-    auto moduleInfo = (OpenXBOXModuleInfo *)library->GetExport("oxModuleInfo");
+    auto moduleInfo = (openxbox::modules::Info *)library->GetExport("oxModuleInfo");
     if (moduleInfo == nullptr) {
         delete library;
         return kModuleInvalidLibrary;
     }
 
-    if (moduleInfo->moduleType != OX_MODULE_CPU) {
+    if (moduleInfo->type != openxbox::modules::TYPE_CPU) {
         delete library;
         return kModuleInvalidType;
     }
     
-    auto cpuModuleInfo = (OpenXBOXCPUModuleInfo *)moduleInfo;
+    auto cpuModuleInfo = (openxbox::modules::cpu::Info *)moduleInfo;
 
-    if ((moduleInfo->moduleAPIVersion != OPENXBOX_MODULE_API_VERSION) ||
-        (cpuModuleInfo->cpuModuleAPIVersion != OPENXBOX_CPU_MODULE_API_VERSION)) {
+    if ((moduleInfo->apiVersion != openxbox::modules::apiVersion) ||
+        (cpuModuleInfo->cpuModuleAPIVersion != openxbox::modules::cpu::apiVersion)) {
         delete library;
         return kModuleLoadAPIVersionMismatch;
     }
 
-    IOpenXBOXCPUModule *moduleInstance = cpuModuleInfo->createModule();
+    openxbox::modules::cpu::ICPUModule *moduleInstance = cpuModuleInfo->createModule();
     if (moduleInstance == nullptr) {
         delete library;
         return kModuleInstantiationFailed;

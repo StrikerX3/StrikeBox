@@ -9,6 +9,8 @@
 
 namespace openxbox {
 
+using namespace openxbox::cpu;
+
 #define PORT_PIC_MASTER_COMMAND  0x20
 #define PORT_PIC_MASTER_DATA     0x21
 #define PORT_PIC_SLAVE_COMMAND   0xA0
@@ -39,7 +41,7 @@ public:
 
     int GetCurrentIRQ();
 private:
-    Cpu *m_cpu;
+    Cpu    *m_cpu;
 
     uint8_t m_PreviousIRR[2];    // used for edge-detection
     uint8_t m_IRR[2];

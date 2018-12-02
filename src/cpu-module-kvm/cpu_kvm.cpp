@@ -8,6 +8,7 @@
 #include <openxbox/gdt.h>
 
 namespace openxbox {
+namespace cpu {
 
 KvmCpu::KvmCpu() {
     m_kvm = nullptr;
@@ -16,7 +17,7 @@ KvmCpu::KvmCpu() {
 }
 
 KvmCpu::~KvmCpu() {
-    if(m_kvm != nullptr) {
+    if (m_kvm != nullptr) {
         // Deleting this will automatically delete the VM and VCPU
         delete m_kvm;
         m_kvm = nullptr;
@@ -24,23 +25,23 @@ KvmCpu::~KvmCpu() {
 }
 
 CPUInitStatus KvmCpu::InitializeImpl() {
-    if(m_kvm == nullptr) {
+    if (m_kvm == nullptr) {
         m_kvm = new Kvm;
 
         auto status = m_kvm->Initialize();
-        if(status != KVMS_SUCCESS) {
+        if (status != KVMS_SUCCESS) {
             return CPUS_INIT_PLATFORM_INIT_FAILED;
         }
 
         auto vmStatus = m_kvm->CreateVM(&m_vm);
-        if(vmStatus != KVMVMS_SUCCESS) {
+        if (vmStatus != KVMVMS_SUCCESS) {
             delete m_kvm;
             m_kvm = nullptr;
             return CPUS_INIT_CREATE_VM_FAILED;
         }
 
         auto vcpuStatus = m_vm->CreateVCPU(&m_vcpu);
-        if(vcpuStatus != KVMVCPUS_SUCCESS) {
+        if (vcpuStatus != KVMVCPUS_SUCCESS) {
             delete m_kvm;
             m_kvm = nullptr;
             return CPUS_INIT_CREATE_CPU_FAILED;
@@ -107,32 +108,35 @@ InterruptResult KvmCpu::InterruptImpl(uint8_t vector) {
 CPUMemMapStatus KvmCpu::MemMapSubregion(MemoryRegion *subregion) {
     log_debug("KvmCpu: Mapping 0x%X bytes to guest memory address 0x%X\n", subregion->m_size, subregion->m_start);
 
-    switch(subregion->m_type) {
-        case MEM_REGION_MMIO: {
-            // Do nothing - KVM treats all unmapped memory as MMIO
-            return CPUS_MMAP_OK;
-        }
+    switch (subregion->m_type) {
+    case MEM_REGION_MMIO:
+    {
+        // Do nothing - KVM treats all unmapped memory as MMIO
+        return CPUS_MMAP_OK;
+    }
 
-        case MEM_REGION_NONE: {
-            // Shouldn't happen
-            assert(0);
-            return CPUS_MMAP_INVALID_TYPE;
-        }
+    case MEM_REGION_NONE:
+    {
+        // Shouldn't happen
+        assert(0);
+        return CPUS_MMAP_INVALID_TYPE;
+    }
 
-        case MEM_REGION_RAM:
-        case MEM_REGION_ROM: {
-            auto status = m_vm->MapUserMemoryToGuest(subregion->m_data, subregion->m_size, subregion->m_start);
-            switch (status) {
-            case KVMVMS_SUCCESS: return CPUS_MMAP_OK;
-            case KVMVMS_MEM_MISALIGNED: return CPUS_MMAP_MEMORY_ADDR_MISALIGNED;
-            case KVMVMS_MEMSIZE_MISALIGNED: return CPUS_MMAP_MEMORY_SIZE_MISALIGNED;
-            case KVMVMS_MEM_ERROR: return CPUS_MMAP_MAPPING_FAILED;
+    case MEM_REGION_RAM:
+    case MEM_REGION_ROM:
+    {
+        auto status = m_vm->MapUserMemoryToGuest(subregion->m_data, subregion->m_size, subregion->m_start);
+        switch (status) {
+        case KVMVMS_SUCCESS: return CPUS_MMAP_OK;
+        case KVMVMS_MEM_MISALIGNED: return CPUS_MMAP_MEMORY_ADDR_MISALIGNED;
+        case KVMVMS_MEMSIZE_MISALIGNED: return CPUS_MMAP_MEMORY_SIZE_MISALIGNED;
+        case KVMVMS_MEM_ERROR: return CPUS_MMAP_MAPPING_FAILED;
             return CPUS_MMAP_UNHANDLED_ERROR;
-            }
         }
-        default:
-            // Shouldn't happen
-            return CPUS_MMAP_INVALID_TYPE;
+    }
+    default:
+        // Shouldn't happen
+        return CPUS_MMAP_INVALID_TYPE;
     }
 }
 
@@ -146,29 +150,29 @@ CPUMemMapStatus KvmCpu::MemMapSubregion(MemoryRegion *subregion) {
 CPUOperationStatus KvmCpu::RegRead(enum CpuReg reg, uint32_t *value) {
     REFRESH_REGISTERS;
 
-    switch(reg) {
-        case REG_EIP:       *value = (uint32_t)m_regs.rip;      break;
-        case REG_EFLAGS:    *value = (uint32_t)m_regs.rflags;   break;
-        case REG_EAX:       *value = (uint32_t)m_regs.rax;      break;
-        case REG_ECX:       *value = (uint32_t)m_regs.rcx;      break;
-        case REG_EDX:       *value = (uint32_t)m_regs.rdx;      break;
-        case REG_EBX:       *value = (uint32_t)m_regs.rbx;      break;
-        case REG_ESI:       *value = (uint32_t)m_regs.rsi;      break;
-        case REG_EDI:       *value = (uint32_t)m_regs.rdi;      break;
-        case REG_ESP:       *value = (uint32_t)m_regs.rsp;      break;
-        case REG_EBP:       *value = (uint32_t)m_regs.rbp;      break;
-        case REG_CS:        *value = m_sregs.cs.selector;       break;
-        case REG_SS:        *value = m_sregs.ss.selector;       break;
-        case REG_DS:        *value = m_sregs.ds.selector;       break;
-        case REG_ES:        *value = m_sregs.es.selector;       break;
-        case REG_FS:        *value = m_sregs.fs.selector;       break;
-        case REG_GS:        *value = m_sregs.gs.selector;       break;
-        case REG_TR:        *value = m_sregs.tr.selector;       break;
-        case REG_CR0:       *value = (uint32_t)m_sregs.cr0;     break;
-        case REG_CR2:       *value = (uint32_t)m_sregs.cr2;     break;
-        case REG_CR3:       *value = (uint32_t)m_sregs.cr3;     break;
-        case REG_CR4:       *value = (uint32_t)m_sregs.cr4;     break;
-        default:                                                return CPUS_OP_INVALID_REGISTER;
+    switch (reg) {
+    case REG_EIP:       *value = (uint32_t)m_regs.rip;      break;
+    case REG_EFLAGS:    *value = (uint32_t)m_regs.rflags;   break;
+    case REG_EAX:       *value = (uint32_t)m_regs.rax;      break;
+    case REG_ECX:       *value = (uint32_t)m_regs.rcx;      break;
+    case REG_EDX:       *value = (uint32_t)m_regs.rdx;      break;
+    case REG_EBX:       *value = (uint32_t)m_regs.rbx;      break;
+    case REG_ESI:       *value = (uint32_t)m_regs.rsi;      break;
+    case REG_EDI:       *value = (uint32_t)m_regs.rdi;      break;
+    case REG_ESP:       *value = (uint32_t)m_regs.rsp;      break;
+    case REG_EBP:       *value = (uint32_t)m_regs.rbp;      break;
+    case REG_CS:        *value = m_sregs.cs.selector;       break;
+    case REG_SS:        *value = m_sregs.ss.selector;       break;
+    case REG_DS:        *value = m_sregs.ds.selector;       break;
+    case REG_ES:        *value = m_sregs.es.selector;       break;
+    case REG_FS:        *value = m_sregs.fs.selector;       break;
+    case REG_GS:        *value = m_sregs.gs.selector;       break;
+    case REG_TR:        *value = m_sregs.tr.selector;       break;
+    case REG_CR0:       *value = (uint32_t)m_sregs.cr0;     break;
+    case REG_CR2:       *value = (uint32_t)m_sregs.cr2;     break;
+    case REG_CR3:       *value = (uint32_t)m_sregs.cr3;     break;
+    case REG_CR4:       *value = (uint32_t)m_sregs.cr4;     break;
+    default:                                                return CPUS_OP_INVALID_REGISTER;
     }
 
     return CPUS_OP_OK;
@@ -177,29 +181,29 @@ CPUOperationStatus KvmCpu::RegRead(enum CpuReg reg, uint32_t *value) {
 CPUOperationStatus KvmCpu::RegWrite(enum CpuReg reg, uint32_t value) {
     REFRESH_REGISTERS;
 
-    switch(reg) {
-        case REG_EIP:       m_regs.rip = value;                                 break;
-        case REG_EFLAGS:    m_regs.rflags = value;                              break;
-        case REG_EAX:       m_regs.rax = value;                                 break;
-        case REG_ECX:       m_regs.rcx = value;                                 break;
-        case REG_EDX:       m_regs.rdx = value;                                 break;
-        case REG_EBX:       m_regs.rbx = value;                                 break;
-        case REG_ESI:       m_regs.rsi = value;                                 break;
-        case REG_EDI:       m_regs.rdi = value;                                 break;
-        case REG_ESP:       m_regs.rsp = value;                                 break;
-        case REG_EBP:       m_regs.rbp = value;                                 break;
-        case REG_CS:        LoadSegmentSelector((uint16_t)value, &m_sregs.cs);  break;
-        case REG_SS:        LoadSegmentSelector((uint16_t)value, &m_sregs.ss);  break;
-        case REG_DS:        LoadSegmentSelector((uint16_t)value, &m_sregs.ds);  break;
-        case REG_ES:        LoadSegmentSelector((uint16_t)value, &m_sregs.es);  break;
-        case REG_FS:        LoadSegmentSelector((uint16_t)value, &m_sregs.fs);  break;
-        case REG_GS:        LoadSegmentSelector((uint16_t)value, &m_sregs.gs);  break;
-        case REG_TR:        LoadSegmentSelector((uint16_t)value, &m_sregs.tr);  break;
-        case REG_CR0:       m_sregs.cr0 = value;                                break;
-        case REG_CR2:       m_sregs.cr2 = value;                                break;
-        case REG_CR3:       m_sregs.cr3 = value;                                break;
-        case REG_CR4:       m_sregs.cr4 = value;                                break;
-        default:                                                                return CPUS_OP_INVALID_REGISTER;
+    switch (reg) {
+    case REG_EIP:       m_regs.rip = value;                                 break;
+    case REG_EFLAGS:    m_regs.rflags = value;                              break;
+    case REG_EAX:       m_regs.rax = value;                                 break;
+    case REG_ECX:       m_regs.rcx = value;                                 break;
+    case REG_EDX:       m_regs.rdx = value;                                 break;
+    case REG_EBX:       m_regs.rbx = value;                                 break;
+    case REG_ESI:       m_regs.rsi = value;                                 break;
+    case REG_EDI:       m_regs.rdi = value;                                 break;
+    case REG_ESP:       m_regs.rsp = value;                                 break;
+    case REG_EBP:       m_regs.rbp = value;                                 break;
+    case REG_CS:        LoadSegmentSelector((uint16_t)value, &m_sregs.cs);  break;
+    case REG_SS:        LoadSegmentSelector((uint16_t)value, &m_sregs.ss);  break;
+    case REG_DS:        LoadSegmentSelector((uint16_t)value, &m_sregs.ds);  break;
+    case REG_ES:        LoadSegmentSelector((uint16_t)value, &m_sregs.es);  break;
+    case REG_FS:        LoadSegmentSelector((uint16_t)value, &m_sregs.fs);  break;
+    case REG_GS:        LoadSegmentSelector((uint16_t)value, &m_sregs.gs);  break;
+    case REG_TR:        LoadSegmentSelector((uint16_t)value, &m_sregs.tr);  break;
+    case REG_CR0:       m_sregs.cr0 = value;                                break;
+    case REG_CR2:       m_sregs.cr2 = value;                                break;
+    case REG_CR3:       m_sregs.cr3 = value;                                break;
+    case REG_CR4:       m_sregs.cr4 = value;                                break;
+    default:                                                                return CPUS_OP_INVALID_REGISTER;
     }
 
     m_regsChanged = true;
@@ -316,29 +320,32 @@ CPUOperationStatus KvmCpu::SetIDT(uint32_t addr, uint32_t size) {
 
 CPUStatus KvmCpu::HandleIO(uint8_t direction, uint16_t port, uint8_t size, uint32_t count, uint64_t dataOffset) {
     uint8_t *ptr;
-    if(count > 1) {
+    if (count > 1) {
         ptr = (uint8_t*)((((uint64_t)m_vcpu->kvmRun()) + dataOffset) + size * count - size);
-    } else {
+    }
+    else {
         ptr = (uint8_t*)(((uint64_t)m_vcpu->kvmRun()) + dataOffset);
     }
 
-    for(uint16_t i = 0; i < count; i++) {
-        if(direction == KVM_EXIT_IO_OUT) {
+    for (uint16_t i = 0; i < count; i++) {
+        if (direction == KVM_EXIT_IO_OUT) {
             uint32_t value;
-            switch(size) {
-                case 1: value = *ptr; break;
-                case 2: value = *reinterpret_cast<uint16_t*>(ptr); break;
-                case 4: value = *reinterpret_cast<uint32_t*>(ptr); break;
-                default: assert(0);
+            switch (size) {
+            case 1: value = *ptr; break;
+            case 2: value = *reinterpret_cast<uint16_t*>(ptr); break;
+            case 4: value = *reinterpret_cast<uint32_t*>(ptr); break;
+            default: assert(0);
             }
             m_ioMapper->IOWrite(port, value, size);
-        } else {
+        }
+        else {
             m_ioMapper->IORead(port, (uint32_t*)(((uint64_t)m_vcpu->kvmRun()) + dataOffset), size);
         }
 
-        if(count > 0) {
+        if (count > 0) {
             ptr -= size;
-        } else {
+        }
+        else {
             ptr += size;
         }
     }
@@ -346,25 +353,26 @@ CPUStatus KvmCpu::HandleIO(uint8_t direction, uint16_t port, uint8_t size, uint3
 }
 
 CPUStatus KvmCpu::HandleMMIO(uint32_t physAddress, uint32_t *data, uint8_t size, uint8_t isWrite) {
-    if(isWrite) {
+    if (isWrite) {
         m_ioMapper->MMIOWrite(physAddress, *data, size);
-    } else {
+    }
+    else {
         m_ioMapper->MMIORead(physAddress, data, size);
     }
     return CPUS_OK;
 }
 
 CPUOperationStatus KvmCpu::RefreshRegisters(bool refreshFPU) {
-    if(m_regsDirty) {
+    if (m_regsDirty) {
         auto regStatus = m_vcpu->GetRegisters(&m_regs);
         auto sRegStatus = m_vcpu->GetSRegisters(&m_sregs);
 
-        if((regStatus != KVMVCPUS_SUCCESS) ||
-                (sRegStatus != KVMVCPUS_SUCCESS)) {
+        if ((regStatus != KVMVCPUS_SUCCESS) ||
+            (sRegStatus != KVMVCPUS_SUCCESS)) {
             return CPUS_OP_FAILED;
         }
 
-        if(refreshFPU) {
+        if (refreshFPU) {
             m_vcpu->GetFPURegisters(&m_fpuRegs);
         }
 
@@ -417,4 +425,5 @@ void KvmCpu::RequestInterruptWindow() {
     m_vcpu->kvmRun()->request_interrupt_window = 1;
 }
 
+}
 }

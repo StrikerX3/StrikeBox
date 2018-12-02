@@ -32,6 +32,8 @@
 
 namespace openxbox {
 
+using namespace openxbox::cpu;
+
 // Implementation based on QEMU:
 // https://github.com/qemu/qemu/blob/master/hw/intc/i8259_common.c
 // https://github.com/qemu/qemu/blob/master/hw/intc/i8259.c

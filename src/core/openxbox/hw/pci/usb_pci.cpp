@@ -48,6 +48,8 @@
 
 namespace openxbox {
 
+using namespace openxbox::cpu;
+
 #define SETUP_STATE_IDLE    0
 #define SETUP_STATE_SETUP   1
 #define SETUP_STATE_DATA    2
