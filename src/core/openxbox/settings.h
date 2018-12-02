@@ -24,9 +24,6 @@ struct OpenXBOXSettings {
     // true: enables the GDB server, allowing the guest to be debugged
     bool gdb_enable = false;
 
-    // true: XBE sections will be dumped to individual files
-    bool debug_dumpXBESectionContents = false;
-
     // true: dump page tables on exit
     bool debug_dumpPageTables = false;
 

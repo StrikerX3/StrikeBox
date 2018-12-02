@@ -8,9 +8,6 @@
 #include "openxbox/settings.h"
 #include "openxbox/thread.h"
 
-// Debugging stuff
-#define DUMP_XBE_INFO 0
-
 #ifdef _WIN32
 char *basename(char *path)
 {
@@ -40,11 +37,10 @@ int main(int argc, const char *argv[]) {
 	printf("------------------\n");
 
 	cxxopts::Options options(basename((char*)argv[0]), "Open source XBOX Emulator\n");
-	options.custom_help("-c mcpx_path -b bios_path -x xbe_path -m model");
+	options.custom_help("-c mcpx_path -b bios_path -m model");
 	options.add_options()
 		("c, mcpx", "MCPX path", cxxopts::value<std::string>(), "mcpx_path")
 		("b, bios", "BIOS path", cxxopts::value<std::string>(), "bios_path")
-		("x, xbe", "XBE path", cxxopts::value<std::string>(), "xbe_path")
 		("m, model", "XBOX Model (retail | debug)", cxxopts::value<std::string>(), "xbox_model")
 		("h, help", "Shows this message");
 
@@ -53,7 +49,7 @@ int main(int argc, const char *argv[]) {
 	/*
 		Argument Check
 	*/
-	if (!(args.count("mcpx") && args.count("bios") && args.count("xbe") && args.count("model")))
+	if (!(args.count("mcpx") && args.count("bios") && args.count("model")))
 	{
 		std::cout << options.help();
 		return 1;
@@ -62,7 +58,6 @@ int main(int argc, const char *argv[]) {
 	// Parse arguments
 	const char *mcpx_path = args["mcpx"].as<std::string>().c_str();
 	const char *bios_path = args["bios"].as<std::string>().c_str();
-	const char *xbe_path = args["xbe"].as<std::string>().c_str();
 	const char *model = args["model"].as<std::string>().c_str();
 	bool is_debug;
 
@@ -104,17 +99,6 @@ int main(int argc, const char *argv[]) {
 	}
 	log_info("success\n");
 
-    // Load XBE executable
-    Xbe *xbe = new Xbe(xbe_path);
-    if (xbe->GetError() != 0) {
-		delete xbe;
-        return 1;
-    }
-
-#if DUMP_XBE_INFO
-    xbe->DumpInformation(stdout);
-#endif
-
 	int result = 0;
     Xbox *xbox = new Xbox(cpuModuleInstance.cpuModule);
 
@@ -123,7 +107,6 @@ int main(int argc, const char *argv[]) {
     settings->emu_stopOnSMCFatalErrors = true;
     settings->emu_stopOnBugChecks = true;
     settings->debug_dumpPageTables = false;
-    settings->debug_dumpXBESectionContents = false;
     settings->debug_dumpDisassemblyOnExit = true;
     settings->debug_dumpDisassembly_length = 10;
     settings->debug_dumpStackOnExit = true;
@@ -140,22 +123,9 @@ int main(int argc, const char *argv[]) {
     settings->rom_mcpx = mcpx_path;
     settings->rom_bios = bios_path;
 
-    if (xbox->Initialize()) {
-		log_fatal("Xbox initialization failed\n");
-		result = -2;
-		goto exit;
-	}
-	/*if (xbox->LoadXbe(xbe)) {
-		log_fatal("XBE load failed\n");
-		result = -3;
-		goto exit;
-	}*/
-	xbox->InitializePreRun();
     xbox->Run();
-	xbox->Cleanup();
 
 exit:
 	delete xbox;
-    delete xbe;
     return result;
 }

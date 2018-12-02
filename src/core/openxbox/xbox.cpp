@@ -59,81 +59,6 @@ const static uint8_t kDefaultEEPROM[] = {
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 };
 
-// CPU emulation thread function
-uint32_t Xbox::EmuCpuThreadFunc(void *data) {
-    Thread_SetName("[HW] CPU");
-    Xbox *xbox = (Xbox *)data;
-    return xbox->RunCpu();
-}
-
-bool Xbox::LocateKernelData() {
-    // Return immediately if the kernel data has already been found
-    if (m_kernelDataFound) {
-        return true;
-    }
-
-    // Check if the kernel has been extracted and decrypted
-    uint32_t eip;
-    m_cpu->RegRead(REG_EIP, &eip);
-    if (eip >= 0x80000000) {
-        uint16_t mzMagic = 0;
-        if (m_cpu->VMemRead(0x80010000, sizeof(uint16_t), &mzMagic)) return false;
-        if (mzMagic != 'ZM') {
-            return false;
-        }
-    }
-    
-    uint32_t peHeaderAddress = 0x00000000;
-    uint32_t baseOfCode = 0x00000000;
-    uint32_t exportsTableAddress = 0x00000000;
-    
-    // Find PE header position and ensure it matches the magic value
-    if (m_cpu->VMemRead(0x8001003c, sizeof(uint32_t), &peHeaderAddress)) return false;
-    peHeaderAddress += 0x80010000;
-    uint16_t peMagic = 0;
-    if (m_cpu->VMemRead(peHeaderAddress, sizeof(uint16_t), &peMagic)) return false;
-    if (peMagic != 'EP') {
-        peHeaderAddress = 0x00000000;
-        return false;
-    }
-
-    // Find base of code and address of functions to locate the exports table
-    if (m_cpu->VMemRead(peHeaderAddress + 0x2c, sizeof(uint32_t), &baseOfCode)) return false;
-    baseOfCode += 0x80010000;
-
-    // Find exports table
-    if (m_cpu->VMemRead(baseOfCode + 0x1c, sizeof(uint32_t), &exportsTableAddress)) return false;
-    exportsTableAddress += 0x80010000;
-
-    // Get addresses of relevant exports
-#define GET_EXPORT(name, num) do { if (m_cpu->VMemRead(exportsTableAddress + ((num - 1) * sizeof(uint32_t)), sizeof(uint32_t), &m_kExp_##name)) { return false; } m_kExp_##name += 0x80010000; } while (0)
-    GET_EXPORT(KiBugCheckData, 162);
-    GET_EXPORT(XboxKrnlVersion, 324);
-#undef GET_EXPORT
-
-    uint32_t pKernelPEHeaderPos;
-    uint32_t pKernelBaseOfCode;
-    uint32_t pKernelExportsTableAddress;
-    uint32_t pKiBugCheckData;
-    uint32_t pXboxKrnlVersion;
-    m_cpu->VirtualToPhysical(peHeaderAddress, &pKernelPEHeaderPos);
-    m_cpu->VirtualToPhysical(baseOfCode, &pKernelBaseOfCode);
-    m_cpu->VirtualToPhysical(exportsTableAddress, &pKernelExportsTableAddress);
-    m_cpu->VirtualToPhysical(m_kExp_KiBugCheckData, &pKiBugCheckData);
-    m_cpu->VirtualToPhysical(m_kExp_XboxKrnlVersion, &pXboxKrnlVersion);
-    log_info("Microsoft Xbox Kernel detected\n");
-    log_info("  PE header           0x%08x  ->  0x%p\n", peHeaderAddress, m_ram + pKernelPEHeaderPos);
-    log_info("  Base of code        0x%08x  ->  0x%p\n", baseOfCode, m_ram + pKernelBaseOfCode);
-    log_info("  Exports table       0x%08x  ->  0x%p\n", exportsTableAddress, m_ram + pKernelExportsTableAddress);
-    log_info("    KiBugCheckData    0x%08x  ->  0x%p\n", m_kExp_KiBugCheckData, m_ram + pKiBugCheckData);
-    log_info("    XboxKrnlVersion   0x%08x  ->  0x%p\n", m_kExp_XboxKrnlVersion, m_ram + pXboxKrnlVersion);
-    m_kernelDataFound = true;
-
-    m_cpu->VMemRead(m_kExp_XboxKrnlVersion, sizeof(XboxKernelVersion), &m_kernelVersion);
-    log_info("Xbox kernel version: %d.%d.%d.%d\n", m_kernelVersion.major, m_kernelVersion.minor, m_kernelVersion.build, m_kernelVersion.rev);
-
-    return true;
-}
 
 /*!
  * Constructor
@@ -199,23 +124,70 @@ Xbox::~Xbox() {
     if (m_GSI != nullptr) delete m_GSI;
 }
 
+void Xbox::CopySettings(OpenXBOXSettings *settings) {
+    m_settings = *settings;
+}
+
+int Xbox::Run() {
+    Initialize();
+
+    m_should_run = true;
+
+    // Start CPU emulation on a new thread
+    uint32_t result;
+    std::thread cpuIdleThread([&] { result = EmuCpuThreadFunc(this); });
+
+    // Wait for the thread to exit
+    cpuIdleThread.join();
+
+    Cleanup();
+
+    return result;
+}
+
+void Xbox::Stop() {
+    if (m_i8254 != nullptr) {
+        m_i8254->Reset();
+    }
+    m_should_run = false;
+}
+
 /*!
  * Perform basic system initialization
  */
 int Xbox::Initialize()
 {
-    // Fixup settings
+    int result;
+    InitFixupSettings();
+    result = InitMemory(); if (result) return result;
+    result = InitCPU(); if (result) return result;
+    result = InitHardware(); if (result) return result;
+    result = InitDebugger(); if (result) return result;
+
+    return 0;
+}
+
+void Xbox::InitFixupSettings() {
     if (m_settings.hw_model == DebugKit) {
         m_settings.hw_enableSuperIO = true;
     }
+}
 
-    MemoryRegion *rgn;
-
+int Xbox::InitMemory() {
     // Initialize 4 GiB address space
     m_memRegion = new MemoryRegion(MEM_REGION_NONE, 0x00000000, 0x100000000ULL, NULL);
+    if (m_memRegion == nullptr) {
+        return -1;
+    }
 
-    // ----- RAM --------------------------------------------------------------
+    int result;
+    result = InitRAM(); if (result) return result;
+    result = InitROM(); if (result) return result;
 
+    return 0;
+}
+
+int Xbox::InitRAM() {
     // Create RAM region
     m_ramSize = m_settings.hw_model == DebugKit ? XBOX_RAM_SIZE_DEBUG : XBOX_RAM_SIZE_RETAIL;
     log_debug("Allocating RAM (%d MiB)\n", m_ramSize >> 20);
@@ -225,20 +197,26 @@ int Xbox::Initialize()
 #endif
 
 #ifdef __linux__
-    m_ram = (char *)mmap(nullptr, m_ramSize, PROT_READ | PROT_WRITE, 
+    m_ram = (char *)mmap(nullptr, m_ramSize, PROT_READ | PROT_WRITE,
         MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE, -1, 0);
 #endif
 
-    assert(m_ram != NULL);
+    if (m_ram == NULL) {
+        return -1;
+    }
     memset(m_ram, 0, m_ramSize);
 
     // Map RAM at address 0x00000000
-    rgn = new MemoryRegion(MEM_REGION_RAM, 0x00000000, m_ramSize, m_ram);
-    assert(rgn != NULL);
+    MemoryRegion *rgn = new MemoryRegion(MEM_REGION_RAM, 0x00000000, m_ramSize, m_ram);
+    if (rgn == nullptr) {
+        return -1;
+    }
     m_memRegion->AddSubRegion(rgn);
 
-    // ----- ROM --------------------------------------------------------------
+    return 0;
+}
 
+int Xbox::InitROM() {
     // Create ROM region
     log_debug("Allocating ROM (%d MiB)\n", XBOX_ROM_AREA_SIZE >> 20);
 
@@ -247,16 +225,20 @@ int Xbox::Initialize()
 #endif
 
 #ifdef __linux__
-    m_rom = (char *)mmap(nullptr, XBOX_ROM_AREA_SIZE, PROT_READ | PROT_WRITE, 
+    m_rom = (char *)mmap(nullptr, XBOX_ROM_AREA_SIZE, PROT_READ | PROT_WRITE,
         MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE, -1, 0);
 #endif
 
-    assert(m_rom != NULL);
+    if (m_rom == NULL) {
+        return -1;
+    }
     memset(m_rom, 0, XBOX_ROM_AREA_SIZE);
 
     // Map ROM to address 0xFF000000
-    rgn = new MemoryRegion(MEM_REGION_ROM, 0xFF000000, XBOX_ROM_AREA_SIZE, m_rom);
-    assert(rgn != NULL);
+    MemoryRegion *rgn = new MemoryRegion(MEM_REGION_ROM, 0xFF000000, XBOX_ROM_AREA_SIZE, m_rom);
+    if (rgn == nullptr) {
+        return -1;
+    }
     m_memRegion->AddSubRegion(rgn);
 
     // Load ROM files
@@ -264,7 +246,7 @@ int Xbox::Initialize()
     long sz;
 
     // Load MCPX ROM
-    log_debug("Loading MCPX ROM %s...", m_settings.rom_mcpx);
+    log_debug("Loading MCPX ROM %s.. .", m_settings.rom_mcpx);
     fp = fopen(m_settings.rom_mcpx, "rb");
     if (fp == NULL) {
         log_debug("file %s could not be opened\n", m_settings.rom_mcpx);
@@ -283,7 +265,7 @@ int Xbox::Initialize()
     log_debug("OK\n");
 
     // Load BIOS ROM
-    log_debug("Loading BIOS ROM %s...", m_settings.rom_bios);
+    log_debug("Loading BIOS ROM %s... ", m_settings.rom_bios);
     fp = fopen(m_settings.rom_bios, "rb");
     if (fp == NULL) {
         log_debug("file %s could not be opened\n", m_settings.rom_bios);
@@ -301,11 +283,12 @@ int Xbox::Initialize()
     fclose(fp);
     log_debug("OK (%d KiB)\n", sz >> 10);
 
-    uint32_t biosSize = sz;
+    m_biosSize = sz;
 
-    // ----- CPU --------------------------------------------------------------
+    return 0;
+}
 
-    // Initialize CPU
+int Xbox::InitCPU() {
     log_debug("Initializing CPU\n");
     if (m_cpuModule == nullptr) {
         log_fatal("No CPU module specified\n");
@@ -324,8 +307,10 @@ int Xbox::Initialize()
     // Allow CPU to update memory map based on device allocation, etc
     m_cpu->MemMap(m_memRegion);
 
-    // ----- Hardware ---------------------------------------------------------
+    return 0;
+}
 
+int Xbox::InitHardware() {
     // Determine which revisions of which components should be used for the
     // specified hardware model
     MCPXRevision mcpxRevision = MCPXRevisionFromHardwareModel(m_settings.hw_model);
@@ -364,7 +349,7 @@ int Xbox::Initialize()
     else {
         m_SuperIO = nullptr;
     }
-    
+
     m_i8259->Reset();
     m_i8254->Reset();
     m_CMOS->Reset();
@@ -379,7 +364,7 @@ int Xbox::Initialize()
     m_EEPROM = new EEPROMDevice();
     m_HostBridge = new HostBridgeDevice(PCI_VENDOR_ID_NVIDIA, 0x02A5, 0xA1);
     m_MCPXRAM = new MCPXRAMDevice(PCI_VENDOR_ID_NVIDIA, 0x02A6, 0xA1, mcpxRevision);
-    m_LPC = new LPCDevice(PCI_VENDOR_ID_NVIDIA, 0x01B2, 0xD4, m_IRQs, m_rom, m_bios, biosSize, m_mcpxROM, m_settings.hw_model != DebugKit);
+    m_LPC = new LPCDevice(PCI_VENDOR_ID_NVIDIA, 0x01B2, 0xD4, m_IRQs, m_rom, m_bios, m_biosSize, m_mcpxROM, m_settings.hw_model != DebugKit);
     m_USB1 = new USBPCIDevice(PCI_VENDOR_ID_NVIDIA, 0x02A5, 0xA1, 1, m_cpu);
     m_USB2 = new USBPCIDevice(PCI_VENDOR_ID_NVIDIA, 0x02A5, 0xA1, 9, m_cpu);
     m_NVNet = new NVNetDevice(PCI_VENDOR_ID_NVIDIA, 0x01C3, 0xD2);
@@ -398,7 +383,7 @@ int Xbox::Initialize()
     for (uint8_t i = 0; i < ISA_NUM_IRQS; i++) {
         m_GSI->i8259IRQs[i] = &m_i8259IRQs[i];
     }
-    
+
     // Create SMBus and connect devices
     m_SMBus = new SMBus(&m_acpiIRQs[1]);
 
@@ -462,41 +447,22 @@ int Xbox::Initialize()
     // TODO: user-specified EEPROM
     m_EEPROM->SetEEPROM(kDefaultEEPROM);
 
-    // ----- Debugger ---------------------------------------------------------
-
-    // GDB Server
-    if (m_settings.gdb_enable) {
-        m_gdb = new GdbServer(m_cpu, "127.0.0.1", 9269);
-        m_gdb->Initialize();
-    }
-
     return 0;
 }
 
-void Xbox::InitializePreRun() {
+int Xbox::InitDebugger() {
+    // GDB Server
     if (m_settings.gdb_enable) {
+        m_gdb = new GdbServer(m_cpu, "127.0.0.1", 9269);
+        int result = m_gdb->Initialize(); if (result) return result;
+
         // Allow debugging before running so client can setup breakpoints, etc
         log_debug("Starting GDB Server\n");
         m_gdb->WaitForConnection();
         m_gdb->Debug(1);
     }
-}
 
-void Xbox::CopySettings(OpenXBOXSettings *settings) {
-    m_settings = *settings;
-}
-
-int Xbox::Run() {
-    m_should_run = true;
-
-    // Start CPU emulation on a new thread
-    uint32_t result;
-    std::thread cpuIdleThread([&] { result = EmuCpuThreadFunc(this); });
-
-    // Wait for the thread to exit
-    cpuIdleThread.join();
-
-    return result;
+    return 0;
 }
 
 /*!
@@ -684,13 +650,6 @@ int Xbox::RunCpu()
     return result;
 }
 
-void Xbox::Stop() {
-    if (m_i8254 != nullptr) {
-        m_i8254->Reset();
-    }
-    m_should_run = false;
-}
-
 void Xbox::Cleanup() {
     if (LOG_LEVEL >= LOG_LEVEL_DEBUG) {
         log_debug("CPU state at the end of execution:\n");
@@ -778,4 +737,79 @@ void Xbox::Cleanup() {
     }
 }
 
+// CPU emulation thread function
+uint32_t Xbox::EmuCpuThreadFunc(void *data) {
+    Thread_SetName("[HW] CPU");
+    Xbox *xbox = (Xbox *)data;
+    return xbox->RunCpu();
+}
+
+bool Xbox::LocateKernelData() {
+    // Return immediately if the kernel data has already been found
+    if (m_kernelDataFound) {
+        return true;
+    }
+
+    // Check if the kernel has been extracted and decrypted
+    uint32_t eip;
+    m_cpu->RegRead(REG_EIP, &eip);
+    if (eip >= 0x80000000) {
+        uint16_t mzMagic = 0;
+        if (m_cpu->VMemRead(0x80010000, sizeof(uint16_t), &mzMagic)) return false;
+        if (mzMagic != 'ZM') {
+            return false;
+        }
+    }
+
+    uint32_t peHeaderAddress = 0x00000000;
+    uint32_t baseOfCode = 0x00000000;
+    uint32_t exportsTableAddress = 0x00000000;
+
+    // Find PE header position and ensure it matches the magic value
+    if (m_cpu->VMemRead(0x8001003c, sizeof(uint32_t), &peHeaderAddress)) return false;
+    peHeaderAddress += 0x80010000;
+    uint16_t peMagic = 0;
+    if (m_cpu->VMemRead(peHeaderAddress, sizeof(uint16_t), &peMagic)) return false;
+    if (peMagic != 'EP') {
+        peHeaderAddress = 0x00000000;
+        return false;
+    }
+
+    // Find base of code and address of functions to locate the exports table
+    if (m_cpu->VMemRead(peHeaderAddress + 0x2c, sizeof(uint32_t), &baseOfCode)) return false;
+    baseOfCode += 0x80010000;
+
+    // Find exports table
+    if (m_cpu->VMemRead(baseOfCode + 0x1c, sizeof(uint32_t), &exportsTableAddress)) return false;
+    exportsTableAddress += 0x80010000;
+
+    // Get addresses of relevant exports
+#define GET_EXPORT(name, num) do { if (m_cpu->VMemRead(exportsTableAddress + ((num - 1) * sizeof(uint32_t)), sizeof(uint32_t), &m_kExp_##name)) { return false; } m_kExp_##name += 0x80010000; } while (0)
+    GET_EXPORT(KiBugCheckData, 162);
+    GET_EXPORT(XboxKrnlVersion, 324);
+#undef GET_EXPORT
+
+    uint32_t pKernelPEHeaderPos;
+    uint32_t pKernelBaseOfCode;
+    uint32_t pKernelExportsTableAddress;
+    uint32_t pKiBugCheckData;
+    uint32_t pXboxKrnlVersion;
+    m_cpu->VirtualToPhysical(peHeaderAddress, &pKernelPEHeaderPos);
+    m_cpu->VirtualToPhysical(baseOfCode, &pKernelBaseOfCode);
+    m_cpu->VirtualToPhysical(exportsTableAddress, &pKernelExportsTableAddress);
+    m_cpu->VirtualToPhysical(m_kExp_KiBugCheckData, &pKiBugCheckData);
+    m_cpu->VirtualToPhysical(m_kExp_XboxKrnlVersion, &pXboxKrnlVersion);
+    log_info("Microsoft Xbox Kernel detected\n");
+    log_info("  PE header           0x%08x  ->  0x%p\n", peHeaderAddress, m_ram + pKernelPEHeaderPos);
+    log_info("  Base of code        0x%08x  ->  0x%p\n", baseOfCode, m_ram + pKernelBaseOfCode);
+    log_info("  Exports table       0x%08x  ->  0x%p\n", exportsTableAddress, m_ram + pKernelExportsTableAddress);
+    log_info("    KiBugCheckData    0x%08x  ->  0x%p\n", m_kExp_KiBugCheckData, m_ram + pKiBugCheckData);
+    log_info("    XboxKrnlVersion   0x%08x  ->  0x%p\n", m_kExp_XboxKrnlVersion, m_ram + pXboxKrnlVersion);
+    m_kernelDataFound = true;
+
+    m_cpu->VMemRead(m_kExp_XboxKrnlVersion, sizeof(XboxKernelVersion), &m_kernelVersion);
+    log_info("Xbox kernel version: %d.%d.%d.%d\n", m_kernelVersion.major, m_kernelVersion.minor, m_kernelVersion.build, m_kernelVersion.rev);
+
+    return true;
+}
 }

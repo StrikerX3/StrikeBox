@@ -17,7 +17,6 @@
 #include "openxbox/log.h"
 #include "openxbox/mem.h"
 #include "openxbox/util.h"
-#include "openxbox/xbe.h"
 #include "openxbox/thread.h"
 #include "openxbox/settings.h"
 
@@ -71,10 +70,6 @@ class Xbox : Emulator {
 public:
     Xbox(IOpenXBOXCPUModule *cpuModule);
     virtual ~Xbox();
-    int Initialize();
-
-    void InitializePreRun();
-    void Cleanup();
 
     OpenXBOXSettings *GetSettings() { return &m_settings; }
     void CopySettings(OpenXBOXSettings *settings);
@@ -83,6 +78,18 @@ public:
     void Stop();
 
 protected:
+    // ----- Initialization and cleanup ---------------------------------------
+    int Initialize();
+    void InitFixupSettings();
+    int InitMemory();
+    int InitRAM();
+    int InitROM();
+    int InitCPU();
+    int InitHardware();
+    int InitDebugger();
+
+    void Cleanup();
+
     // ----- Thread functions -------------------------------------------------
     int RunCpu();
 
@@ -98,6 +105,7 @@ protected:
     uint8_t          *m_ram;
     uint8_t          *m_rom;
     uint8_t          *m_bios;
+    uint32_t          m_biosSize;
     uint8_t          *m_mcpxROM;
     MemoryRegion     *m_memRegion;
     IOMapper          m_ioMapper;
