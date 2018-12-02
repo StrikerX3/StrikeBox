@@ -14,6 +14,12 @@ struct OpenXBOXSettings {
     // true: the CPU emulator will execute one instruction at a time
     bool cpu_singleStep = false;
 
+    // true: log fatal error codes sent to the SMC
+    bool emu_logSMCFatalErrors = false;
+
+    // true: the emulator will stop on a fatal error
+    bool emu_stopOnSMCFatalErrors = false;
+
     // true: enables the GDB server, allowing the guest to be debugged
     bool gdb_enable = false;
 

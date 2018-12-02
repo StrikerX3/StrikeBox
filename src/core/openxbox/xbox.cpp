@@ -433,7 +433,9 @@ int Xbox::Run() {
  */
 int Xbox::RunCpu()
 {
+#if defined(_DEBUG) && 0
     Timer t;
+#endif
     int result;
     struct CpuExitInfo *exit_info;
 
@@ -475,39 +477,49 @@ int Xbox::RunCpu()
             break;
         }
 
-        // Parse and display fatal error code
-        // See http://xboxdevwiki.net/Fatal_Error
-        // See https://assemblergames.com/threads/xbox-error-codes-repair-reference-tips.62966/
+        // Parse fatal error code
         static uint8_t lastSMCErrorCode = 0;
         uint8_t smcErrorCode = m_SMC->GetRegister(SMCRegister::ErrorCode);
+
+        // Display fatal error code and description
+        // See http://xboxdevwiki.net/Fatal_Error
+        // See https://assemblergames.com/threads/xbox-error-codes-repair-reference-tips.62966/
         if (smcErrorCode != 0 && lastSMCErrorCode != smcErrorCode) {
-            log_fatal("/!\\ --------------------------------- /!\\\n");
-            log_fatal("/!\\    System issued a Fatal Error    /!\\\n");
-            log_fatal("/!\\                                   /!\\\n");
-            log_fatal("/!\\        Fatal error code %02d        /!\\\n", smcErrorCode);
-            switch (smcErrorCode) {
-            case  2: log_fatal("/!\\      Invalid EEPROM checksum      /!\\\n"); break;
-            case  4: log_fatal("/!\\         RAM check failure         /!\\\n"); break;
-            case  5: log_fatal("/!\\       Hard drive not locked       /!\\\n"); break;
-            case  6: log_fatal("/!\\    Unable to unlock hard drive    /!\\\n"); break;
-            case  7: log_fatal("/!\\        Hard drive timeout         /!\\\n"); break;
-            case  8: log_fatal("/!\\        No hard drive found        /!\\\n"); break;
-            case  9: log_fatal("/!\\  Hard drive configuration failed  /!\\\n"); break;
-            case 10: log_fatal("/!\\         DVD drive timeout         /!\\\n"); break;
-            case 11: log_fatal("/!\\        No DVD drive found         /!\\\n"); break;
-            case 12: log_fatal("/!\\  DVD drive configuration failed   /!\\\n"); break;
-            case 13: log_fatal("/!\\    Dashboard failed to launch     /!\\\n"); break;
-            case 14: log_fatal("/!\\    Unspecified dashboard error    /!\\\n"); break;
-            case 16: log_fatal("/!\\     Dashboard settings error      /!\\\n"); break;
-            case 20: log_fatal("/!\\    Dashboard failed to launch     /!\\\n");
-                /**/ log_fatal("/!\\    (DVD authentication passed)    /!\\\n"); break;
-            case 21: log_fatal("/!\\         Unspecified error         /!\\\n"); break;
+            if (m_settings.emu_logSMCFatalErrors) {
+                log_error("/!\\ --------------------------------- /!\\\n");
+                log_fatal("/!\\    System issued a Fatal Error    /!\\\n");
+                log_fatal("/!\\                                   /!\\\n");
+                log_fatal("/!\\        Fatal error code %02d        /!\\\n", smcErrorCode);
+                switch (smcErrorCode) {
+                case  2: log_fatal("/!\\      Invalid EEPROM checksum      /!\\\n"); break;
+                case  4: log_fatal("/!\\         RAM check failure         /!\\\n"); break;
+                case  5: log_fatal("/!\\       Hard drive not locked       /!\\\n"); break;
+                case  6: log_fatal("/!\\    Unable to unlock hard drive    /!\\\n"); break;
+                case  7: log_fatal("/!\\        Hard drive timeout         /!\\\n"); break;
+                case  8: log_fatal("/!\\        No hard drive found        /!\\\n"); break;
+                case  9: log_fatal("/!\\  Hard drive configuration failed  /!\\\n"); break;
+                case 10: log_fatal("/!\\         DVD drive timeout         /!\\\n"); break;
+                case 11: log_fatal("/!\\        No DVD drive found         /!\\\n"); break;
+                case 12: log_fatal("/!\\  DVD drive configuration failed   /!\\\n"); break;
+                case 13: log_fatal("/!\\    Dashboard failed to launch     /!\\\n"); break;
+                case 14: log_fatal("/!\\    Unspecified dashboard error    /!\\\n"); break;
+                case 16: log_fatal("/!\\     Dashboard settings error      /!\\\n"); break;
+                case 20: log_fatal("/!\\    Dashboard failed to launch     /!\\\n"); /* */
+                    /**/ log_fatal("/!\\    (DVD authentication passed)    /!\\\n"); break;
+                case 21: log_fatal("/!\\         Unspecified error         /!\\\n"); break;
+                default: log_fatal("/!\\              Unknown              /!\\\n"); break;
+                }
+                log_fatal("/!\\                                   /!\\\n");
+                log_fatal("/!\\ --------------------------------- /!\\\n");
             }
-            log_fatal("/!\\                                   /!\\\n");
-            log_fatal("/!\\ --------------------------------- /!\\\n");
+
+            // Stop emulation on fatal errors if configured to do so
+            if (m_settings.emu_stopOnSMCFatalErrors) {
+                log_fatal("Received fatal error %02d; stopping.\n", smcErrorCode);
+                Stop();
+                break;
+            }
             lastSMCErrorCode = smcErrorCode;
-            //Stop();
-            //break;
         }
 
 #if defined(_DEBUG) && 0
