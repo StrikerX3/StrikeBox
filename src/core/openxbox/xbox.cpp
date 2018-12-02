@@ -23,6 +23,7 @@
 
 namespace openxbox {
 
+// bunnie's EEPROM
 const static uint8_t kDefaultEEPROM[] = {
     0xe3, 0x1c, 0x5c, 0x23, 0x6a, 0x58, 0x68, 0x37,
     0xb7, 0x12, 0x26, 0x6c, 0x99, 0x11, 0x30, 0xd1,
@@ -471,8 +472,9 @@ int Xbox::RunCpu()
         // Parse and display fatal error code
         // See http://xboxdevwiki.net/Fatal_Error
         // See https://assemblergames.com/threads/xbox-error-codes-repair-reference-tips.62966/
+        static uint8_t lastSMCErrorCode = 0;
         uint8_t smcErrorCode = m_SMC->GetRegister(SMCRegister::ErrorCode);
-        if (smcErrorCode != 0) {
+        if (smcErrorCode != 0 && lastSMCErrorCode != smcErrorCode) {
             log_fatal("/!\\ --------------------------------- /!\\\n");
             log_fatal("/!\\    System issued a Fatal Error    /!\\\n");
             log_fatal("/!\\                                   /!\\\n");
@@ -497,8 +499,9 @@ int Xbox::RunCpu()
             }
             log_fatal("/!\\                                   /!\\\n");
             log_fatal("/!\\ --------------------------------- /!\\\n");
-            Stop();
-            break;
+            lastSMCErrorCode = smcErrorCode;
+            //Stop();
+            //break;
         }
 
 #if defined(_DEBUG) && 0

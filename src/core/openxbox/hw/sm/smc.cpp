@@ -58,7 +58,7 @@ void SMCDevice::Init() {
     m_PICVersionStringIndex = 0;
     memset(m_buffer, 0, sizeof(m_buffer));
     m_buffer[SMCRegister::AVPack] = kSMC_AVPack_HDTV; // see http://xboxdevwiki.net/PIC#The_AV_Pack
-    m_buffer[SMCRegister::LEDSequence] = LED::Sequence{ LED::Green,LED::Green,LED::Green,LED::Green };
+    m_buffer[SMCRegister::LEDSequence] = 0xF; // all green
     m_buffer[SMCRegister::Scratch] = 0; // see http://xboxdevwiki.net/PIC#Scratch_register_values
 }
 
@@ -173,7 +173,7 @@ void SMCDevice::WriteByte(uint8_t command, uint8_t value) {
     {
         // Parse and display LED sequence
         LED::Sequence seq = value;
-        log_info("SMCDevice::WriteByte: Changed LED flash sequence: %s %s %s %s\n", LED::Name(seq.phase0), LED::Name(seq.phase1), LED::Name(seq.phase2), LED::Name(seq.phase3));
+        log_info("SMCDevice::WriteByte: Changed LED flash sequence: %s %s %s %s\n", seq.Name(0), seq.Name(1), seq.Name(2), seq.Name(3));
         break;
     }
     // TODO: case SMCRegister::TrayEject:
