@@ -79,13 +79,15 @@ protected:
     static uint32_t EmuCpuThreadFunc(void *data);
 
     // ----- Modules ----------------------------------------------------------
-    IOpenXBOXCPUModule * m_cpuModule;
+    IOpenXBOXCPUModule *m_cpuModule;
 
     // ----- Hardware ---------------------------------------------------------
     Cpu              *m_cpu;
     uint32_t          m_ramSize;
-    char             *m_ram;
-    char             *m_rom;
+    uint8_t          *m_ram;
+    uint8_t          *m_rom;
+    uint8_t          *m_bios;
+    uint8_t          *m_mcpxROM;
     MemoryRegion     *m_memRegion;
     IOMapper          m_ioMapper;
     

@@ -22,7 +22,7 @@ namespace openxbox {
 class LPCDevice : public PCIDevice, public IRQHandler {
 public:
     // constructor
-    LPCDevice(uint16_t vendorID, uint16_t deviceID, uint8_t revisionID, IRQ *irqs);
+    LPCDevice(uint16_t vendorID, uint16_t deviceID, uint8_t revisionID, IRQ *irqs, uint8_t *rom, uint8_t *bios, uint32_t biosSize, uint8_t *mcpxROM, bool initMcpxROM);
     virtual ~LPCDevice();
 
     void HandleIRQ(uint8_t irqNum, int level) override;
@@ -35,10 +35,18 @@ public:
     void PCIIORead(int barIndex, uint32_t port, uint32_t *value, uint8_t size) override;
     void PCIIOWrite(int barIndex, uint32_t port, uint32_t value, uint8_t size) override;
 
+    void WriteConfig(uint32_t reg, uint32_t value, uint8_t size) override;
+
 private:
     int m_field_pin = 0;
     IRQ *m_irqs;
     ISABus *m_isaBus;
+
+    uint8_t *m_rom;
+    uint8_t *m_bios;
+    uint32_t m_biosSize;
+    uint8_t *m_mcpxROM;
+    bool m_initMcpxROM;
 
     friend class LPCIRQMapper;
 };

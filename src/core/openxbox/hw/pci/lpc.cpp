@@ -27,11 +27,16 @@
 
 namespace openxbox {
 
-LPCDevice::LPCDevice(uint16_t vendorID, uint16_t deviceID, uint8_t revisionID, IRQ *irqs)
+LPCDevice::LPCDevice(uint16_t vendorID, uint16_t deviceID, uint8_t revisionID, IRQ *irqs, uint8_t *rom, uint8_t *bios, uint32_t biosSize, uint8_t *mcpxROM, bool initMcpxROM)
     : PCIDevice(PCI_HEADER_TYPE_BRIDGE, vendorID, deviceID, revisionID,
         0x06, 0x01, 0x00, // ISA bridge
         /*TODO: subsystemVendorID*/0x00, /*TODO: subsystemID*/0x00)
     , m_irqs(irqs)
+    , m_rom(rom)
+    , m_bios(bios)
+    , m_biosSize(biosSize)
+    , m_mcpxROM(mcpxROM)
+    , m_initMcpxROM(initMcpxROM)
 {
     m_isaBus = new ISABus(irqs);
 }
@@ -55,9 +60,23 @@ void LPCDevice::HandleIRQ(uint8_t irqNum, int level) {
 
 void LPCDevice::Init() {
     RegisterBAR(0, 0x100, PCI_BAR_TYPE_IO); // 0x8000 - 0x80FF
+
+    Reset();
 }
 
 void LPCDevice::Reset() {
+    // Load BIOS ROM image
+    memcpy(m_rom, m_bios, m_biosSize);
+
+    if (m_initMcpxROM) {
+        // Overlay MCPX ROM image onto the last 512 bytes
+        memcpy(m_rom + m_biosSize - 512, m_mcpxROM, 512);
+
+        // Replicate resulting ROM image across the entire 16 MiB range
+        for (uint32_t addr = m_biosSize; addr < MiB(16); addr += m_biosSize) {
+            memcpy(m_rom + addr, m_rom, m_biosSize);
+        }
+    }
 }
 
 void LPCDevice::PCIIORead(int barIndex, uint32_t port, uint32_t *value, uint8_t size) {
@@ -99,6 +118,19 @@ void LPCDevice::PCIIOWrite(int barIndex, uint32_t port, uint32_t value, uint8_t 
 
     // TODO
     log_warning("LPCDevice::PCIIOWrite: Unimplemented!  bar = %d,  port = 0x%x,  size = %u,  value = 0x%x\n", barIndex, port, size, value);
+}
+
+void LPCDevice::WriteConfig(uint32_t reg, uint32_t value, uint8_t size) {
+    PCIDevice::WriteConfig(reg, value, size);
+
+    // Disable MCPX ROM
+    if (reg == 0x80 && (value & 2)) {
+        log_debug("LPCDevice::WriteConfig:  Disabling MCPX ROM\n");
+        // Restore last 512 bytes of the original BIOS ROM image, replicating across the entire 16 MiB range
+        for (uint32_t addr = 0; addr < MiB(16); addr += m_biosSize) {
+            memcpy(m_rom + m_biosSize - 512 + addr, m_bios + m_biosSize - 512, 512);
+        }
+    }
 }
 
 

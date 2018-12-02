@@ -17,6 +17,8 @@
 #include <sys/mman.h>
 #endif
 
+#include "Zydis/Zydis.h"
+
 #include <chrono>
 
 namespace openxbox {
@@ -92,6 +94,8 @@ Xbox::~Xbox() {
         munmap(m_rom, XBOX_ROM_AREA_SIZE);
 #endif
     }
+    if (m_bios != nullptr) delete[] m_bios;
+    if (m_mcpxROM != nullptr) delete[] m_mcpxROM;
     if (m_memRegion) delete m_memRegion;
 
     if (m_SMC != nullptr) delete m_SMC;
@@ -143,7 +147,7 @@ int Xbox::Initialize(OpenXBOXSettings *settings)
     log_debug("Allocating RAM (%d MiB)\n", m_ramSize >> 20);
 
 #ifdef _WIN32
-    m_ram = (char *)valloc(m_ramSize);
+    m_ram = (uint8_t *)valloc(m_ramSize);
 #endif
 
 #ifdef __linux__
@@ -165,7 +169,7 @@ int Xbox::Initialize(OpenXBOXSettings *settings)
     log_debug("Allocating ROM (%d MiB)\n", XBOX_ROM_AREA_SIZE >> 20);
 
 #ifdef _WIN32
-    m_rom = (char *)valloc(XBOX_ROM_AREA_SIZE);
+    m_rom = (uint8_t *)valloc(XBOX_ROM_AREA_SIZE);
 #endif
 
 #ifdef __linux__
@@ -199,8 +203,8 @@ int Xbox::Initialize(OpenXBOXSettings *settings)
         log_debug("incorrect file size: %d (must be 512 bytes)\n", sz);
         return 2;
     }
-    char *mcpx = new char[sz];
-    fread(mcpx, 1, sz, fp);
+    m_mcpxROM = new uint8_t[sz];
+    fread(m_mcpxROM, 1, sz, fp);
     fclose(fp);
     log_debug("OK\n");
 
@@ -218,25 +222,12 @@ int Xbox::Initialize(OpenXBOXSettings *settings)
         log_debug("incorrect file size: %d (must be 256 KiB or 1024 KiB)\n", sz);
         return 3;
     }
-    char *bios = new char[sz];
-    fread(bios, 1, sz, fp);
+    m_bios = new uint8_t[sz];
+    fread(m_bios, 1, sz, fp);
     fclose(fp);
     log_debug("OK (%d KiB)\n", sz >> 10);
 
     uint32_t biosSize = sz;
-
-    // Load BIOS ROM image
-    memcpy(m_rom, bios, biosSize);
-
-    // Overlay MCPX ROM image onto the last 512 bytes
-    if(!(m_settings.hw_model == DebugKit)) {
-        memcpy(m_rom + biosSize - 512, mcpx, 512);
-    }
-
-    // Replicate resulting ROM image across the entire 16 MiB range
-    for (uint32_t addr = biosSize; addr < MiB(16); addr += biosSize) {
-        memcpy(m_rom + addr, m_rom, biosSize);
-    }
 
     // ----- CPU --------------------------------------------------------------
 
@@ -314,7 +305,7 @@ int Xbox::Initialize(OpenXBOXSettings *settings)
     m_EEPROM = new EEPROMDevice();
     m_HostBridge = new HostBridgeDevice(PCI_VENDOR_ID_NVIDIA, 0x02A5, 0xA1);
     m_MCPXRAM = new MCPXRAMDevice(PCI_VENDOR_ID_NVIDIA, 0x02A6, 0xA1, mcpxRevision);
-    m_LPC = new LPCDevice(PCI_VENDOR_ID_NVIDIA, 0x01B2, 0xD4, m_IRQs);
+    m_LPC = new LPCDevice(PCI_VENDOR_ID_NVIDIA, 0x01B2, 0xD4, m_IRQs, m_rom, m_bios, biosSize, m_mcpxROM, m_settings.hw_model != DebugKit);
     m_USB1 = new USBPCIDevice(PCI_VENDOR_ID_NVIDIA, 0x02A5, 0xA1, 1, m_cpu);
     m_USB2 = new USBPCIDevice(PCI_VENDOR_ID_NVIDIA, 0x02A5, 0xA1, 9, m_cpu);
     m_NVNet = new NVNetDevice(PCI_VENDOR_ID_NVIDIA, 0x01C3, 0xD2);
@@ -445,10 +436,8 @@ int Xbox::RunCpu()
 
     while (m_should_run) {
         // Run CPU emulation
-#if 0
-#ifdef _DEBUG
+#if defined(_DEBUG) && 0
         t.Start();
-#endif
 #endif
         if (m_settings.cpu_singleStep) {
             result = m_cpu->Step();
@@ -456,11 +445,9 @@ int Xbox::RunCpu()
         else {
             result = m_cpu->Run();
         }
-#if 0
-#ifdef _DEBUG
+#if defined(_DEBUG) && 0
         t.Stop();
         log_debug("CPU Executed for %lld ms\n", t.GetMillisecondsElapsed());
-#endif
 #endif
 
         // Handle result
@@ -481,23 +468,42 @@ int Xbox::RunCpu()
             break;
         }
 
-#if 1
-#ifdef _DEBUG
-#if 0
+#if defined(_DEBUG) && 0
         // Print CPU registers
         uint32_t eip;
         m_cpu->RegRead(REG_EIP, &eip);
         DumpCPURegisters(m_cpu);
 #endif
 
-#if 0
-        // Print current EIP
+#if defined(_DEBUG) && 1
+        // Print current EIP and instruction
         static bool printEIP = false;
         uint32_t eip;
         m_cpu->RegRead(REG_EIP, &eip);
-        log_debug("%08x\n", eip);
+        log_debug("%08x", eip);
+        {
+            char mem[16];
+            m_cpu->MemRead(eip, 16, mem);
+
+            ZydisDecoder decoder;
+            ZydisDecoderInit(&decoder, ZYDIS_MACHINE_MODE_LEGACY_32, ZYDIS_ADDRESS_WIDTH_32);
+
+            ZydisFormatter formatter;
+            ZydisFormatterInit(&formatter, ZYDIS_FORMATTER_STYLE_INTEL);
+
+            uint32_t offset = 0;
+            ZydisDecodedInstruction instruction;
+
+            if (ZYDIS_SUCCESS(ZydisDecoderDecodeBuffer(&decoder, mem, sizeof(mem), eip, &instruction))) {
+                char buffer[256];
+                ZydisFormatterFormatInstruction(&formatter, &instruction, buffer, sizeof(buffer));
+                log_debug("    %s", buffer);
+            }
+        }
+        log_debug("\n");
 #endif
 
+#if defined(_DEBUG) && 0
         // Print kernel bugchecks and wait for input
         {
             static bool kernelFound = false;
@@ -507,10 +513,14 @@ int Xbox::RunCpu()
 
             // Check if the kernel has been extracted and decrypted
             if (!kernelFound) {
-                uint16_t mzMagic = 0;
-                m_cpu->VMemRead(0x80010000, sizeof(uint16_t), &mzMagic);
-                if (mzMagic == 0x5a4d) {
-                    kernelFound = true;
+                uint32_t eip;
+                m_cpu->RegRead(REG_EIP, &eip);
+                if (eip >= 0x80000000) {
+                    uint16_t mzMagic = 0;
+                    m_cpu->VMemRead(0x80010000, sizeof(uint16_t), &mzMagic);
+                    if (mzMagic == 0x5a4d) {
+                        kernelFound = true;
+                    }
                 }
             }
 
@@ -546,6 +556,13 @@ int Xbox::RunCpu()
                     log_debug("  Address of functions: 0x%08x  ->  0x%08x\n", kernelAddressOfFunctions, pKernelAddressOfFunctions);
                     log_debug("    KiBugCheckData    : 0x%08x  ->  0x%08x\n", kiBugCheckDataAddress, pKiBugCheckDataAddress);
                     printedKernelData = true;
+                 
+                    /*HardwareBreakpoints bps = { 0 };
+                    bps.bp[0].address = 0x8002f243; // RtlAssert entrypoint in complex 4627 BIOS
+                    bps.bp[0].globalEnable = true;
+                    bps.bp[0].length = HWBP_LENGTH_1_BYTE;
+                    bps.bp[0].trigger = HWBP_TRIGGER_EXECUTION;
+                    m_cpu->SetHardwareBreakpoints(bps);*/
                 }
 
                 static uint32_t lastBugCheckCode = 0;
@@ -572,17 +589,42 @@ int Xbox::RunCpu()
                 }
             }
         }
+#endif
 
         // Handle reason for the CPU to exit
         exit_info = m_cpu->GetExitInfo();
         switch (exit_info->reason) {
         case CPU_EXIT_HLT:      log_info("CPU halted\n");          Stop(); break;
         case CPU_EXIT_SHUTDOWN: log_info("VM is shutting down\n"); Stop(); break;
+#if defined(_DEBUG) && 0
+        case CPU_EXIT_HW_BREAKPOINT:
+        case CPU_EXIT_SW_BREAKPOINT:
+        {
+            uint32_t bpAddr;
+            if (m_cpu->GetBreakpointAddress(&bpAddr)) {
+                if (exit_info->reason == CPU_EXIT_HW_BREAKPOINT) {
+                    log_info("Hardware breakpoint hit at 0x%08x\n", bpAddr);
+                }
+                else {
+                    log_info("Software breakpoint hit at 0x%08x\n", bpAddr);
+                }
+                DumpCPURegisters(m_cpu);
+                DumpCPUStack(m_cpu, -0x10, 0x100);
+                log_warning("Press ENTER to continue\n");
+                getchar();
+            }
+            else {
+                log_warning("Breakpoint hit, but address could not be retrieved\n");
+                log_warning("Press ENTER to continue\n");
+                getchar();
+            }
+            break;
+        }
+#endif
         default: break;
         }
     }
-#endif
-#endif
+
 
     return result;
 }
