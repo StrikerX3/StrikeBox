@@ -163,7 +163,7 @@ void DisassembleCPUMemory(Cpu* cpu, uint32_t address, uint32_t size, bool physic
 	}
 	else {
 		if (cpu->VMemRead(address, size, mem)) {
-			log_debug("<invalid address\n\n");
+			log_debug("<invalid address>\n\n");
 			delete[] mem;
 			return;
 		}
