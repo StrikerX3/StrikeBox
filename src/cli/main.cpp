@@ -115,31 +115,32 @@ int main(int argc, const char *argv[]) {
     xbe->DumpInformation(stdout);
 #endif
 
-    OpenXBOXSettings settings;
-    settings.cpu_singleStep = false;
-    settings.emu_stopOnSMCFatalErrors = true;
-    settings.emu_stopOnBugChecks = true;
-    settings.debug_dumpPageTables = false;
-    settings.debug_dumpXBESectionContents = false;
-    settings.debug_dumpDisassemblyOnExit = true;
-    settings.debug_dumpDisassembly_length = 10;
-    settings.debug_dumpStackOnExit = true;
-    settings.debug_dumpStack_upperBound = 0x10;
-    settings.debug_dumpStack_lowerBound = 0x20;
-    settings.gdb_enable = false;
-    settings.hw_model = is_debug ? DebugKit : Revision1_0;
-    settings.hw_sysclock_tickRate = 1000.0f;
-    settings.hw_enableSuperIO = true;
-    settings.hw_charDrivers[0].type = CHD_HostSerialPort;
-    settings.hw_charDrivers[0].params.hostSerialPort.portNum = 5;
-    //settings.hw_charDrivers[0].type = CHD_Null;
-    settings.hw_charDrivers[1].type = CHD_Null;
-    settings.rom_mcpx = mcpx_path;
-    settings.rom_bios = bios_path;
-
 	int result = 0;
     Xbox *xbox = new Xbox(cpuModuleInstance.cpuModule);
-	if (xbox->Initialize(&settings)) {
+
+    OpenXBOXSettings *settings = xbox->GetSettings();
+    settings->cpu_singleStep = false;
+    settings->emu_stopOnSMCFatalErrors = true;
+    settings->emu_stopOnBugChecks = true;
+    settings->debug_dumpPageTables = false;
+    settings->debug_dumpXBESectionContents = false;
+    settings->debug_dumpDisassemblyOnExit = true;
+    settings->debug_dumpDisassembly_length = 10;
+    settings->debug_dumpStackOnExit = true;
+    settings->debug_dumpStack_upperBound = 0x10;
+    settings->debug_dumpStack_lowerBound = 0x20;
+    settings->gdb_enable = false;
+    settings->hw_model = is_debug ? DebugKit : Revision1_0;
+    settings->hw_sysclock_tickRate = 1000.0f;
+    settings->hw_enableSuperIO = true;
+    settings->hw_charDrivers[0].type = CHD_HostSerialPort;
+    settings->hw_charDrivers[0].params.hostSerialPort.portNum = 5;
+    //settings->hw_charDrivers[0].type = CHD_Null;
+    settings->hw_charDrivers[1].type = CHD_Null;
+    settings->rom_mcpx = mcpx_path;
+    settings->rom_bios = bios_path;
+
+    if (xbox->Initialize()) {
 		log_fatal("Xbox initialization failed\n");
 		result = -2;
 		goto exit;

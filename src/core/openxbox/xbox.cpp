@@ -202,10 +202,8 @@ Xbox::~Xbox() {
 /*!
  * Perform basic system initialization
  */
-int Xbox::Initialize(OpenXBOXSettings *settings)
+int Xbox::Initialize()
 {
-    m_settings = *settings;
-
     // Fixup settings
     if (m_settings.hw_model == DebugKit) {
         m_settings.hw_enableSuperIO = true;
@@ -482,6 +480,10 @@ void Xbox::InitializePreRun() {
         m_gdb->WaitForConnection();
         m_gdb->Debug(1);
     }
+}
+
+void Xbox::CopySettings(OpenXBOXSettings *settings) {
+    m_settings = *settings;
 }
 
 int Xbox::Run() {

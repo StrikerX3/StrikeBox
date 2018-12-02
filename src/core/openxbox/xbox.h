@@ -71,12 +71,13 @@ class Xbox : Emulator {
 public:
     Xbox(IOpenXBOXCPUModule *cpuModule);
     virtual ~Xbox();
-    int Initialize(OpenXBOXSettings *settings);
+    int Initialize();
 
     void InitializePreRun();
     void Cleanup();
 
     OpenXBOXSettings *GetSettings() { return &m_settings; }
+    void CopySettings(OpenXBOXSettings *settings);
 
     int Run();
     void Stop();
