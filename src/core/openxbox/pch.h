@@ -6,6 +6,7 @@
 #include "openxbox/settings.h"
 #include "openxbox/pte.h"
 #include "openxbox/log.h"
+#include "openxbox/util.h"
 
 #include <string.h>
 #include <vector>
