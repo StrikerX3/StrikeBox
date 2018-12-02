@@ -151,23 +151,9 @@ void DumpCPUMemory(Cpu *cpu, uint32_t address, uint32_t size, bool physical) {
 	delete[] mem;
 }
 
-void DisassembleCPUMemory(Cpu* cpu, uint32_t address, uint32_t size, bool physical) {
+void DumpCPUDisassembly(Cpu* cpu, uint32_t address, uint32_t count, bool physical) {
 	log_debug("%s memory disassembly at 0x%08x:\n", (physical ? "Physical" : "Virtual"), address);
-	char *mem = new char[size];
-	if (physical) {
-		if (cpu->MemRead(address, size, mem)) {
-			log_debug("<invalid address>\n\n");
-			delete[] mem;
-			return;
-		}
-	}
-	else {
-		if (cpu->VMemRead(address, size, mem)) {
-			log_debug("<invalid address>\n\n");
-			delete[] mem;
-			return;
-		}
-	}
+    uint8_t mem[16];
 
 	ZydisDecoder decoder;
 	ZydisDecoderInit(&decoder,
@@ -177,24 +163,30 @@ void DisassembleCPUMemory(Cpu* cpu, uint32_t address, uint32_t size, bool physic
 	ZydisFormatter formatter;
 	ZydisFormatterInit(&formatter, ZYDIS_FORMATTER_STYLE_INTEL);
 
-	uint32_t offset = 0;
 	ZydisDecodedInstruction instruction;
 
-	while (offset < size) {
-		if (ZYDIS_SUCCESS(ZydisDecoderDecodeBuffer(
-			&decoder, (char*)mem + offset, ((sizeof(char) * size) - offset),
-			(address + offset), &instruction
-		))) {
-			char buffer[256];
-			ZydisFormatterFormatInstruction(
-				&formatter, &instruction, buffer, sizeof(buffer)
-			);
-			log_debug("%08x  %s\n", (address + offset), buffer);
-		}
-		offset += instruction.length;
-	}
+	for (int i = 0; i < count; i++) {
+        if (physical) {
+            if (cpu->MemRead(address, 16, mem)) {
+                log_debug("<invalid address>\n\n");
+                return;
+            }
+        }
+        else {
+            if (cpu->VMemRead(address, 16, mem)) {
+                log_debug("<invalid address>\n\n");
+                return;
+            }
+        }
 
-	delete[] mem;
+        auto result = ZydisDecoderDecodeBuffer(&decoder, mem, 16, address, &instruction);
+		if (ZYDIS_SUCCESS(result)) {
+			char buffer[256];
+			ZydisFormatterFormatInstruction(&formatter, &instruction, buffer, sizeof(buffer));
+			log_debug("%08x  %s\n", address, buffer);
+		}
+		address += instruction.length;
+	}
 }
 
 }

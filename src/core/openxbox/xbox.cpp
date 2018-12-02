@@ -575,8 +575,8 @@ int Xbox::RunCpu()
                 DumpCPUStack(m_cpu);
                 DumpCPUMemory(m_cpu, eip, 0x40, true);
                 DumpCPUMemory(m_cpu, eip, 0x40, false);
-                DisassembleCPUMemory(m_cpu, eip, 0x40, true);
-                DisassembleCPUMemory(m_cpu, eip, 0x40, false);
+                DumpCPUDisassembly(m_cpu, eip, 0x40, true);
+                DumpCPUDisassembly(m_cpu, eip, 0x40, false);
             }
             // Stop emulation
             Stop();
@@ -695,11 +695,13 @@ void Xbox::Cleanup() {
         uint32_t eip;
         m_cpu->RegRead(REG_EIP, &eip);
         DumpCPURegisters(m_cpu);
-        DumpCPUStack(m_cpu);
-        DumpCPUMemory(m_cpu, eip, 0x80, true);
-        DumpCPUMemory(m_cpu, eip, 0x80, false);
-        DisassembleCPUMemory(m_cpu, eip, 0x80, true);
-        DisassembleCPUMemory(m_cpu, eip, 0x80, false);
+        if (m_settings.debug_dumpStackOnExit) {
+            DumpCPUStack(m_cpu, -m_settings.debug_dumpStack_upperBound, m_settings.debug_dumpStack_lowerBound);
+        }
+        if (m_settings.debug_dumpDisassemblyOnExit) {
+            DumpCPUDisassembly(m_cpu, eip, m_settings.debug_dumpDisassembly_length, true);
+            DumpCPUDisassembly(m_cpu, eip, m_settings.debug_dumpDisassembly_length, false);
+        }
 
         auto skippedInterrupts = m_cpu->GetSkippedInterrupts();
         for (uint8_t i = 0; i < 0x40; i++) {

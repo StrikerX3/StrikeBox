@@ -121,6 +121,11 @@ int main(int argc, const char *argv[]) {
     settings.emu_stopOnBugChecks = true;
     settings.debug_dumpPageTables = false;
     settings.debug_dumpXBESectionContents = false;
+    settings.debug_dumpDisassemblyOnExit = true;
+    settings.debug_dumpDisassembly_length = 10;
+    settings.debug_dumpStackOnExit = true;
+    settings.debug_dumpStack_upperBound = 0x10;
+    settings.debug_dumpStack_lowerBound = 0x20;
     settings.gdb_enable = false;
     settings.hw_model = is_debug ? DebugKit : Revision1_0;
     settings.hw_sysclock_tickRate = 1000.0f;

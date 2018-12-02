@@ -23,6 +23,6 @@ void DumpCPUMemory(Cpu *cpu, uint32_t address, uint32_t size, bool physical);
 /*!
 * Disassemble memory region
 */
-void DisassembleCPUMemory(Cpu *cpu, uint32_t address, uint32_t size, bool physical);
+void DumpCPUDisassembly(Cpu *cpu, uint32_t address, uint32_t size, bool physical);
 
 }

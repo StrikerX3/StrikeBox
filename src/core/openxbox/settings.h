@@ -27,8 +27,23 @@ struct OpenXBOXSettings {
     // true: XBE sections will be dumped to individual files
     bool debug_dumpXBESectionContents = false;
 
-    // true: dump page tables after execution
+    // true: dump page tables on exit
     bool debug_dumpPageTables = false;
+
+    // true: dump current stack on exit
+    bool debug_dumpStackOnExit = false;
+
+    // The upper bound of the stack to be dumped, expressed as an offset from the current stack pointer
+    uint32_t debug_dumpStack_upperBound = 0x10;
+
+    // The lower bound of the stack to be dumped, expressed as an offset from the current stack pointer
+    uint32_t debug_dumpStack_lowerBound = 0x20;
+
+    // true: dump disassembly of instructions starting at current EIP on exit
+    bool debug_dumpDisassemblyOnExit = false;
+
+    // The number of instructions to disassemble
+    uint32_t debug_dumpDisassembly_length = 15;
 
     // The Xbox hardware model to use
     HardwareModel hw_model = DebugKit;
