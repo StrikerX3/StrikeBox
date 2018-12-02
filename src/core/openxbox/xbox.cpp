@@ -136,6 +136,12 @@ Xbox::~Xbox() {
 int Xbox::Initialize(OpenXBOXSettings *settings)
 {
     m_settings = *settings;
+
+    // Fixup settings
+    if (m_settings.hw_model == DebugKit) {
+        m_settings.hw_enableSuperIO = true;
+    }
+
     MemoryRegion *rgn;
 
     // Initialize 4 GiB address space
@@ -269,7 +275,7 @@ int Xbox::Initialize(OpenXBOXSettings *settings)
     m_i8259 = new i8259(m_cpu);
     m_i8254 = new i8254(m_i8259, m_settings.hw_sysclock_tickRate);
     m_CMOS = new CMOS();
-    if (m_settings.hw_model == DebugKit) {
+    if (m_settings.hw_enableSuperIO) {
         for (int i = 0; i < SUPERIO_SERIAL_PORT_COUNT; i++) {
             switch (m_settings.hw_charDrivers[i].type) {
             case CHD_Null:
@@ -295,7 +301,7 @@ int Xbox::Initialize(OpenXBOXSettings *settings)
     m_i8259->Reset();
     m_i8254->Reset();
     m_CMOS->Reset();
-    if (m_settings.hw_model == DebugKit) {
+    if (m_settings.hw_enableSuperIO) {
         m_SuperIO->Reset();
     }
 
@@ -374,7 +380,7 @@ int Xbox::Initialize(OpenXBOXSettings *settings)
     m_i8254->MapIO(&m_ioMapper);
     m_CMOS->MapIO(&m_ioMapper);
     m_PCIBus->MapIO(&m_ioMapper);
-    if (m_settings.hw_model == DebugKit) {
+    if (m_settings.hw_enableSuperIO) {
         m_SuperIO->MapIO(&m_ioMapper);
     }
 

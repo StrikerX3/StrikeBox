@@ -29,6 +29,10 @@ struct OpenXBOXSettings {
     // The system clock tick rate
     float hw_sysclock_tickRate = 1000.0f;
 
+    // Enable Super I/O hardware on retail systems
+    // Always enabled on DebugKit models
+    bool hw_enableSuperIO = true;
+
     // Character I/O drivers for each of the two emulated serial ports
     struct {
         CharDriverType type;

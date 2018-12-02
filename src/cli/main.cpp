@@ -122,6 +122,7 @@ int main(int argc, const char *argv[]) {
     settings.gdb_enable = false;
     settings.hw_model = is_debug ? DebugKit : Revision1_0;
     settings.hw_sysclock_tickRate = 1000.0f;
+    settings.hw_enableSuperIO = true;
     settings.hw_charDrivers[0].type = CHD_HostSerialPort;
     settings.hw_charDrivers[0].params.hostSerialPort.portNum = 5;
     //settings.hw_charDrivers[0].type = CHD_Null;
