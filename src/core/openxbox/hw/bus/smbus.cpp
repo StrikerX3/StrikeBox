@@ -106,7 +106,7 @@ void SMBus::ExecuteTransaction() {
             m_Data1 = val >> 8;
         }
         else {
-            pDevice->WriteWord(m_Command, m_Data0);
+            pDevice->WriteWord(m_Command, (m_Data1 << 8) | m_Data0);
         }
         break;
     case AMD756_BLOCK_DATA:
@@ -134,10 +134,6 @@ void SMBus::PCIIORead(int barIndex, uint32_t port, uint32_t *value, uint8_t size
         return;
     }
 
-    if (size != 1) {
-        log_debug("SMBus::PCIIORead:  unexpected size %d   bar = %d,  port = 0x%x\n", size, barIndex, port);
-    }
-
     port &= 0x3f;
 
     switch (port) {
@@ -154,7 +150,12 @@ void SMBus::PCIIORead(int barIndex, uint32_t port, uint32_t *value, uint8_t size
         *value = m_Address;
         break;
     case SMB_HOST_DATA:
-        *value = m_Data0;
+        if (size == 2) {
+            *value = (m_Data1 << 8) | m_Data0;
+        }
+        else {
+            *value = m_Data0;
+        }
         break;
     case SMB_HOST_DATA + 1:
         *value = m_Data1;
@@ -178,10 +179,6 @@ void SMBus::PCIIOWrite(int barIndex, uint32_t port, uint32_t value, uint8_t size
     if (barIndex != 1) {
         log_debug("SMBus::PCIIOWrite: unimplemented access to bar %d:  port = 0x%x,  size = %u,  value = 0x%x\n", barIndex, port, size, value);
         return;
-    }
-
-    if (size != 1) {
-        log_debug("SMBus::PCIIOWrite: unexpected size %d   bar = %d,  port = 0x%x,  value = 0x%x\n", size, barIndex, port, value);
     }
 
     port &= 0x3f;
@@ -231,7 +228,13 @@ void SMBus::PCIIOWrite(int barIndex, uint32_t port, uint32_t value, uint8_t size
         m_Address = value;
         break;
     case SMB_HOST_DATA:
-        m_Data0 = value;
+        if (size == 2) {
+            m_Data0 = value & 0xFF;
+            m_Data1 = (value >> 8) & 0xFF;
+        }
+        else {
+            m_Data0 = value;
+        }
         break;
     case SMB_HOST_DATA + 1:
         m_Data1 = value;
