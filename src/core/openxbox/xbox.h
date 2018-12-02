@@ -125,7 +125,15 @@ protected:
     OpenXBOXSettings  m_settings;
 
     // ----- State ------------------------------------------------------------
-    bool m_should_run;
+    bool     m_should_run;
+
+    uint8_t  m_lastSMCErrorCode = 0;
+
+    bool     m_kernelDataFound = false;
+    uint32_t m_kiBugCheckDataAddress = 0x00000000;
+    uint32_t m_lastBugCheckCode = 0x00000000;
+
+    bool LocateKernelData();
 
     // ----- Debugger ---------------------------------------------------------
     GdbServer *m_gdb;

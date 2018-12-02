@@ -66,6 +66,67 @@ uint32_t Xbox::EmuCpuThreadFunc(void *data) {
     return xbox->RunCpu();
 }
 
+bool Xbox::LocateKernelData() {
+    // Return immediately if the kernel data has already been found
+    if (m_kernelDataFound) {
+        return true;
+    }
+
+    // Check if the kernel has been extracted and decrypted
+    uint32_t eip;
+    m_cpu->RegRead(REG_EIP, &eip);
+    if (eip >= 0x80000000) {
+        uint16_t mzMagic = 0;
+        if (m_cpu->VMemRead(0x80010000, sizeof(uint16_t), &mzMagic)) return false;
+        if (mzMagic != 'ZM') {
+            return false;
+        }
+    }
+    
+    uint32_t peHeaderAddress = 0x00000000;
+    uint32_t baseOfCode = 0x00000000;
+    uint32_t exportsTableAddress = 0x00000000;
+    
+    // Find PE header position and ensure it matches the magic value
+    if (m_cpu->VMemRead(0x8001003c, sizeof(uint32_t), &peHeaderAddress)) return false;
+    peHeaderAddress += 0x80010000;
+    uint16_t peMagic = 0;
+    if (m_cpu->VMemRead(peHeaderAddress, sizeof(uint16_t), &peMagic)) return false;
+    if (peMagic != 'EP') {
+        peHeaderAddress = 0x00000000;
+        return false;
+    }
+
+    // Find base of code and address of functions to locate the exports table
+    if (m_cpu->VMemRead(peHeaderAddress + 0x2c, sizeof(uint32_t), &baseOfCode)) return false;
+    baseOfCode += 0x80010000;
+
+    // Find exports table
+    if (m_cpu->VMemRead(baseOfCode + 0x1c, sizeof(uint32_t), &exportsTableAddress)) return false;
+    exportsTableAddress += 0x80010000;
+
+    // Get addresses of relevant data
+    if (m_cpu->VMemRead(exportsTableAddress + ((162 - 1) * sizeof(uint32_t)), sizeof(uint32_t), &m_kiBugCheckDataAddress)) return false;
+    m_kiBugCheckDataAddress += 0x80010000;
+
+    uint32_t pKernelPEHeaderPos;
+    uint32_t pKernelBaseOfCode;
+    uint32_t pKernelExportsTableAddress;
+    uint32_t pKiBugCheckDataAddress;
+    m_cpu->VirtualToPhysical(peHeaderAddress, &pKernelPEHeaderPos);
+    m_cpu->VirtualToPhysical(baseOfCode, &pKernelBaseOfCode);
+    m_cpu->VirtualToPhysical(exportsTableAddress, &pKernelExportsTableAddress);
+    m_cpu->VirtualToPhysical(m_kiBugCheckDataAddress, &pKiBugCheckDataAddress);
+    log_debug("Kernel extracted and decrypted\n");
+    log_debug("  PE header          0x%08x  ->  0x%p\n", peHeaderAddress, m_ram + pKernelPEHeaderPos);
+    log_debug("  Base of code       0x%08x  ->  0x%p\n", baseOfCode, m_ram + pKernelBaseOfCode);
+    log_debug("  Exports table      0x%08x  ->  0x%p\n", exportsTableAddress, m_ram + pKernelExportsTableAddress);
+    log_debug("    KiBugCheckData   0x%08x  ->  0x%p\n", m_kiBugCheckDataAddress, m_ram + pKiBugCheckDataAddress);
+    m_kernelDataFound = true;
+
+    return true;
+}
+
 /*!
  * Constructor
  */
@@ -459,67 +520,6 @@ int Xbox::RunCpu()
         log_debug("CPU Executed for %lld ms\n", t.GetMillisecondsElapsed());
 #endif
 
-        // Handle result
-        if (result != 0) {
-            log_error("Error occurred!\n");
-            if (LOG_LEVEL >= LOG_LEVEL_DEBUG) {
-                uint32_t eip;
-                m_cpu->RegRead(REG_EIP, &eip);
-                DumpCPURegisters(m_cpu);
-                DumpCPUStack(m_cpu);
-                DumpCPUMemory(m_cpu, eip, 0x40, true);
-                DumpCPUMemory(m_cpu, eip, 0x40, false);
-                DisassembleCPUMemory(m_cpu, eip, 0x40, true);
-                DisassembleCPUMemory(m_cpu, eip, 0x40, false);
-            }
-            // Stop emulation
-            Stop();
-            break;
-        }
-
-        // Parse fatal error code
-        static uint8_t lastSMCErrorCode = 0;
-        uint8_t smcErrorCode = m_SMC->GetRegister(SMCRegister::ErrorCode);
-
-        // Display fatal error code and description
-        // See http://xboxdevwiki.net/Fatal_Error
-        // See https://assemblergames.com/threads/xbox-error-codes-repair-reference-tips.62966/
-        if (smcErrorCode != 0 && lastSMCErrorCode != smcErrorCode) {
-            log_error("/!\\ --------------------------------- /!\\\n");
-            log_fatal("/!\\    System issued a Fatal Error    /!\\\n");
-            log_fatal("/!\\                                   /!\\\n");
-            log_fatal("/!\\        Fatal error code %02d        /!\\\n", smcErrorCode);
-            switch (smcErrorCode) {
-            case  2: log_fatal("/!\\      Invalid EEPROM checksum      /!\\\n"); break;
-            case  4: log_fatal("/!\\         RAM check failure         /!\\\n"); break;
-            case  5: log_fatal("/!\\       Hard drive not locked       /!\\\n"); break;
-            case  6: log_fatal("/!\\    Unable to unlock hard drive    /!\\\n"); break;
-            case  7: log_fatal("/!\\        Hard drive timeout         /!\\\n"); break;
-            case  8: log_fatal("/!\\        No hard drive found        /!\\\n"); break;
-            case  9: log_fatal("/!\\  Hard drive configuration failed  /!\\\n"); break;
-            case 10: log_fatal("/!\\         DVD drive timeout         /!\\\n"); break;
-            case 11: log_fatal("/!\\        No DVD drive found         /!\\\n"); break;
-            case 12: log_fatal("/!\\  DVD drive configuration failed   /!\\\n"); break;
-            case 13: log_fatal("/!\\    Dashboard failed to launch     /!\\\n"); break;
-            case 14: log_fatal("/!\\    Unspecified dashboard error    /!\\\n"); break;
-            case 16: log_fatal("/!\\     Dashboard settings error      /!\\\n"); break;
-            case 20: log_fatal("/!\\    Dashboard failed to launch     /!\\\n"); /* */
-                /**/ log_fatal("/!\\    (DVD authentication passed)    /!\\\n"); break;
-            case 21: log_fatal("/!\\         Unspecified error         /!\\\n"); break;
-            default: log_fatal("/!\\              Unknown              /!\\\n"); break;
-            }
-            log_fatal("/!\\                                   /!\\\n");
-            log_fatal("/!\\ --------------------------------- /!\\\n");
-
-            // Stop emulation on fatal errors if configured to do so
-            if (m_settings.emu_stopOnSMCFatalErrors) {
-                log_fatal("Received fatal error %02d; stopping.\n", smcErrorCode);
-                Stop();
-                break;
-            }
-            lastSMCErrorCode = smcErrorCode;
-        }
-
 #if defined(_DEBUG) && 0
         // Print CPU registers
         uint32_t eip;
@@ -557,77 +557,71 @@ int Xbox::RunCpu()
         log_debug("\n");
 #endif
 
-
-#if defined(_DEBUG) && 1
-        // Print kernel bugchecks and wait for input
-        {
-            // TODO: clean this mess up
-            static bool kernelFound = false;
-            static uint32_t kernelPEHeaderPos = 0;
-            static uint32_t kernelBaseOfCode = 0;
-            static uint32_t kernelAddressOfFunctions = 0;
-            static uint32_t kiBugCheckDataAddress = 0;
-
-            // Check if the kernel has been extracted and decrypted
-            if (!kernelFound) {
+        // Handle result
+        if (result != 0) {
+            log_error("Error occurred!\n");
+            if (LOG_LEVEL >= LOG_LEVEL_DEBUG) {
                 uint32_t eip;
                 m_cpu->RegRead(REG_EIP, &eip);
-                if (eip >= 0x80000000) {
-                    uint16_t mzMagic = 0;
-                    m_cpu->VMemRead(0x80010000, sizeof(uint16_t), &mzMagic);
-                    if (mzMagic == 0x5a4d) {
-                        kernelFound = true;
-                    }
-                }
+                DumpCPURegisters(m_cpu);
+                DumpCPUStack(m_cpu);
+                DumpCPUMemory(m_cpu, eip, 0x40, true);
+                DumpCPUMemory(m_cpu, eip, 0x40, false);
+                DisassembleCPUMemory(m_cpu, eip, 0x40, true);
+                DisassembleCPUMemory(m_cpu, eip, 0x40, false);
             }
+            // Stop emulation
+            Stop();
+            break;
+        }
 
-            // Find new executable header position
-            if (kernelFound && kernelPEHeaderPos < 0x80000000) {
-                m_cpu->VMemRead(0x8001003c, sizeof(uint32_t), &kernelPEHeaderPos);
-                kernelPEHeaderPos += 0x80010000;
+        // Parse fatal error code
+        uint8_t smcErrorCode = m_SMC->GetRegister(SMCRegister::ErrorCode);
+
+        // Display fatal error code and description
+        // See http://xboxdevwiki.net/Fatal_Error
+        // See https://assemblergames.com/threads/xbox-error-codes-repair-reference-tips.62966/
+        if (smcErrorCode != 0 && m_lastSMCErrorCode != smcErrorCode) {
+            log_error("/!\\ --------------------------------- /!\\\n");
+            log_fatal("/!\\    System issued a Fatal Error    /!\\\n");
+            log_fatal("/!\\                                   /!\\\n");
+            log_fatal("/!\\        Fatal error code %02d        /!\\\n", smcErrorCode);
+            switch (smcErrorCode) {
+            case  2: log_fatal("/!\\      Invalid EEPROM checksum      /!\\\n"); break;
+            case  4: log_fatal("/!\\         RAM check failure         /!\\\n"); break;
+            case  5: log_fatal("/!\\       Hard drive not locked       /!\\\n"); break;
+            case  6: log_fatal("/!\\    Unable to unlock hard drive    /!\\\n"); break;
+            case  7: log_fatal("/!\\        Hard drive timeout         /!\\\n"); break;
+            case  8: log_fatal("/!\\        No hard drive found        /!\\\n"); break;
+            case  9: log_fatal("/!\\  Hard drive configuration failed  /!\\\n"); break;
+            case 10: log_fatal("/!\\         DVD drive timeout         /!\\\n"); break;
+            case 11: log_fatal("/!\\        No DVD drive found         /!\\\n"); break;
+            case 12: log_fatal("/!\\  DVD drive configuration failed   /!\\\n"); break;
+            case 13: log_fatal("/!\\    Dashboard failed to launch     /!\\\n"); break;
+            case 14: log_fatal("/!\\    Unspecified dashboard error    /!\\\n"); break;
+            case 16: log_fatal("/!\\     Dashboard settings error      /!\\\n"); break;
+            case 20: log_fatal("/!\\    Dashboard failed to launch     /!\\\n"); /* */
+                /**/ log_fatal("/!\\    (DVD authentication passed)    /!\\\n"); break;
+            case 21: log_fatal("/!\\         Unspecified error         /!\\\n"); break;
+            default: log_fatal("/!\\              Unknown              /!\\\n"); break;
             }
+            log_fatal("/!\\                                   /!\\\n");
+            log_fatal("/!\\ --------------------------------- /!\\\n");
 
-            // Find base of code and address of functions to locate the exports table
-            if (kernelPEHeaderPos >= 0x80000000 && kernelBaseOfCode < 0x80000000) {
-                m_cpu->VMemRead(kernelPEHeaderPos + 0x2c, sizeof(uint32_t), &kernelBaseOfCode);
-                kernelBaseOfCode += 0x80010000;
+            // Stop emulation on fatal errors if configured to do so
+            if (m_settings.emu_stopOnSMCFatalErrors) {
+                log_fatal("Received fatal error %02d; stopping.\n", smcErrorCode);
+                Stop();
+                break;
             }
+            m_lastSMCErrorCode = smcErrorCode;
+        }
 
-            // Find address of functions
-            if (kernelBaseOfCode >= 0x80000000 && kernelAddressOfFunctions < 0x80000000) {
-                m_cpu->VMemRead(kernelBaseOfCode + 0x1c, sizeof(uint32_t), &kernelAddressOfFunctions);
-                kernelAddressOfFunctions += 0x80010000;
-            }
-
-            // Find KiBugCheckData address
-            if (kernelAddressOfFunctions >= 0x80000000 && kiBugCheckDataAddress < 0x80000000) {
-                m_cpu->VMemRead(kernelAddressOfFunctions + ((162 - 1) * sizeof(uint32_t)), sizeof(uint32_t), &kiBugCheckDataAddress);
-                kiBugCheckDataAddress += 0x80010000;
-            }
-
-            if (kiBugCheckDataAddress >= 0x80000000) {
-                static bool printedKernelData = false;
-                if (!printedKernelData) {
-                    uint32_t pKernelPEHeaderPos;
-                    uint32_t pKernelBaseOfCode;
-                    uint32_t pKernelAddressOfFunctions;
-                    uint32_t pKiBugCheckDataAddress;
-                    m_cpu->VirtualToPhysical(kernelPEHeaderPos, &pKernelPEHeaderPos);
-                    m_cpu->VirtualToPhysical(kernelBaseOfCode, &pKernelBaseOfCode);
-                    m_cpu->VirtualToPhysical(kernelAddressOfFunctions, &pKernelAddressOfFunctions);
-                    m_cpu->VirtualToPhysical(kiBugCheckDataAddress, &pKiBugCheckDataAddress);
-                    log_debug("Kernel extracted and decrypted\n");
-                    log_debug("  PE header           : 0x%08x  ->  0x%08x\n", kernelPEHeaderPos, pKernelPEHeaderPos);
-                    log_debug("  Base of code        : 0x%08x  ->  0x%08x\n", kernelBaseOfCode, pKernelBaseOfCode);
-                    log_debug("  Address of functions: 0x%08x  ->  0x%08x\n", kernelAddressOfFunctions, pKernelAddressOfFunctions);
-                    log_debug("    KiBugCheckData    : 0x%08x  ->  0x%08x\n", kiBugCheckDataAddress, pKiBugCheckDataAddress);
-                    printedKernelData = true;
-                }
-
-                static uint32_t lastBugCheckCode = 0;
-                uint32_t bugCheckCode[5] = { 0 };
-                m_cpu->VMemRead(kiBugCheckDataAddress, 5 * sizeof(uint32_t), &bugCheckCode);
-                if (bugCheckCode[0] != 0 && lastBugCheckCode != bugCheckCode[0]) {
+        // Print kernel bugchecks and wait for input
+        if (m_settings.emu_stopOnBugChecks && LocateKernelData()) {
+            uint32_t bugCheckCode[5] = { 0 };
+            if (m_cpu->VMemRead(m_kiBugCheckDataAddress, 5 * sizeof(uint32_t), &bugCheckCode) == 0) {
+                if (bugCheckCode[0] != 0 && m_lastBugCheckCode != bugCheckCode[0]) {
                     log_fatal("/!\\ ---------------------------- /!\\\n");
                     log_fatal("/!\\   System issued a BugCheck   /!\\\n");
                     log_fatal("/!\\                              /!\\\n");
@@ -638,18 +632,16 @@ int Xbox::RunCpu()
                     log_fatal("/!\\  Parameter 4     0x%08x  /!\\\n", bugCheckCode[4]);
                     log_fatal("/!\\                              /!\\\n");
                     log_fatal("/!\\ ---------------------------- /!\\\n");
-                    lastBugCheckCode = bugCheckCode[0];
+                    m_lastBugCheckCode = bugCheckCode[0];
                 }
             }
         }
-#endif
 
         // Handle reason for the CPU to exit
         exit_info = m_cpu->GetExitInfo();
         switch (exit_info->reason) {
         case CPU_EXIT_HLT:      log_info("CPU halted\n");          Stop(); break;
         case CPU_EXIT_SHUTDOWN: log_info("VM is shutting down\n"); Stop(); break;
-#if defined(_DEBUG) && 0
         case CPU_EXIT_HW_BREAKPOINT:
         case CPU_EXIT_SW_BREAKPOINT:
         {
@@ -663,21 +655,21 @@ int Xbox::RunCpu()
                 }
                 DumpCPURegisters(m_cpu);
                 DumpCPUStack(m_cpu, -0x10, 0x100);
-                log_warning("Press ENTER to continue\n");
-                getchar();
+                // TODO: allow users to handle breakpoints
+                //log_warning("Press ENTER to continue\n");
+                //getchar();
             }
             else {
                 log_warning("Breakpoint hit, but address could not be retrieved\n");
-                log_warning("Press ENTER to continue\n");
-                getchar();
+                // TODO: allow users to handle breakpoints
+                //log_warning("Press ENTER to continue\n");
+                //getchar();
             }
             break;
         }
-#endif
         default: break;
         }
     }
-
 
     return result;
 }

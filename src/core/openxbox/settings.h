@@ -17,6 +17,10 @@ struct OpenXBOXSettings {
     // true: the emulator will stop on a fatal error
     bool emu_stopOnSMCFatalErrors = false;
 
+    // true: the emulator will stop on a kernel bug check
+    // (only applies to original or modified Microsoft kernels)
+    bool emu_stopOnBugChecks = false;
+
     // true: enables the GDB server, allowing the guest to be debugged
     bool gdb_enable = false;
 

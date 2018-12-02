@@ -117,8 +117,8 @@ int main(int argc, const char *argv[]) {
 
     OpenXBOXSettings settings;
     settings.cpu_singleStep = false;
-    settings.emu_logSMCFatalErrors = true;
     settings.emu_stopOnSMCFatalErrors = true;
+    settings.emu_stopOnBugChecks = true;
     settings.debug_dumpPageTables = false;
     settings.debug_dumpXBESectionContents = false;
     settings.gdb_enable = false;
