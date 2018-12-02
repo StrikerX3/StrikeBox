@@ -451,11 +451,6 @@ public:
 	 * Retrieves information about why the CPU emulation exited.
 	 */
 	struct CpuExitInfo* GetExitInfo() { return &m_exitInfo; }
-
-	/*!
-	 * Retrieves the skipped interrupts counts.
-	 */
-	inline const uint32_t* GetSkippedInterrupts() { return m_skippedInterrupts; }
 protected:
 	/*!
 	 * The CPU exit information.
@@ -488,12 +483,6 @@ protected:
 	virtual InterruptResult InterruptImpl(uint8_t vector) = 0;
 	
     /*!
-	 * Keeps track of how many interrupts were skipped because they were
-	 * already enqueued.
-	 */
-	uint32_t m_skippedInterrupts[0x40];
-
-    /*!
      * Injects an interrupt into the VCPU.
      */
     virtual int InjectInterrupt(uint8_t vector) = 0;
@@ -515,7 +504,6 @@ private:
     std::mutex m_interruptMutex;
     std::mutex m_pendingInterruptsMutex;
     std::queue<uint8_t> m_pendingInterrupts;
-    Bitmap64 m_pendingInterruptsBitmap;  // Prevents the same interrupt from being enqueued more than once
     uint8_t m_interruptHandlerCredits;
 
     void InjectPendingInterrupt();

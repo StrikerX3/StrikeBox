@@ -703,13 +703,6 @@ void Xbox::Cleanup() {
             DumpCPUDisassembly(m_cpu, eip, m_settings.debug_dumpDisassembly_length, false);
         }
 
-        auto skippedInterrupts = m_cpu->GetSkippedInterrupts();
-        for (uint8_t i = 0; i < 0x40; i++) {
-            if (skippedInterrupts[i] > 0) {
-                log_warning("Interrupt vector 0x%02x: %d interrupt requests were skipped\n", i, skippedInterrupts[i]);
-            }
-        }
-
         if (m_settings.debug_dumpPageTables) {
             uint32_t cr0;
             m_cpu->RegRead(REG_CR0, &cr0);

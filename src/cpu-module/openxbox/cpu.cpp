@@ -29,10 +29,6 @@ Cpu::~Cpu() {
 int Cpu::Initialize(IOMapper *ioMapper) {
     m_ioMapper = ioMapper;
 	
-    for (uint8_t i = 0; i < 0x40; i++) {
-		m_skippedInterrupts[i] = 0;
-	}
-    m_pendingInterruptsBitmap = 0;
     m_interruptHandlerCredits = kInterruptHandlerMaxCredits;
 
     return InitializeImpl();
@@ -47,7 +43,7 @@ int Cpu::Run() {
     }
 
     // Inject an interrupt if available and possible
-    if (m_pendingInterruptsBitmap != 0) {
+    if (m_pendingInterrupts.size() > 0) {
         if (CanInjectInterrupt()) {
             InjectPendingInterrupt();
         }
@@ -68,7 +64,7 @@ int Cpu::Step() {
     }
 
     // Inject an interrupt if available and possible
-    if (m_pendingInterruptsBitmap != 0) {
+    if (m_pendingInterrupts.size() > 0) {
         if (CanInjectInterrupt()) {
             InjectPendingInterrupt();
         }
@@ -86,15 +82,8 @@ InterruptResult Cpu::Interrupt(uint8_t vector) {
     // Acquire the pending interrupts mutex
     std::lock_guard<std::mutex> guard(m_pendingInterruptsMutex);
 
-    // If the vector has not been enqueued yet, enqueue the interrupt
-    if (!Bitmap64IsSet(m_pendingInterruptsBitmap, vector)) {
-        m_pendingInterrupts.push(vector);
-        Bitmap64Set(&m_pendingInterruptsBitmap, vector);
-    }
-    // Keep track of skipped interrupts
-    else {
-        m_skippedInterrupts[vector]++;
-    }
+    // Enqueue the interrupt
+    m_pendingInterrupts.push(vector);
 
     return InterruptImpl(vector);
 }
@@ -108,7 +97,7 @@ int Cpu::MemMap(MemoryRegion *mem) {
 
 	for (auto it = mem->m_subregions; it != nullptr; it = it->next) {
 		auto subregion = it->curr;
-		log_debug("Mapping Region [%08x-%08zx)\n", subregion->m_start, subregion->m_start + subregion->m_size);
+		log_debug("Mapping Region %08x - %08zx\n", subregion->m_start, subregion->m_start + subregion->m_size - 1);
         if (MemMapSubregion(subregion)) {
             log_error("  Failed to map subregion\n");
             return -1;
@@ -430,8 +419,11 @@ void Cpu::InjectPendingInterrupt() {
     uint8_t vector = m_pendingInterrupts.front();
     m_pendingInterrupts.pop();
 
-    // Clear the bit in the pending interrupts bitmap
-    Bitmap64Clear(&m_pendingInterruptsBitmap, vector);
+#ifdef _DEBUG
+    if (m_pendingInterrupts.size() > 100) {
+        log_warning("Pending interrupts queue growing too long!\n");
+    }
+#endif
 
     // Inject the interrupt into the VCPU
     InjectInterrupt(vector);
