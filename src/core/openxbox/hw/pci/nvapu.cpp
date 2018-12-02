@@ -54,8 +54,7 @@ uint32_t GetAPUTime() {
 
 NVAPUDevice::NVAPUDevice(uint16_t vendorID, uint16_t deviceID, uint8_t revisionID)
     : PCIDevice(PCI_HEADER_TYPE_NORMAL, vendorID, deviceID, revisionID,
-        0x0f, 0x02, 0x00, // Audio controller
-        PCI_VENDOR_ID_NVIDIA, 0x01b0)
+        0x0f, 0x02, 0x00) // Audio controller
 {
 }
 
