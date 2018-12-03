@@ -140,7 +140,7 @@ static inline uint64_t Muldiv64(uint64_t a, uint32_t b, uint32_t c) {
 #define OHCI_ED_EN_MASK   (0xF<<OHCI_ED_EN_SHIFT)     // EndpointNumber
 #define OHCI_ED_D_SHIFT   11
 #define OHCI_ED_D_MASK    (3<<OHCI_ED_D_SHIFT)        // Direction
-#define OHCI_ED_S         (1<<13)
+#define OHCI_ED_S         (1<<13)                     // Speed
 #define OHCI_ED_K         (1<<14)                     // sKip
 #define OHCI_ED_F         (1<<15)                     // Format
 #define OHCI_ED_MPS_SHIFT 16
@@ -148,7 +148,7 @@ static inline uint64_t Muldiv64(uint64_t a, uint32_t b, uint32_t c) {
 
 /* Flags in the HeadP field of an ED */
 #define OHCI_ED_H         1                           // Halted
-#define OHCI_ED_C         2
+#define OHCI_ED_C         2                           // toggleCarry
 
 /* Bitfields for the first word of a TD */
 #define OHCI_TD_R         (1<<18)                     // bufferRounding
@@ -159,7 +159,7 @@ static inline uint64_t Muldiv64(uint64_t a, uint32_t b, uint32_t c) {
 #define OHCI_TD_T0        (1<<24)
 #define OHCI_TD_T1        (1<<25)                     // DataToggle (T0 and T1)
 #define OHCI_TD_EC_SHIFT  26
-#define OHCI_TD_EC_MASK   (3<<OHCI_TD_EC_SHIFT)
+#define OHCI_TD_EC_MASK   (3<<OHCI_TD_EC_SHIFT)       // ErrorCount
 #define OHCI_TD_CC_SHIFT  28
 #define OHCI_TD_CC_MASK   (0xF<<OHCI_TD_CC_SHIFT)     // ConditionCode
 /* Bitfields for the first word of an Isochronous Transfer Desciptor.  */
@@ -233,15 +233,15 @@ OHCI::OHCI(Cpu* cpu, int Irq, USBPCIDevice* UsbObj)
     }
     
     if (m_IrqNum == 9) {
-        offset = 2;
+        offset = 4;
     }
 
-	for (int i = 0; i < 2; i++) {
+	for (int i = 0; i < 4; i++) {
 		m_UsbDevice->USB_RegisterPort(&m_Registers.RhPort[i].UsbPort, i + offset, USB_SPEED_MASK_LOW | USB_SPEED_MASK_FULL, ops);
 	}
 	OHCI_PacketInit(&m_UsbPacket);
 
-	m_UsbFrameTime = 1000000ULL; // 1 ms
+	m_UsbFrameTime = 1000000ULL; // 1 ms expressed in ns
 	m_TicksPerUsbTick = 1000000000ULL / USB_HZ; // 83
 
 	// Do a hardware reset
@@ -294,7 +294,8 @@ void OHCI::OHCI_FrameBoundaryWorker()
 
 	// From the standard: "This bit is loaded from the FrameIntervalToggle field of
 	// HcFmInterval whenever FrameRemaining reaches 0."
-	m_Registers.HcFmRemaining = (m_Registers.HcFmRemaining & ~OHCI_FMR_FRT) | (m_Registers.HcFmInterval & OHCI_FMI_FIT);
+    m_Registers.HcFmRemaining = (m_Registers.HcFmInterval & OHCI_FMI_FIT) == 0 ?
+        m_Registers.HcFmRemaining & ~OHCI_FMR_FRT : m_Registers.HcFmRemaining | OHCI_FMR_FRT;
 
 	// Increment frame number
 	m_Registers.HcFmNumber = (m_Registers.HcFmNumber + 1) & 0xFFFF; // prevent overflow
@@ -341,7 +342,7 @@ void OHCI::OHCI_FatalError()
 {
 	// According to the standard, an OHCI will stop operating, and set itself into error state
 	// (which can be queried by MMIO). Instead of calling directly CxbxKrnlCleanup, we let the
-	// HCD know the problem so it can try to solve it
+	// HCD know the problem so that it can try to solve it
 
 	OHCI_SetInterrupt(OHCI_INTR_UE);
 	OHCI_BusStop();
@@ -618,7 +619,7 @@ int OHCI::OHCI_ServiceTD(OHCI_ED* Ed)
 	addr = Ed->HeadP & OHCI_DPTR_MASK;
 	// See if this TD has already been submitted to the device
 	completion = (addr == m_AsyncTD);
-	if (completion && !m_AsyncComplete) { // ??
+	if (completion && !m_AsyncComplete) {
 #ifdef DEBUG_PACKET
         log_spew("OHCI: Skipping async TD\n");
 #endif
@@ -859,7 +860,7 @@ XboxDeviceState* OHCI::OHCI_FindDevice(uint8_t Addr)
     XboxDeviceState* dev;
 	int i;
 
-	for (i = 0; i < 2; i++) {
+	for (i = 0; i < 4; i++) {
 		if ((m_Registers.RhPort[i].HcRhPortStatus & OHCI_PORT_PES) == 0) {
 			continue; // port is disabled
 		}
@@ -881,13 +882,8 @@ void OHCI::OHCI_StateReset()
 	m_OldHcControl = 0;
 
 	// Reset all registers
-	// Remark: the standard says that RemoteWakeupConnected bit should be set during POST, cleared during hw reset
-	// and ignored during a sw reset. However, VBox sets it on hw reset and XQEMU clears it. Considering that the Xbox
-	// doesn't do POST, I will clear it.
 	m_Registers.HcRevision = 0x10;
 	m_Registers.HcControl = 0;
-	m_Registers.HcControl &= ~OHCI_CTL_HCFS;
-	m_Registers.HcControl |= Reset;
 	m_Registers.HcCommandStatus = 0;
 	m_Registers.HcInterruptStatus = 0;
 	m_Registers.HcInterrupt = OHCI_INTR_MIE; // enable interrupts
@@ -906,13 +902,13 @@ void OHCI::OHCI_StateReset()
 	m_Registers.HcPeriodicStart = 0;
     m_Registers.HcLSThreshold = OHCI_LS_THRESH;
 
-	m_Registers.HcRhDescriptorA = OHCI_RHA_NPS | 2; // The xbox lacks the hw to switch off the power on the ports and has 2 ports per HC
+	m_Registers.HcRhDescriptorA = OHCI_RHA_NOCP | OHCI_RHA_NPS | 4; // The xbox lacks the hw to switch off the power on the ports and has 4 ports per HC
 	m_Registers.HcRhDescriptorB = 0; // The attached devices are removable and use PowerSwitchingMode to control the power on the ports
     m_Registers.HcRhStatus = 0;
 
 	m_DoneCount = 7;
 
-	for (int i = 0; i < 2; i++)
+	for (int i = 0; i < 4; i++)
 	{
 		OHCIPort* Port = &m_Registers.RhPort[i];
 		Port->HcRhPortStatus = 0;
@@ -1109,6 +1105,14 @@ uint32_t OHCI::OHCI_ReadRegister(uint32_t Addr)
 				ret = m_Registers.RhPort[1].HcRhPortStatus | OHCI_PORT_PPS;
 				break;
 
+            case 23: // RhPort 2
+                ret = m_Registers.RhPort[2].HcRhPortStatus | OHCI_PORT_PPS;
+                break;
+
+            case 24: // RhPort 3
+                ret = m_Registers.RhPort[3].HcRhPortStatus | OHCI_PORT_PPS;
+                break;
+
 			default:
                 log_warning("OHCI: Read register operation with bad offset %u. Ignoring.\n", Addr >> 2);
 		}
@@ -1240,6 +1244,14 @@ void OHCI::OHCI_WriteRegister(uint32_t Addr, uint32_t Value)
 				OHCI_PortSetStatus(1, Value);
 				break;
 
+            case 23: // RhPort 2
+                OHCI_PortSetStatus(2, Value);
+                break;
+
+            case 24: // RhPort 3
+                OHCI_PortSetStatus(3, Value);
+                break;
+
 			default:
                 log_warning("OHCI: Write register operation with bad offset %u. Ignoring.\n", Addr >> 2);
 		}
@@ -1250,11 +1262,9 @@ void OHCI::OHCI_UpdateInterrupt()
 {
     // TODO: interrupts
 	if ((m_Registers.HcInterrupt & OHCI_INTR_MIE) && (m_Registers.HcInterruptStatus & m_Registers.HcInterrupt)) {
+        //HalSystemInterrupts[m_IrqNum].Assert(false);
         //HalSystemInterrupts[m_IrqNum].Assert(true);
 	}
-	else {
-        //HalSystemInterrupts[m_IrqNum].Assert(false);
-    }
 }
 
 void OHCI::OHCI_SetInterrupt(uint32_t Value)
@@ -1291,7 +1301,7 @@ void OHCI::OHCI_StopEndpoints()
     XboxDeviceState* dev;
 	int i, j;
 
-	for (i = 0; i < 2; i++) {
+	for (i = 0; i < 4; i++) {
 		dev = m_Registers.RhPort[i].UsbPort.Dev;
 		if (dev && dev->Attached) {
 			m_UsbDevice->USB_DeviceEPstopped(dev, &dev->EP_ctl);
@@ -1317,7 +1327,7 @@ void OHCI::OHCI_SetHubStatus(uint32_t Value)
 	if (Value & OHCI_RHS_LPS) {
 		int i;
 
-		for (i = 0; i < 2; i++) {
+		for (i = 0; i < 4; i++) {
 			OHCI_PortPower(i, 0);
 		}	
         log_debug("OHCI: powered down all ports\n");
@@ -1326,7 +1336,7 @@ void OHCI::OHCI_SetHubStatus(uint32_t Value)
 	if (Value & OHCI_RHS_LPSC) {
 		int i;
 
-		for (i = 0; i < 2; i++) {
+		for (i = 0; i < 4; i++) {
 			OHCI_PortPower(i, 1);
 		}	
         log_debug("OHCI: powered up all ports\n");
@@ -1525,7 +1535,7 @@ void OHCI::OHCI_AsyncCancelDevice(XboxDeviceState* dev)
 		m_UsbDevice->USB_IsPacketInflight(&m_UsbPacket) &&
 		m_UsbPacket.Endpoint->Dev == dev) {
 		m_UsbDevice->USB_CancelPacket(&m_UsbPacket);
-		m_AsyncTD = 0;
+        m_AsyncTD = NULL;
 	}
 }
 

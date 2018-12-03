@@ -120,7 +120,7 @@ public:
     void USB_PacketCheckState(USBPacket* p, USBPacketState expected);
     // process the packet
     void USB_ProcessOne(USBPacket* p);
-    //
+    // xhci only?
     void USB_DoParameter(XboxDeviceState* s, USBPacket* p);
     // process a setup token
     void USB_DoTokenSetup(XboxDeviceState* s, USBPacket* p);
@@ -196,7 +196,7 @@ public:
     // return the binary rapresentation of interface descriptors
     int USB_ReadInterfaceDesc(const USBDescIface* iface, int flags, uint8_t* dest, size_t len);
     // return the binary rapresentation of class-specific descriptors
-    int USB_ReadOtherDesc(const USBDescOther* desc, uint8_t* dest, size_t len);
+    size_t USB_ReadOtherDesc(const USBDescOther* desc, uint8_t* dest, size_t len);
     // return the binary rapresentation of endpoint descriptors
     int USB_ReadEndpointDesc(const USBDescEndpoint* ep, int flags, uint8_t* dest, size_t len);
     // return the binary rapresentation of string descriptors

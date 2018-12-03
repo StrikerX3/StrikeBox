@@ -203,10 +203,9 @@ void USBPCIDevice::USB_PacketSetup(USBPacket* p, int Pid, USBEndpoint* Ep, unsig
     p->Stream = Stream;
     p->Status = USB_RET_SUCCESS;
     p->ActualLength = 0;
-    p->Parameter = 0;
+    p->Parameter = 0ull;
     p->ShortNotOK = ShortNotOK;
     p->IntReq = IntReq;
-    p->Combined = nullptr;
     IoVecReset(&p->IoVec);
     p->State = USB_PACKET_SETUP;
 }
@@ -495,7 +494,7 @@ void USBPCIDevice::DoTokenOut(XboxDeviceState* s, USBPacket* p) {
 }
 
 void USBPCIDevice::USB_PacketCopy(USBPacket* p, void* ptr, size_t bytes) {
-    IOVector* iov = p->Combined ? &p->Combined->IoVec : &p->IoVec;
+    IOVector* iov = &p->IoVec;
 
     assert(p->ActualLength >= 0);
     assert(p->ActualLength + bytes <= iov->Size);
@@ -705,7 +704,6 @@ void USBPCIDevice::USB_EpReset(XboxDeviceState* dev) {
 void USBPCIDevice::USB_CreateSerial(XboxDeviceState* dev, std::string&& str) {
     const USBDesc* desc = USBDesc_GetUsbDeviceDesc(dev);
     int index = desc->id.iSerialNumber;
-    std::string str2;
 
     assert(index != 0 && str.empty() == false);
     str += '-';
@@ -1009,7 +1007,7 @@ int USBPCIDevice::USBDesc_HandleStandardGetDescriptor(XboxDeviceState* dev, USBP
         break;
     }
 
-    // Dropped from XQEMU descriptor types USB_DT_DEVICE_QUALIFIER (6), USB_DT_OTHER_SPEED_CONFIG (7) -> usb 2.0 only and reserved on usb 3.0,
+    // Dropped from XQEMU descriptor types USB_DT_DEVICE_QUALIFIER (6), USB_DT_OTHER_SPEED_CONFIG (7) -> usb 2.0 only and reserved in usb 3.0,
     // USB_DT_BOS (15) and USB_DT_DEBUG (10) -> usb 3.0 only
 
     default:
@@ -1143,8 +1141,8 @@ int USBPCIDevice::USB_ReadInterfaceDesc(const USBDescIface* iface, int flags, ui
     return pos;
 }
 
-int USBPCIDevice::USB_ReadOtherDesc(const USBDescOther* desc, uint8_t* dest, size_t len) {
-    int bLength = desc->length ? desc->length : desc->data[0];
+size_t USBPCIDevice::USB_ReadOtherDesc(const USBDescOther* desc, uint8_t* dest, size_t len) {
+    size_t bLength = desc->length ? desc->length : desc->data[0];
 
     if (len < bLength) {
         return -1;
@@ -1155,15 +1153,15 @@ int USBPCIDevice::USB_ReadOtherDesc(const USBDescOther* desc, uint8_t* dest, siz
 }
 
 int USBPCIDevice::USB_ReadEndpointDesc(const USBDescEndpoint* ep, int flags, uint8_t* dest, size_t len) {
-    uint8_t bLength = ep->is_audio ? 0x09 : 0x07; // an endpoint descriptor is 7 bytes large (or 9 if it is an audio device)
-    uint8_t extralen = ep->extra ? ep->extra[0] : 0;
+    size_t bLength = ep->is_audio ? 0x09 : 0x07; // an endpoint descriptor is 7 bytes large (or 9 if it is an audio device)
+    size_t extralen = ep->extra ? ep->extra[0] : 0;
     USBDescriptor* d = reinterpret_cast<USBDescriptor*>(dest);
 
     if (len < bLength + extralen) {
         return -1;
     }
 
-    d->bLength = bLength;
+    d->bLength = static_cast<uint8_t>(bLength);
     d->bDescriptorType = USB_DT_ENDPOINT;
 
     d->u.endpoint.bEndpointAddress = ep->bEndpointAddress;
@@ -1186,7 +1184,8 @@ int USBPCIDevice::USB_ReadEndpointDesc(const USBDescEndpoint* ep, int flags, uin
 }
 
 int USBPCIDevice::USB_ReadStringDesc(XboxDeviceState* dev, int index, uint8_t* dest, size_t len) {
-    uint8_t bLength, pos, i;
+    size_t bLength, i;
+    unsigned int pos;
     const char* str;
 
     if (len < 4) {
@@ -1213,7 +1212,7 @@ int USBPCIDevice::USB_ReadStringDesc(XboxDeviceState* dev, int index, uint8_t* d
     // From the standard: "The UNICODE string descriptor is not NULL-terminated. The string length is
     // computed by subtracting two from the value of the first byte of the descriptor"
 
-    bLength = strlen(str) * 2 + 2;
+    bLength = std::strlen(str) * 2 + 2;
     dest[0] = bLength;
     dest[1] = USB_DT_STRING;
     i = 0; pos = 2;

@@ -39,6 +39,7 @@
 // ******************************************************************
 
 #include "xid_gamepad.h"
+#include "..\ohci\ohci.h"
 #include "../pci/usb_pci.h"
 
 #include <string>
@@ -67,7 +68,6 @@ struct XIDDesc {
     uint8_t bMaxInputReportSize;
     uint8_t bMaxOutputReportSize;
     uint16_t wAlternateProductIds[4];
-    XIDDesc();
 };
 
 /* Struct used by the Get_Report request -> state of the buttons */
@@ -98,97 +98,104 @@ struct USBXIDState {
 
     const XIDDesc* xid_desc;            // xid-specific descriptor
 
-    bool in_dirty;                      // indicates a change in the button's state
-    XIDGamepadReport in_state;          // Get_Report struct
-    XIDGamepadOutputReport out_state;   // Ser_Report struct
+    XIDGamepadReport in_state;                      // Get_Report struct
+    XIDGamepadReport in_state_capabilities;         // Get_Capabilities struct (in)
+    XIDGamepadOutputReport out_state;               // Set_Report struct
+    XIDGamepadOutputReport out_state_capabilities;  // Get_Capabilities struct (out)
 };
 
-USBDescIface::USBDescIface() {
-    std::memset(this, 0, sizeof(USBDescIface));
-    eps = new USBDescEndpoint[2]();
-    bInterfaceNumber = 0;
-    bNumEndpoints = 2;
-    bInterfaceClass = USB_CLASS_XID;
-    bInterfaceSubClass = 0x42;
-    bInterfaceProtocol = 0x00;
-    eps->bEndpointAddress = USB_DIR_IN | 0x02;
-    eps->bmAttributes = USB_ENDPOINT_XFER_INT;
-    eps->wMaxPacketSize = 0x20;
-    eps->bInterval = 4;
-    eps++;
-    eps->bEndpointAddress = USB_DIR_OUT | 0x02;
-    eps->bmAttributes = USB_ENDPOINT_XFER_INT;
-    eps->wMaxPacketSize = 0x20;
-    eps->bInterval = 4;
-}
+static const USBDescEndpoint desc_endp_xbox_gamepad[2] = {
+    {
+        USB_DIR_IN | 0x02,       // bEndpointAddress;
+        USB_ENDPOINT_XFER_INT,   // bmAttributes;
+        0x20,                    // wMaxPacketSize;
+        4,                       // bInterval;
+        0,                       // bRefresh;
+        0,                       // bSynchAddress
+        0,                       // is_audio
+        nullptr                  // extra
+    },
+    {
+        USB_DIR_OUT | 0x02,
+        USB_ENDPOINT_XFER_INT,
+        0x20,
+        4,
+        0,
+        0,
+        0,
+        nullptr
+    }
+};
 
-USBDescIface::~USBDescIface() {
-    delete[] eps;
-}
+static const USBDescIface desc_iface_xbox_gamepad = {
+    0,                // bInterfaceNumber;
+    0,                // bAlternateSetting;
+    2,                // bNumEndpoints;
+    USB_CLASS_XID,    // bInterfaceClass;
+    0x42,             // bInterfaceSubClass
+    0x00,             // bInterfaceProtocol
+    0,                // iInterface
+    0,                // ndesc
+    nullptr,          // descs
+    desc_endp_xbox_gamepad
+};
 
-static const USBDescIface desc_iface_xbox_gamepad;
+static const USBDescConfig desc_config_xbox_gamepad = {
+   1,     // bNumInterfaces
+   1,     // bConfigurationValue
+   0,     // iConfiguration
+   0x80,  // bmAttributes
+   50,    // bMaxPower
+   1,     // nif
+   &desc_iface_xbox_gamepad
+};
 
-USBDescDevice::USBDescDevice() {
-    std::memset(this, 0, sizeof(USBDescDevice));
-    USBDescConfig* pUSBDescConfig = new USBDescConfig();
-    bcdUSB = 0x0110;
-    bMaxPacketSize0 = 0x40;
-    bNumConfigurations = 1;
-    pUSBDescConfig->bNumInterfaces = 1;
-    pUSBDescConfig->bConfigurationValue = 1;
-    pUSBDescConfig->bmAttributes = 0x80;
-    pUSBDescConfig->bMaxPower = 50;
-    pUSBDescConfig->nif = 1;
-    pUSBDescConfig->ifs = &desc_iface_xbox_gamepad;
-    confs = pUSBDescConfig;
-}
+static const USBDescDevice desc_device_xbox_gamepad = {
+    0x0110,   // bcdUSB
+    0,        // bDeviceClass
+    0,        // bDeviceSubClass
+    0,        // bDeviceProtocol
+    0x40,     // bMaxPacketSize0
+    1,        // bNumConfigurations
+    &desc_config_xbox_gamepad
+};
 
-USBDescDevice::~USBDescDevice() {
-    delete confs;
-}
+static const USBDesc desc_xbox_gamepad = {
+    {
+        0x045E,            // idVendor
+        0x0202,            // idProduct
+        0x0100,            // bcdDevice
+        STR_MANUFACTURER,  // iManufacturer
+        STR_PRODUCT,       // iProduct
+        STR_SERIALNUMBER   // iSerialNumber
+    },
+    &desc_device_xbox_gamepad
+};
 
-static const USBDescDevice desc_device_xbox_gamepad;
-
-USBDesc::USBDesc() {
-    std::memset(this, 0, sizeof(USBDesc));
-    id.idVendor = 0x045E;
-    id.idProduct = 0x0202;
-    id.bcdDevice = 0x0100;
-    id.iManufacturer = STR_MANUFACTURER;
-    id.iProduct = STR_PRODUCT;
-    id.iSerialNumber = STR_SERIALNUMBER;
-    full = &desc_device_xbox_gamepad;
-}
-
-static const USBDesc desc_xbox_gamepad;
-
-XIDDesc::XIDDesc() {
-    bLength = 0x10;
-    bDescriptorType = USB_DT_XID;
-    bcdXid = 1;
-    bType = 1;
-    bSubType = 1;
-    bMaxInputReportSize = 0x20;
-    bMaxOutputReportSize = 0x6;
-    wAlternateProductIds[0] = -1;
-    wAlternateProductIds[1] = -1;
-    wAlternateProductIds[2] = -1;
-    wAlternateProductIds[3] = -1;
-}
-
-static const XIDDesc desc_xid_xbox_gamepad;
+static const XIDDesc desc_xid_xbox_gamepad = {
+    0x10,        // bLength
+    USB_DT_XID,  // bDescriptorType
+    0x100,       // bcdXid
+    1,           // bType
+    1,           // bSubType
+    20,          // bMaxInputReportSize
+    6,           // bMaxOutputReportSize
+    { 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF }  // wAlternateProductIds
+};
 
 int XidGamepad::Init(int port) {
-    if (port > 4 || port < 1) { return -1; };
+    if (port > 4 || port < 1) { return -1; }
 
     XboxDeviceState* dev = ClassInitFn();
     int rc = UsbXidClaimPort(dev, port);
     if (rc != 0) {
+        m_UsbDev->m_HostController->m_bFrameTime = false;
         return rc;
     }
     m_UsbDev->USB_EpInit(dev);
     m_UsbDev->USB_DeviceInit(dev);
     m_UsbDev->USB_DeviceAttach(dev);
+    m_UsbDev->m_HostController->m_bFrameTime = false;
 
     return 0;
 }
@@ -241,6 +248,10 @@ int XidGamepad::UsbXidClaimPort(XboxDeviceState* dev, int port) {
         log_warning("XID: Port requested %d.2 not found (in use?)", port);
         return -1;
     }
+
+    while (m_UsbDev->m_HostController->m_bFrameTime) {}
+    m_UsbDev->m_HostController->m_bFrameTime = true;
+
     m_Port = port;
     it = m_UsbDev->m_FreePorts.begin() + i;
     dev->Port = *it;
@@ -267,7 +278,17 @@ int XidGamepad::UsbXid_Initfn(XboxDeviceState* dev) {
     m_XidState->intr = m_UsbDev->USB_GetEP(dev, USB_TOKEN_IN, 2);
 
     m_XidState->in_state.bLength = sizeof(m_XidState->in_state);
+    m_XidState->in_state.bReportId = 0;
     m_XidState->out_state.length = sizeof(m_XidState->out_state);
+    m_XidState->out_state.report_id = 0;
+
+    std::memset(&m_XidState->in_state_capabilities, 0xFF, sizeof(m_XidState->in_state_capabilities));
+    m_XidState->in_state_capabilities.bLength = sizeof(m_XidState->in_state_capabilities);
+    m_XidState->in_state_capabilities.bReportId = 0;
+    std::memset(&m_XidState->out_state_capabilities, 0xFF, sizeof(m_XidState->out_state_capabilities));
+    m_XidState->out_state_capabilities.length = sizeof(m_XidState->out_state_capabilities);
+    m_XidState->out_state_capabilities.report_id = 0;
+
     m_XidState->xid_desc = &desc_xid_xbox_gamepad;
 
     return 0;
@@ -308,21 +329,37 @@ void XidGamepad::UsbXid_HandleControl(XboxDeviceState* dev, USBPacket* p,
         // The wValue field specifies the Report Type in the high byte and the Report ID in the low byte. Set Report ID
         // to 0 (zero) if Report IDs are not used. 01 = input, 02 = output, 03 = feature, 04-FF = reserved"
         log_debug("XID: Gamepad GET_REPORT 0x%X", value);
-        if (value == 0x100) {
-            assert(m_XidState->in_state.bLength <= length);
-            // m_XidState->in_state.bReportId++; /* FIXME: I'm not sure if bReportId is just a counter */
-            // TODO: implement input devices
-            /*SDL2Devices* controller = g_InputDeviceManager->FindDeviceFromXboxPort(m_Port);
-            if (controller != nullptr) {
-                controller->ReadButtonState(&m_XidState->in_state.wButtons, m_XidState->in_state.bAnalogButtons,
-                    &m_XidState->in_state.sThumbLX, &m_XidState->in_state.sThumbLY, &m_XidState->in_state.sThumbRX,
-                    &m_XidState->in_state.sThumbRY);
-            }*/
-            std::memcpy(data, &m_XidState->in_state, m_XidState->in_state.bLength);
-            p->ActualLength = m_XidState->in_state.bLength;
+        // JayFoxRox's analysis: "This 0x0100 case is for input.
+        // This is the case where the Xbox wants to read input data from the controller.
+        // Confirmed with a real Duke controller :
+        // If the buffer provided by the Xbox is too small, the controller will cut the transfer when the buffer is full (actual_length is patched).
+        // If the buffer is too large the controller will STALL instead.
+        // If the buffer has the correct length the full input data is transferred."
+        if (value == 0x0100) {
+            if (length <= m_XidState->in_state.bLength) {
+                // TODO: implement input devices
+                //SDL2Devices* controller = g_InputDeviceManager->FindDeviceFromXboxPort(m_Port);
+                //if (controller != nullptr) {
+                //    controller->ReadButtonState(&m_XidState->in_state.wButtons, m_XidState->in_state.bAnalogButtons,
+                //        &m_XidState->in_state.sThumbLX, &m_XidState->in_state.sThumbLY, &m_XidState->in_state.sThumbRX,
+                //        &m_XidState->in_state.sThumbRY);
+                //}
+                //else
+                //{
+                //    // ergo720: this shouldn't really happen. If it does, it either means that m_Port is wrong or there's a bug
+                //    // in the InputDeviceManager
+                //    p->Status = USB_RET_STALL;
+                //    assert(0);
+                //}
+                std::memcpy(data, &m_XidState->in_state, m_XidState->in_state.bLength);
+                p->ActualLength = length;
+            }
+            else {
+                p->Status = USB_RET_STALL;
+            }
         }
         else {
-            assert(0);
+            p->Status = USB_RET_STALL;
         }
         break;
     }
@@ -334,18 +371,27 @@ void XidGamepad::UsbXid_HandleControl(XboxDeviceState* dev, USBPacket* p,
         // request is the same as for the Get_Report request, however the data direction is reversed and the Report
         // Data is sent from host to device."
         log_debug("XID: Gamepad SET_REPORT 0x%X", value);
-        if (value == 0x200) {
-            // Read length, then the entire packet
-            std::memcpy(&m_XidState->out_state, data, sizeof(m_XidState->out_state));
-            assert(m_XidState->out_state.length == sizeof(m_XidState->out_state));
-            assert(m_XidState->out_state.length <= length);
-            //FIXME: Check actuator endianess
-            log_debug("XID: Set rumble power to left: 0x%X and right: 0x%X",
-                m_XidState->out_state.left_actuator_strength,
-                m_XidState->out_state.right_actuator_strength);
-            p->ActualLength = m_XidState->out_state.length;
+        // JayFoxRox's analysis: "The 0x0200 case below is for output.
+        // This is the case where the Xbox wants to write rumble data to the controller.
+        // To my knowledge :
+        // If the buffer provided by the Xbox is too small the transfer will STALL.
+        // If the buffer is too large the transfer will STALL.
+        // If the buffer has the correct length the full output data is transferred."
+        if (value == 0x0200) {
+            if (length == m_XidState->out_state.length) {
+                // Read length, then the entire packet
+                std::memcpy(&m_XidState->out_state, data, sizeof(m_XidState->out_state));
+                /* FIXME: This should also be a STALL */
+                assert(m_XidState->out_state.length == sizeof(m_XidState->out_state));
+                p->ActualLength = length;
+            }
+            else {
+                p->Status = USB_RET_STALL;
+            }
+            UpdateForceFeedback();
         }
         else {
+            p->Status = USB_RET_STALL;
             assert(0);
         }
         break;
@@ -361,6 +407,7 @@ void XidGamepad::UsbXid_HandleControl(XboxDeviceState* dev, USBPacket* p,
             p->ActualLength = m_XidState->xid_desc->bLength;
         }
         else {
+            p->Status = USB_RET_STALL;
             assert(0);
         }
         break;
@@ -369,9 +416,24 @@ void XidGamepad::UsbXid_HandleControl(XboxDeviceState* dev, USBPacket* p,
     case VendorInterfaceRequest | XID_GET_CAPABILITIES:
     {
         log_debug("XID: Gamepad XID_GET_CAPABILITIES 0x%x", value);
-        /* FIXME: ! */
-        p->Status = USB_RET_STALL;
-        //assert(false);
+        if (value == 0x0100) {
+            if (length > m_XidState->in_state_capabilities.bLength) {
+                length = m_XidState->in_state_capabilities.bLength;
+            }
+            std::memcpy(data, &m_XidState->in_state_capabilities, length);
+            p->ActualLength = length;
+        }
+        else if (value == 0x0200) {
+            if (length > m_XidState->out_state_capabilities.length) {
+                length = m_XidState->out_state_capabilities.length;
+            }
+            std::memcpy(data, &m_XidState->out_state_capabilities, length);
+            p->ActualLength = length;
+        }
+        else {
+            p->Status = USB_RET_STALL;
+            assert(0);
+        }
         break;
     }
 
@@ -408,13 +470,24 @@ void XidGamepad::UsbXid_HandleData(XboxDeviceState* dev, USBPacket* p) {
     case USB_TOKEN_IN:
     {
         if (p->Endpoint->Num == 2) {
-            if (m_XidState->in_dirty) {
-                m_UsbDev->USB_PacketCopy(p, &m_XidState->in_state, m_XidState->in_state.bLength);
-                m_XidState->in_dirty = false;
-            }
-            else {
-                p->Status = USB_RET_NAK;
-            }
+            //SDL2Devices* controller = g_InputDeviceManager->FindDeviceFromXboxPort(m_Port);
+            //if (controller != nullptr) {
+            //    bool ret;
+            //    ret = controller->ReadButtonState(&m_XidState->in_state.wButtons, m_XidState->in_state.bAnalogButtons,
+            //        &m_XidState->in_state.sThumbLX, &m_XidState->in_state.sThumbLY, &m_XidState->in_state.sThumbRX,
+            //        &m_XidState->in_state.sThumbRY);
+            //    if (ret) {
+            //        m_UsbDev->USB_PacketCopy(p, &m_XidState->in_state, m_XidState->in_state.bLength);
+            //    }
+            //    else {
+                    p->Status = USB_RET_NAK;
+            //    }
+            //}
+            //else
+            //{
+            //    p->Status = USB_RET_STALL;
+            //    assert(0);
+            //}
         }
         else {
             assert(0);
@@ -424,7 +497,13 @@ void XidGamepad::UsbXid_HandleData(XboxDeviceState* dev, USBPacket* p) {
 
     case USB_TOKEN_OUT:
     {
-        p->Status = USB_RET_STALL;
+        if (p->Endpoint->Num == 2) {
+            m_UsbDev->USB_PacketCopy(p, &m_XidState->out_state, m_XidState->out_state.length);
+            UpdateForceFeedback();
+        }
+        else {
+            assert(0);
+        }
         break;
     }
 
@@ -440,6 +519,17 @@ void XidGamepad::XidCleanUp() {
     delete m_XidState;
     m_pPeripheralFuncStruct = nullptr;
     m_XidState = nullptr;
+}
+
+void XidGamepad::UpdateForceFeedback() {
+    // JayFoxRox's remarks: "Xbox -> XID packets were not tested
+    // The handling of output packets / force feedback was not checked."
+    // For the above reason we don't implement vibration support for now since the current
+    // implementation is untested and could potentially contain errors
+    /* FIXME: Check actuator endianess */
+    log_debug("XID: Set rumble power to left: 0x%X and right: 0x%X\n",
+        m_XidState->out_state.left_actuator_strength,
+        m_XidState->out_state.right_actuator_strength);
 }
 
 }

@@ -56,6 +56,7 @@ using namespace openxbox::cpu;
 // EOF: end of frame; the end of a USB-defined frame
 // ED: endpoint descriptor; a memory structure used by the HC to communicate with an endpoint
 // TD: transfer descriptor; a memory structure used by the HC to transfer a block of data to/from a device endpoint
+// HCCA: Host Controller Communications Area; shared memory between the HC and HCD
 
 
 /* endpoint descriptor */
@@ -135,7 +136,7 @@ struct OHCI_Registers {
     uint32_t HcRhDescriptorA;
     uint32_t HcRhDescriptorB;
     uint32_t HcRhStatus;
-    OHCIPort RhPort[2]; // 2 ports per HC, for a total of 4 USB ports
+    OHCIPort RhPort[4]; // 4 ports per HC
 };
 
 
@@ -143,7 +144,7 @@ struct OHCI_Registers {
 class OHCI {
 public:
     // Indicates that the timer thread is accessing the OHCI object. Necessary because the input thread from the
-    // InputDeviceManager will access us when it needs to destroy a device
+    // InputDeviceManager will access us when it needs to create or destroy a device
     std::atomic_bool m_bFrameTime;
 
     // constructor
@@ -159,7 +160,7 @@ private:
     Cpu* m_cpu;
     // pointer to g_USB0 or g_USB1
     USBPCIDevice* m_UsbDevice = nullptr;
-    // all the registers available on the OHCI standard
+    // all the registers available in the OHCI standard
     OHCI_Registers m_Registers;
     // end-of-frame timer
     TimerObject* m_pEOFtimer = nullptr;
@@ -181,8 +182,8 @@ private:
     int m_DoneCount;
     // the address of the pending TD
     uint32_t m_AsyncTD = NULL;
-    // ergo720: I think it signals that a TD has been processed completely
-    bool m_AsyncComplete;
+    // indicates if there is a pending asynchronous packet to process
+    bool m_AsyncComplete = 0;
 
     // EOF callback wrapper
     static void OHCI_FrameBoundaryWrapper(void* pVoid);
@@ -248,7 +249,7 @@ private:
     // process an isochronous TD
     int OHCI_ServiceIsoTD(OHCI_ED* ed, int completion);
     // find the usb device with the supplied address
-    XboxDeviceState* OHCI::OHCI_FindDevice(uint8_t Addr);
+    XboxDeviceState* OHCI_FindDevice(uint8_t Addr);
     // cancel a packet when a device is removed
     void OHCI_AsyncCancelDevice(XboxDeviceState* dev);
     // Process Control and Bulk lists

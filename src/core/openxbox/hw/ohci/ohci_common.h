@@ -158,12 +158,14 @@ typedef enum {
     STR_MANUFACTURER = 1,
     STR_PRODUCT,
     STR_SERIALNUMBER,
-};
+} STRING_DESC_INDEX;
 
+// Forward declarations
 struct USBPacket;
 struct USBPort;
 struct USBDeviceClass;
 struct XboxDeviceState;
+struct USBPortOps;
 
 /* String descriptor */
 struct USBDescString {
@@ -206,9 +208,7 @@ struct USBDescIface {
 
     uint8_t                   ndesc;              // number of device-specific class descriptors (if any)
     USBDescOther*             descs;              // pointer to the extra class descriptors
-    USBDescEndpoint*          eps;                // endpoints supported by this interface
-    USBDescIface();
-    ~USBDescIface();
+    const USBDescEndpoint*    eps;                // endpoints supported by this interface
 };
 
 /*
@@ -239,8 +239,6 @@ struct USBDescDevice {
     uint8_t                   bMaxPacketSize0;    // maximum packet size for endpoint zero (only 8, 16, 32, or 64 are valid)
     uint8_t                   bNumConfigurations; // number of possible configurations
     const USBDescConfig*      confs;              // configurations supported by this device
-    USBDescDevice();
-    ~USBDescDevice();
 };
 
 /* Device descriptor part 2 */
@@ -258,7 +256,6 @@ struct USBDesc {
     USBDescID                 id;   // id-specific info of the device descriptor
     const USBDescDevice*      full; // remaining fields of the device descriptor
     const char* const*        str;
-    USBDesc();
 };
 
 #pragma pack(1)
@@ -332,91 +329,13 @@ struct USBEndpoint {
     QTAILQ_HEAD(, USBPacket) Queue;   // queue of packets to this endpoint
 };
 
-/* definition of an Xbox usb device */
-struct XboxDeviceState {
-    USBPort* Port;                         // usb port struct of this device
-    int PortPath;                          // port index to which this device is attached to
-    uint32_t flags;
-    USBDeviceClass* klass;                 // usb class struct of this device
-    
-    int Speed;                             // actual speed of the connected device
-    int SpeedMask;                         // supported speeds, not in info because it may be variable (hostdevs)
-    uint8_t Addr;                          // device function address
-    std::string ProductDesc;               // the friendly name of this device
-    int Attached;                          // device is attached
-
-    int32_t State;                         // current state of device
-    uint8_t SetupBuffer[8];                // setup packet buffer - 8 bytes (control transfers only)
-    uint8_t DataBuffer[4096];              // buffer where to write the data requested during usb requests
-    int32_t RemoteWakeup;                  // wakeup flag
-    int32_t SetupState;                    // result of a control transfer processing operation
-    int32_t SetupLength;                   // this field specifies the length of the data transferred during the second phase of the control transfer
-    int32_t SetupIndex;                    // index of the parameter in a setup token?
-
-    USBEndpoint EP_ctl;                    // endpoints for SETUP tokens
-    USBEndpoint EP_in[USB_MAX_ENDPOINTS];  // endpoints for OUT tokens
-    USBEndpoint EP_out[USB_MAX_ENDPOINTS]; // endpoints for IN tokens
-
-    QLIST_HEAD(, USBDescString) Strings;   // strings of the string descriptors
-    const USBDesc* UsbDesc;                // Overrides class usb_desc if not nullptr
-    const USBDescDevice* Device;           // device descriptor part 1
-
-    int Configuration;                              // number of the selected configuration descriptor
-    int NumInterfaces;                              // number of available interface descriptors
-    int AltSetting[USB_MAX_INTERFACES];             // alternate setting numbers for the current interface
-    const USBDescConfig* Config;                    // configuration descriptor in use
-    const USBDescIface* Ifaces[USB_MAX_INTERFACES]; // interface in use
-};
-
-struct USBCombinedPacket {
-    USBPacket* First;
-    QTAILQ_HEAD(packets_head, USBPacket) Packets;
-    IOVector IoVec;
-};
-
-/* Structure used to hold information about an active USB packet */
-struct USBPacket {
-    int Pid;                                 // Packet ID (used to identify the type of packet that is being sent)
-    uint32_t Id;                             // Paddr of the TD for this packet 
-    USBEndpoint* Endpoint;                   // endpoint this packet is transferred to
-    unsigned int Stream;
-    IOVector IoVec;                          // used to perform vectored I/O
-    uint64_t Parameter;                      // control transfers
-    bool ShortNotOK;                         // the bufferRounding mode of the TD for this packet
-    bool IntReq;                             // whether or not to generate an interrupt for this packet (DelayInterrupt of the TD is zero)
-    int Status;                              // USB_RET_* status code
-    int ActualLength;                        // number of bytes actually written to DataBuffer
-    // Internal use by the USB layer
-    USBPacketState State;
-    USBCombinedPacket* Combined;
-    QTAILQ_ENTRY(USBPacket) Queue;
-    QTAILQ_ENTRY(USBPacket) CombinedEntry;
-};
-
-struct USBPortOps {
-    std::function<void(USBPort* port)> attach;
-    std::function<void(USBPort* port)> detach;
-    /*
-     * This gets called when a device downstream from the device attached to
-     * the port (attached through a hub) gets detached.
-     */
-    std::function<void(XboxDeviceState* child)> child_detach;
-    std::function<void(USBPort* port)> wakeup;
-    /*
-     * Note that port->dev will be different then the device from which
-     * the packet originated when a hub is involved.
-     */
-    std::function<void(USBPort* port, USBPacket* p)> complete;
-};
-
 /* Struct describing the status of a usb port */
 struct USBPort {
-    XboxDeviceState* Dev = nullptr;    // usb device (if present)
-    USBPortOps* Operations = nullptr;  // functions to call when a port event happens
-    int SpeedMask;                     // usb speeds supported
-    int HubCount;                      // number of hubs chained
-    std::string Path;                  // the number of the port + 1, used to create a serial number for this device
-    int PortIndex;                     // internal port index
+    XboxDeviceState* Dev = nullptr;   // usb device(if present)
+    USBPortOps* Operations;           // functions to call when a port event happens
+    int SpeedMask;                    // usb speeds supported
+    std::string Path;                 // the number of the port + 1, used to create a serial number for this device
+    int PortIndex;                    // internal port index
 };
 
 /* Struct which stores general functions/variables regarding the peripheral */
@@ -465,6 +384,75 @@ struct USBDeviceClass {
 
     const char* product_desc;  // friendly name of the device
     const USBDesc* usb_desc;   // device descriptor
+};
+
+/* definition of an Xbox usb device */
+struct XboxDeviceState {
+    USBPort* Port;                         // usb port struct of this device
+    int PortPath;                          // port index to which this device is attached to
+    uint32_t flags;
+    USBDeviceClass* klass;                 // usb class struct of this device
+    
+    int Speed;                             // actual speed of the connected device
+    int SpeedMask;                         // supported speeds, not in info because it may be variable (hostdevs)
+    uint8_t Addr;                          // device function address
+    std::string ProductDesc;               // the friendly name of this device
+    int Attached;                          // device is attached
+
+    int32_t State;                         // current state of device
+    uint8_t SetupBuffer[8];                // setup packet buffer - 8 bytes (control transfers only)
+    uint8_t DataBuffer[4096];              // buffer where to write the data requested during usb requests
+    int32_t RemoteWakeup;                  // wakeup flag
+    int32_t SetupState;                    // result of a control transfer processing operation
+    int32_t SetupLength;                   // this field specifies the length of the data transferred during the second phase of the control transfer
+    int32_t SetupIndex;                    // index of the parameter in a setup token?
+
+    USBEndpoint EP_ctl;                    // endpoints for SETUP tokens
+    USBEndpoint EP_in[USB_MAX_ENDPOINTS];  // endpoints for OUT tokens
+    USBEndpoint EP_out[USB_MAX_ENDPOINTS]; // endpoints for IN tokens
+
+    QLIST_HEAD(, USBDescString) Strings;   // strings of the string descriptors
+    const USBDesc* UsbDesc;                // Overrides class usb_desc if not nullptr
+    const USBDescDevice* Device;           // device descriptor part 1
+
+    int Configuration;                              // number of the selected configuration descriptor
+    int NumInterfaces;                              // number of available interface descriptors
+    int AltSetting[USB_MAX_INTERFACES];             // alternate setting numbers for the current interface
+    const USBDescConfig* Config;                    // configuration descriptor in use
+    const USBDescIface* Ifaces[USB_MAX_INTERFACES]; // interface in use
+};
+
+/* Structure used to hold information about an active USB packet */
+struct USBPacket {
+    int Pid;                                 // Packet ID (used to identify the type of packet that is being sent)
+    uint32_t Id;                             // Paddr of the TD for this packet 
+    USBEndpoint* Endpoint;                   // endpoint this packet is transferred to
+    unsigned int Stream;
+    IOVector IoVec;                          // used to perform vectored I/O
+    uint64_t Parameter;                      // this seems to be used only in xhci and it's 0 otherwise. If so, this can be removed
+    bool ShortNotOK;                         // the bufferRounding mode of the TD for this packet
+    bool IntReq;                             // whether or not to generate an interrupt for this packet (DelayInterrupt of the TD is zero)
+    int Status;                              // USB_RET_* status code
+    int ActualLength;                        // number of bytes actually written to DataBuffer
+    // Internal use by the USB layer
+    USBPacketState State;
+    QTAILQ_ENTRY(USBPacket) Queue;
+};
+
+struct USBPortOps {
+    std::function<void(USBPort* port)> attach;
+    std::function<void(USBPort* port)> detach;
+    /*
+     * This gets called when a device downstream from the device attached to
+     * the port (attached through a hub) gets detached.
+     */
+    std::function<void(XboxDeviceState* child)> child_detach;
+    std::function<void(USBPort* port)> wakeup;
+    /*
+     * Note that port->dev will be different then the device from which
+     * the packet originated when a hub is involved.
+     */
+    std::function<void(USBPort* port, USBPacket* p)> complete;
 };
 
 }
