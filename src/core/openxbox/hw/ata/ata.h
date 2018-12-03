@@ -16,7 +16,7 @@
 #include "openxbox/cpu.h"
 #include "../basic/i8259.h"
 #include "../ata/defs.h"
-#include "ata_state.h"
+#include "ata_channel.h"
 
 namespace openxbox {
 namespace hw {
@@ -34,7 +34,7 @@ public:
     bool IOWrite(uint32_t port, uint32_t value, uint8_t size) override;
 
 private:
-    ATAState m_states[2];
+    ATAChannel m_states[2];
 };
 
 }

@@ -45,7 +45,7 @@ bool ATA::MapIO(IOMapper *mapper) {
 }
 
 bool ATA::IORead(uint32_t port, uint32_t *value, uint8_t size) {
-    ATAState *state;
+    ATAChannel *state;
     if (port >= kPrimaryCommandBasePort && port <= kPrimaryCommandLastPort) {
         return m_states[ChanPrimary].ReadCommandPort((Register)(port - kPrimaryCommandBasePort), value, size);
     }

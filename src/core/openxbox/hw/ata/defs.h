@@ -36,16 +36,28 @@ const uint16_t kSecondaryControlPort      = 0x376;
 
 // Command port registers [chapter 7]
 enum Register : uint8_t {
-    RegData = 0,           // Read/write  [7.7]
-    RegError = 1,          // Read-only   [7.11]
-    RegFeatures = 1,       // Write-only  [7.12]
-    RegSectorCount = 2,    // Read/write  [7.13]
-    RegSectorNumber = 3,   // Read/write  [7.14]
-    RegCylinderLow = 4,    // Read/write  [7.6]
-    RegCylinderHigh = 5,   // Read/write  [7.5]
-    RegDeviceHead = 6,     // Read/write  [7.10]
-    RegStatus = 7,         // Read-only   [7.15]
-    RegCommand = 7,        // Write-only  [7.4]
+    RegData = 0,           // [7.7]  Read/write 
+    RegError = 1,          // [7.11] Read-only  
+    RegFeatures = 1,       // [7.12] Write-only 
+    RegSectorCount = 2,    // [7.13] Read/write 
+    RegSectorNumber = 3,   // [7.14] Read/write 
+    RegCylinderLow = 4,    // [7.6]  Read/write 
+    RegCylinderHigh = 5,   // [7.5]  Read/write 
+    RegDeviceHead = 6,     // [7.10] Read/write 
+    RegStatus = 7,         // [7.15] Read-only  
+    RegCommand = 7,        // [7.4]  Write-only 
+};
+
+// Register sizes
+const uint8_t kRegSizes[] = {
+    2,   // [7.7]  Data
+    1,   // [7.11] Error and [7.12] Features
+    1,   // [7.13] Sector count
+    1,   // [7.14] Sector number
+    1,   // [7.6]  Cylinder low
+    1,   // [7.6]  Cylinder high
+    1,   // [7.10] Device/Head
+    1,   // [7.15] Status and [7.4] Command
 };
 
 // Control port registers:

@@ -27,7 +27,7 @@ enum Channel {
 };
 
 
-struct ATAState {
+struct ATAChannel {
     Channel m_channel;
 
     // ----- IRQ handling -----------------------------------------------------
@@ -55,12 +55,11 @@ struct ATAState {
 
     // ----- Command operations -----------------------------------------------
 
-    bool ReadData(uint32_t *value, uint8_t size);
-    bool ReadError(uint32_t *value, uint8_t size);
-    bool ReadStatus(uint32_t *value, uint8_t size);
+    void ReadData(uint16_t *value);
+    void ReadStatus(uint8_t *value);
 
-    bool WriteData(uint32_t value, uint8_t size);
-    bool WriteCommand(uint32_t value, uint8_t size);
+    void WriteData(uint16_t value);
+    void WriteCommand(uint8_t value);
 
     // ----- Utility functions ------------------------------------------------
 
