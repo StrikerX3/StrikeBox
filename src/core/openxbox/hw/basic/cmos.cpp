@@ -22,6 +22,9 @@ bool CMOS::MapIO(IOMapper *mapper) {
 
 bool CMOS::IORead(uint32_t port, uint32_t *value, uint8_t size) {
     log_warning("CMOS::IORead:  Unhandled read!   port = 0x%x,  size = %u\n", port, size);
+ 
+    *value = 0;
+
     return false;
 }
 
