@@ -89,13 +89,25 @@ bool ATAChannel::WriteControlPort(uint32_t value, uint8_t size) {
     if (size != 1) {
         log_debug("ATAChannel::WriteControlPort: Unexpected write of size %d for channel %d\n", size, m_channel);
     }
+    
+    // Make sure to update the INTRQ state if nIEN is enabled before updating the register
+    // to ensure we send a low state to the IRQ handler
+    if (value & DevCtlNegateInterruptEnable) {
+        SetInterrupt(false);
+    }
 
-    log_warning("ATAChannel::WriteControlPort:  Unimplemented!  (channel = %d  size = %d  value = 0x%x)\n", m_channel, size, value);
+    if (value & DevCtlSoftwareReset) {
+        log_debug("ATAChannel::WriteControlPort: Software reset triggered on channel %d\n", m_channel);
+        // TODO: implement [9.3.1] for device 0 and [9.3.2] for device 1
+    }
+
+    m_reg_control = value;
+
     return false;
 }
 
 void ATAChannel::ReadData(uint16_t *value) {
-    if (!IsPIOMode()) {
+    if (m_transferMode != XferModePIODefault || m_transferMode != XferModePIOFlowCtl) {
         log_warning("ATAChannel::ReadData:  Attempted to read while not in PIO mode\n", m_channel);
         *value = 0;
         return;
@@ -108,11 +120,11 @@ void ATAChannel::ReadData(uint16_t *value) {
 void ATAChannel::ReadStatus(uint8_t *value) {
     log_spew("ATAChannel::ReadStatus:  Reading status of device %d\n", GetSelectedDeviceIndex());
     
-    // TODO: implement
-    *value = StReady;
+    // TODO: implement by delegating to corresponding ATADevice
+    *value = m_reg_status | StReady;
     
     // [7.15.4]: "Reading this register when an interrupt is pending causes the interrupt to be cleared"
-    HandleInterrupt(false);
+    SetInterrupt(false);
 }
 
 void ATAChannel::WriteData(uint16_t value) {
@@ -120,12 +132,43 @@ void ATAChannel::WriteData(uint16_t value) {
 }
 
 void ATAChannel::WriteCommand(uint8_t value) {
-    log_warning("ATAChannel::WriteCommand:  Unimplemented!  (channel = %d  value = 0x%02x)\n", m_channel, value);
+    // Follow the non-data protocol [8.37.3] -> [9.9]
+   
+    // TODO: should be in ATADevice
+
+    // Set BSY=1 and execute command
+    m_reg_status |= StBusy;
+
+    // TODO: submit this entire block as a job to the command thread
+    {
+        switch (value) {
+        case CmdSetFeatures:
+            log_warning("ATAChannel::WriteCommand:  Setting features for channel %d, device %d\n", value, m_channel, GetSelectedDeviceIndex());
+            // TODO: mark as failed for now
+            m_reg_status |= StError;
+            break;
+        default:
+            log_warning("ATAChannel::WriteCommand:  Unhandled command %d for channel %d, device %d\n", value, m_channel, GetSelectedDeviceIndex());
+            m_reg_status |= StError;
+            break;
+        }
+
+        // Clear BSY=0
+        m_reg_status &= ~StBusy;
+
+        // nIEN=0 ?
+        if (AreInterruptsEnabled()) {
+            // Assert INTRQ
+            SetInterrupt(true);
+        }
+    }
 }
 
-void ATAChannel::HandleInterrupt(bool asserted) {
-    m_interrupt = asserted;
-    m_irqHandler->HandleIRQ(m_irqNum, asserted);
+void ATAChannel::SetInterrupt(bool asserted) {
+    if (asserted != m_interrupt && AreInterruptsEnabled()) {
+        m_interrupt = asserted;
+        m_irqHandler->HandleIRQ(m_irqNum, m_interrupt);
+    }
 }
 
 }

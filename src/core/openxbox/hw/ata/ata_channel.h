@@ -37,13 +37,17 @@ struct ATAChannel {
 
     // ----- Registers --------------------------------------------------------
 
-    OperationMode m_operationMode = PIO0;
-    uint8_t m_reg_error = 0;
     uint8_t m_reg_features = 0;
     uint8_t m_reg_sectorCount = 0;
     uint8_t m_reg_sectorNumber = 0;
     uint16_t m_reg_cylinder = 0;
     uint8_t m_reg_deviceHead = 0;
+    uint8_t m_reg_control = 0;
+
+    // TODO: these should be in ATADevice
+    TransferMode m_transferMode = XferModePIODefault;
+    uint8_t m_reg_status = 0;
+    uint8_t m_reg_error = 0;
 
     // ----- State ------------------------------------------------------------
 
@@ -67,22 +71,19 @@ struct ATAChannel {
 
     // ----- Interrupt handling -----------------------------------------------
 
-    void HandleInterrupt(bool asserted);
+    void SetInterrupt(bool asserted);
 
     // ----- Utility functions ------------------------------------------------
 
     // Retrieves the index of the currently selected device from bit 4
     // (DEV - Device select) of the Device/Head register [7.10.6]
-    inline uint8_t GetSelectedDeviceIndex() const { return (m_reg_deviceHead >> kDeviceHeadSelectorBit) & 1; }
+    inline uint8_t GetSelectedDeviceIndex() const { return (m_reg_deviceHead >> kDevSelectorBit) & 1; }
 
     // Determines if the previous command was aborted due to an error by
     // reading bit 2 (ABRT - Command aborted) from the Error register [7.11.6]
     inline bool IsAborted() const { return (m_reg_error >> kErrorAbortBit) & 1; }
 
-    inline bool IsPIOMode() const { return m_operationMode >= PIO0 && m_operationMode <= PIO4; }
-    inline bool IsUltraDMAMode() const { return m_operationMode >= UltraDMA0 && m_operationMode <= UltraDMA2; }
-
-    inline void SetIRQ(bool level) const { m_irqHandler->HandleIRQ(m_irqNum, level); }
+    inline bool AreInterruptsEnabled() const { return (m_reg_control & DevCtlNegateInterruptEnable) == 0; }
 };
 
 }

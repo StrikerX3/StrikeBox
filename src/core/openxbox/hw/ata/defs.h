@@ -78,22 +78,36 @@ enum Status : uint8_t {
 
 // Device control bits (written to the Device Control register)
 enum DeviceControl : uint8_t {
-    DevCtlSoftwareReset = (1 << 2),    // [7.9.6] (SRST) Execute a software reset
-    DevCtlInterruptEnable = (1 << 1),  // [7.9.6] (nIEN) When set, INTRQ signal is effectively disabled
+    DevCtlSoftwareReset = (1 << 2),          // [7.9.6] (SRST) Execute a software reset
+    DevCtlNegateInterruptEnable = (1 << 1),  // [7.9.6] (nIEN) When set, INTRQ signal is effectively disabled
 };
 
-const uint8_t kDeviceHeadSelectorBit = 4;  // [7.10.6] (DEV) Selects Device 0 when cleared or Device 1 when set
-const uint8_t kErrorAbortBit = 2;          // [7.11.6] (ABRT) Previous command was aborted due to an error or invalid parameter
+const uint8_t kDevSelectorBit = 4;  // [7.10.6] (DEV) Selects Device 0 when cleared or Device 1 when set
+const uint8_t kErrorAbortBit = 2;   // [7.11.6] (ABRT) Previous command was aborted due to an error or invalid parameter
 
-enum OperationMode : uint8_t {
-    PIO0,
-    PIO1,
-    PIO2,
-    PIO3,
-    PIO4,
-    UltraDMA0,
-    UltraDMA1,
-    UltraDMA2,
+// [8.37.10 table 20] Transfer modes for the Set Transfer Mode subcommand of the Set Features command.
+// These specify the 5 most significant bits of the transfer mode.
+// The 3 least significant bits specify additional parameters for the mode. When applicable, they are documented below.
+enum TransferMode : uint8_t {
+    XferModePIODefault = 0b00000,     // PIO default mode
+                                      //   000b = IORDY enabled
+                                      //   001b = IORDY disabled
+    XferModePIOFlowCtl = 0b00001,     // PIO flow control transfer mode
+                                      //   LSB specify mode (from 0 to 4)
+    XferModeMultiWordDMA = 0b00100,   // Multiword DMA mode
+                                      //   LSB specify mode (from 0 to 2)
+    XferModeUltraDMA = 0b01000,       // Ultra DMA mode
+                                      //   LSB specify mode (from 0 to 2)
+};
+
+// [8] Commands
+enum Command : uint8_t {
+    CmdSetFeatures = 0xEF,   // [8.37] Set Features
+};
+
+// [8.37.8] Set Features subcommands (specified in the Features register)
+enum SetFeaturesSubCommand : uint8_t {
+    SFCmdSetTransferMode = 0x03,    // [8.37.10] Set Transfer Mode
 };
 
 }
