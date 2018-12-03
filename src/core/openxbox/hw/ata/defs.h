@@ -69,21 +69,26 @@ const uint8_t kRegSizes[] = {
 
 
 // Status bits (read from the Status register)
-enum Status : uint8_t {
+enum StatusBits : uint8_t {
     StBusy = (1 << 7),          // [7.15.6.1] (BSY) The device is busy
     StReady = (1 << 6),         // [7.15.6.2] (DRDY) The device is ready to accept commands
     StDataRequest = (1 << 3),   // [7.15.6.4] (DRQ) The device is ready to transfer a word of data
     StError = (1 << 0),         // [7.15.6.6] (ERR) An error occurred during execution of the previous command
 };
 
+// Error bits (read from the Error register)
+enum ErrorBits : uint8_t {
+    ErrAbort = (1 << 2),        // [7.11.6] (ABRT) Previous command was aborted due to an error or invalid parameter
+};
+
+
 // Device control bits (written to the Device Control register)
-enum DeviceControl : uint8_t {
+enum DeviceControlBits : uint8_t {
     DevCtlSoftwareReset = (1 << 2),          // [7.9.6] (SRST) Execute a software reset
     DevCtlNegateInterruptEnable = (1 << 1),  // [7.9.6] (nIEN) When set, INTRQ signal is effectively disabled
 };
 
 const uint8_t kDevSelectorBit = 4;  // [7.10.6] (DEV) Selects Device 0 when cleared or Device 1 when set
-const uint8_t kErrorAbortBit = 2;   // [7.11.6] (ABRT) Previous command was aborted due to an error or invalid parameter
 
 // [8.37.10 table 20] Transfer modes for the Set Transfer Mode subcommand of the Set Features command.
 // These specify the 5 most significant bits of the transfer mode.

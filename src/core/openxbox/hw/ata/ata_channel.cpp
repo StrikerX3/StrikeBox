@@ -120,7 +120,6 @@ void ATAChannel::ReadData(uint16_t *value) {
 void ATAChannel::ReadStatus(uint8_t *value) {
     log_spew("ATAChannel::ReadStatus:  Reading status of device %d\n", GetSelectedDeviceIndex());
     
-    // TODO: implement by delegating to corresponding ATADevice
     *value = m_reg_status | StReady;
     
     // [7.15.4]: "Reading this register when an interrupt is pending causes the interrupt to be cleared"
@@ -134,8 +133,6 @@ void ATAChannel::WriteData(uint16_t value) {
 void ATAChannel::WriteCommand(uint8_t value) {
     // Follow the non-data protocol [8.37.3] -> [9.9]
    
-    // TODO: should be in ATADevice
-
     // Set BSY=1 and execute command
     m_reg_status |= StBusy;
 

@@ -37,17 +37,15 @@ struct ATAChannel {
 
     // ----- Registers --------------------------------------------------------
 
+    TransferMode m_transferMode = XferModePIODefault;
+    uint8_t m_reg_status = 0;
+    uint8_t m_reg_error = 0;
     uint8_t m_reg_features = 0;
     uint8_t m_reg_sectorCount = 0;
     uint8_t m_reg_sectorNumber = 0;
     uint16_t m_reg_cylinder = 0;
     uint8_t m_reg_deviceHead = 0;
     uint8_t m_reg_control = 0;
-
-    // TODO: these should be in ATADevice
-    TransferMode m_transferMode = XferModePIODefault;
-    uint8_t m_reg_status = 0;
-    uint8_t m_reg_error = 0;
 
     // ----- State ------------------------------------------------------------
 
@@ -78,10 +76,6 @@ struct ATAChannel {
     // Retrieves the index of the currently selected device from bit 4
     // (DEV - Device select) of the Device/Head register [7.10.6]
     inline uint8_t GetSelectedDeviceIndex() const { return (m_reg_deviceHead >> kDevSelectorBit) & 1; }
-
-    // Determines if the previous command was aborted due to an error by
-    // reading bit 2 (ABRT - Command aborted) from the Error register [7.11.6]
-    inline bool IsAborted() const { return (m_reg_error >> kErrorAbortBit) & 1; }
 
     inline bool AreInterruptsEnabled() const { return (m_reg_control & DevCtlNegateInterruptEnable) == 0; }
 };
