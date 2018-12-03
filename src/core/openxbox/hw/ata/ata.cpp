@@ -18,12 +18,12 @@ namespace openxbox {
 namespace hw {
 namespace ata {
 
-ATA::ATA(i8259 *pic) {
-    m_states[0].m_pic = pic;
+ATA::ATA(IRQHandler *irqHandler) {
+    m_states[0].m_irqHandler = irqHandler;
     m_states[0].m_irqNum = kPrimaryIRQ;
     m_states[0].m_channel = ChanPrimary;
 
-    m_states[1].m_pic = pic;
+    m_states[1].m_irqHandler = irqHandler;
     m_states[1].m_irqNum = kSecondaryIRQ;
     m_states[1].m_channel = ChanSecondary;
 }

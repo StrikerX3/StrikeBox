@@ -44,8 +44,8 @@ static uint32_t i8254ThreadFunc(void *data) {
     return 0;
 }
 
-i8254::i8254(i8259 *pic, float tickRate)
-    : m_pic(pic)
+i8254::i8254(IRQHandler *irqHandler, float tickRate)
+    : m_irqHandler(irqHandler)
     , m_tickRate(tickRate)
     , m_running(false)
 {
@@ -92,12 +92,12 @@ void i8254::Run() {
 
     m_running = true;
     while (m_running) {
-        m_pic->HandleIRQ(0, 1);
+        m_irqHandler->HandleIRQ(0, 1);
 
         nextStop += interval;
         std::this_thread::sleep_until(nextStop);
 
-        m_pic->HandleIRQ(0, 0);
+        m_irqHandler->HandleIRQ(0, 0);
     }
 }
 

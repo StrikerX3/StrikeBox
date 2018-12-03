@@ -14,7 +14,7 @@
 #include <cstdint>
 
 #include "openxbox/cpu.h"
-#include "../basic/i8259.h"
+#include "../basic/irq.h"
 #include "../ata/defs.h"
 #include "ata_channel.h"
 
@@ -24,7 +24,7 @@ namespace ata {
 
 class ATA : public IODevice {
 public:
-    ATA(i8259 *pic);
+    ATA(IRQHandler *irqHandler);
     virtual ~ATA();
     void Reset();
 

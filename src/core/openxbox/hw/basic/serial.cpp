@@ -124,8 +124,8 @@ void Serial::FifoTimeoutInterruptCB(void *userData) {
     ((Serial *)userData)->FifoTimeoutInterrupt();
 }
 
-Serial::Serial(i8259 *pic, uint32_t ioBase)
-    : m_pic(pic)
+Serial::Serial(IRQHandler *irqHandler, uint32_t ioBase)
+    : m_irqHandler(irqHandler)
     , m_ioBase(ioBase)
 {
     m_recvFifo = new Fifo<uint8_t>(UART_FIFO_LENGTH);
@@ -621,10 +621,10 @@ void Serial::UpdateIRQ() {
     m_iir = tmp_iir | (m_iir & 0xF0);
 
     if (tmp_iir != UART_IIR_NO_INT) {
-        m_pic->HandleIRQ(m_irq, 1);
+        m_irqHandler->HandleIRQ(m_irq, 1);
     }
     else {
-        m_pic->HandleIRQ(m_irq, 0);
+        m_irqHandler->HandleIRQ(m_irq, 0);
     }
 }
 

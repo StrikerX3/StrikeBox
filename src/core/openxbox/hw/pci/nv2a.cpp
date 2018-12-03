@@ -61,12 +61,12 @@ static inline uint32_t ldl_le_p(const void *p) {
 
 NV2ADevice::NV2ADevice(uint16_t vendorID, uint16_t deviceID, uint8_t revisionID,
     uint8_t *pSystemRAM, uint32_t systemRAMSize,
-    i8259 *pic)
+    IRQHandler *irqHandler)
 	: PCIDevice(PCI_HEADER_TYPE_NORMAL, vendorID, deviceID, revisionID,
 		0x03, 0x00, 0x00) // VGA-compatible controller
     , m_pSystemRAM(pSystemRAM)
     , m_systemRAMSize(systemRAMSize)
-    , m_pic(pic)
+    , m_irqHandler(irqHandler)
 {
 }
 
@@ -2438,10 +2438,10 @@ void NV2ADevice::UpdateIRQ() {
 
     uint8_t irq = Read8(m_configSpace, PCI_INTERRUPT_PIN);
     if (m_PMC.pendingInterrupts && m_PMC.enabledInterrupts) {
-        m_pic->HandleIRQ(irq, 1);
+        m_irqHandler->HandleIRQ(irq, 1);
     }
     else {
-        m_pic->HandleIRQ(irq, 0);
+        m_irqHandler->HandleIRQ(irq, 0);
     }
 }
 

@@ -112,7 +112,7 @@ void ATAChannel::ReadStatus(uint8_t *value) {
     *value = StReady;
     
     // [7.15.4]: "Reading this register when an interrupt is pending causes the interrupt to be cleared"
-    m_pendingInterrupt = false;
+    HandleInterrupt(false);
 }
 
 void ATAChannel::WriteData(uint16_t value) {
@@ -121,6 +121,11 @@ void ATAChannel::WriteData(uint16_t value) {
 
 void ATAChannel::WriteCommand(uint8_t value) {
     log_warning("ATAChannel::WriteCommand:  Unimplemented!  (channel = %d  value = 0x%02x)\n", m_channel, value);
+}
+
+void ATAChannel::HandleInterrupt(bool asserted) {
+    m_interrupt = asserted;
+    m_irqHandler->HandleIRQ(m_irqNum, asserted);
 }
 
 }

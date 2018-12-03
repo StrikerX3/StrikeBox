@@ -3,7 +3,7 @@
 #include <cstdint>
 #include <thread>
 
-#include "i8259.h"
+#include "irq.h"
 #include "openxbox/io.h"
 
 namespace openxbox {
@@ -18,7 +18,7 @@ namespace openxbox {
 
 class i8254 : public IODevice {
 public:
-    i8254(i8259 *pic, float tickRate = 1000.0f);
+    i8254(IRQHandler *irqHandler, float tickRate = 1000.0f);
     virtual ~i8254();
     void Reset();
     
@@ -29,7 +29,7 @@ public:
     
     void Run();
 private:
-    i8259 *m_pic;
+    IRQHandler *m_irqHandler;
     float m_tickRate;
     bool m_running;
 

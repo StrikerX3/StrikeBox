@@ -14,7 +14,7 @@
 #include <cstdint>
 
 #include "openxbox/cpu.h"
-#include "../basic/i8259.h"
+#include "../basic/irq.h"
 #include "../ata/defs.h"
 
 namespace openxbox {
@@ -32,7 +32,7 @@ struct ATAChannel {
 
     // ----- IRQ handling -----------------------------------------------------
 
-    i8259 *m_pic;
+    IRQHandler *m_irqHandler;
     uint8_t m_irqNum;
 
     // ----- Registers --------------------------------------------------------
@@ -47,7 +47,7 @@ struct ATAChannel {
 
     // ----- State ------------------------------------------------------------
 
-    bool m_pendingInterrupt = false;  // [5.2.9] INTRQ (Device Interrupt)
+    bool m_interrupt = false;  // [5.2.9] INTRQ (Device Interrupt)
 
     // ----- Basic I/O --------------------------------------------------------
 
@@ -65,6 +65,10 @@ struct ATAChannel {
     void WriteData(uint16_t value);
     void WriteCommand(uint8_t value);
 
+    // ----- Interrupt handling -----------------------------------------------
+
+    void HandleInterrupt(bool asserted);
+
     // ----- Utility functions ------------------------------------------------
 
     // Retrieves the index of the currently selected device from bit 4
@@ -78,7 +82,7 @@ struct ATAChannel {
     inline bool IsPIOMode() const { return m_operationMode >= PIO0 && m_operationMode <= PIO4; }
     inline bool IsUltraDMAMode() const { return m_operationMode >= UltraDMA0 && m_operationMode <= UltraDMA2; }
 
-    inline void SetIRQ(bool level) const { m_pic->HandleIRQ(m_irqNum, level); }
+    inline void SetIRQ(bool level) const { m_irqHandler->HandleIRQ(m_irqNum, level); }
 };
 
 }

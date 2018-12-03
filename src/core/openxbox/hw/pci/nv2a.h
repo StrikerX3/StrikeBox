@@ -6,7 +6,7 @@
 #include "pci.h"
 #include "../nv2a/defs.h"
 #include "../nv2a/vga.h"
-#include "../basic/i8259.h"
+#include "../basic/irq.h"
 
 namespace openxbox {
 
@@ -14,7 +14,7 @@ class NV2ADevice : public PCIDevice {
 public:
     NV2ADevice(uint16_t vendorID, uint16_t deviceID, uint8_t revisionID,
         uint8_t *pSystemRAM, uint32_t systemRAMSize,
-        i8259 *pic);
+        IRQHandler *irqHandler);
     
     virtual ~NV2ADevice();
 
@@ -122,7 +122,7 @@ private:
 
     uint8_t *m_pSystemRAM;
     uint32_t m_systemRAMSize;
-    i8259 *m_pic;
+    IRQHandler *m_irqHandler;
 
     uint8_t* m_pRAMIN = nullptr;
     uint8_t* m_VRAM = nullptr;

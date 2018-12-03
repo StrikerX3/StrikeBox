@@ -6,7 +6,7 @@
 #include "openxbox/util/fifo.h"
 #include "openxbox/util/invoke_later.h"
 #include "char.h"
-#include "../basic/i8259.h"
+#include "../basic/irq.h"
 
 #include <chrono>
 
@@ -22,7 +22,7 @@ namespace openxbox {
 
 class Serial : public IODevice {
 public:
-    Serial(i8259 *pic, uint32_t ioBase);
+    Serial(IRQHandler *irqHandler, uint32_t ioBase);
     virtual ~Serial();
 
     bool Init(CharDriver *chr);
@@ -61,7 +61,7 @@ private:
     static void UpdateMSLCB(void *userData);
     static void FifoTimeoutInterruptCB(void *userData);
 
-    i8259 *m_pic;
+    IRQHandler *m_irqHandler;
     uint32_t m_ioBase;
 
     uint16_t m_divider = 0;
