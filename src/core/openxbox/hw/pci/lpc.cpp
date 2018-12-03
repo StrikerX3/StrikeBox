@@ -46,7 +46,7 @@ LPCDevice::~LPCDevice() {
     delete m_isaBus;
 }
 
-void LPCDevice::HandleIRQ(uint8_t irqNum, int level) {
+void LPCDevice::HandleIRQ(uint8_t irqNum, bool level) {
     uint32_t routing = Read32(m_configSpace, XBOX_LPC_ACPI_IRQ_ROUT);
     
     int irq = (routing >> (irqNum * 8)) & 0xff;

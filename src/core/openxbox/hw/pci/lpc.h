@@ -25,7 +25,7 @@ public:
     LPCDevice(uint16_t vendorID, uint16_t deviceID, uint8_t revisionID, IRQ *irqs, uint8_t *rom, uint8_t *bios, uint32_t biosSize, uint8_t *mcpxROM, bool initMcpxROM);
     virtual ~LPCDevice();
 
-    void HandleIRQ(uint8_t irqNum, int level) override;
+    void HandleIRQ(uint8_t irqNum, bool level) override;
     inline ISABus *GetISABus() { return m_isaBus; }
 
     // PCI Device functions

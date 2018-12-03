@@ -107,9 +107,9 @@ int main(int argc, const char *argv[]) {
     settings->emu_stopOnSMCFatalErrors = true;
     settings->emu_stopOnBugChecks = true;
     settings->debug_dumpPageTables = false;
-    settings->debug_dumpDisassemblyOnExit = true;
+    settings->debug_dumpDisassemblyOnExit = false;
     settings->debug_dumpDisassembly_length = 10;
-    settings->debug_dumpStackOnExit = true;
+    settings->debug_dumpStackOnExit = false;
     settings->debug_dumpStack_upperBound = 0x10;
     settings->debug_dumpStack_lowerBound = 0x20;
     settings->gdb_enable = false;

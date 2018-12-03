@@ -6,14 +6,14 @@ namespace openxbox {
 
 class IRQHandler {
 public:
-    virtual void HandleIRQ(uint8_t irqNum, int level) = 0;
+    virtual void HandleIRQ(uint8_t irqNum, bool level) = 0;
 };
 
 struct IRQ {
     IRQHandler *handler;
     uint8_t num;
 
-    inline void Handle(uint8_t level) {
+    inline void Handle(bool level) {
         if (handler != nullptr) {
             handler->HandleIRQ(num, level);
         }

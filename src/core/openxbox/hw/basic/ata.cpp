@@ -18,26 +18,26 @@ void ATA::Reset() {
 }
 
 bool ATA::MapIO(IOMapper *mapper) {
-    if (!mapper->MapIODevice(PORT_PRIMARY_ATA_COMMAND_BASE, PORT_PRIMARY_ATA_COMMAND_COUNT, this)) return false;
-    if (!mapper->MapIODevice(PORT_PRIMARY_ATA_CONTROL, 1, this)) return false;
+    if (!mapper->MapIODevice(kPrimaryCommandBasePort, kPrimaryCommandPortCount, this)) return false;
+    if (!mapper->MapIODevice(kPrimaryControlPort, 1, this)) return false;
 
-    if (!mapper->MapIODevice(PORT_SECONDARY_ATA_COMMAND_BASE, PORT_SECONDARY_ATA_COMMAND_COUNT, this)) return false;
-    if (!mapper->MapIODevice(PORT_SECONDARY_ATA_CONTROL, 1, this)) return false;
+    if (!mapper->MapIODevice(kSecondaryCommandBasePort, kSecondaryCommandPortCount, this)) return false;
+    if (!mapper->MapIODevice(kSecondaryControlPort, 1, this)) return false;
 
     return true;
 }
 
 bool ATA::IORead(uint32_t port, uint32_t *value, uint8_t size) {
-    if (port >= PORT_PRIMARY_ATA_COMMAND_BASE && port <= PORT_PRIMARY_ATA_COMMAND_LAST) {
-        return ReadCommandPort((Register) (port - PORT_PRIMARY_ATA_COMMAND_BASE), ChanPrimary, value, size);
+    if (port >= kPrimaryCommandBasePort && port <= kPrimaryCommandLastPort) {
+        return ReadCommandPort((Register) (port - kPrimaryCommandBasePort), ChanPrimary, value, size);
     }
-    if (port == PORT_PRIMARY_ATA_CONTROL) {
+    if (port == kPrimaryControlPort) {
         return ReadControlPort(ChanPrimary, value, size);
     }
-    if (port >= PORT_SECONDARY_ATA_COMMAND_BASE && port <= PORT_SECONDARY_ATA_COMMAND_LAST) {
-        return ReadCommandPort((Register)(port - PORT_SECONDARY_ATA_COMMAND_BASE), ChanSecondary, value, size);
+    if (port >= kSecondaryCommandBasePort && port <= kSecondaryCommandLastPort) {
+        return ReadCommandPort((Register)(port - kSecondaryCommandBasePort), ChanSecondary, value, size);
     }
-    if (port == PORT_SECONDARY_ATA_CONTROL) {
+    if (port == kSecondaryControlPort) {
         return ReadControlPort(ChanSecondary, value, size);
     }
 
@@ -47,16 +47,16 @@ bool ATA::IORead(uint32_t port, uint32_t *value, uint8_t size) {
 }
 
 bool ATA::IOWrite(uint32_t port, uint32_t value, uint8_t size) {
-    if (port >= PORT_PRIMARY_ATA_COMMAND_BASE && port <= PORT_PRIMARY_ATA_COMMAND_LAST) {
-        return WriteCommandPort((Register)(port - PORT_PRIMARY_ATA_COMMAND_BASE), ChanPrimary, value, size);
+    if (port >= kPrimaryCommandBasePort && port <= kPrimaryCommandLastPort) {
+        return WriteCommandPort((Register)(port - kPrimaryCommandBasePort), ChanPrimary, value, size);
     }
-    if (port == PORT_PRIMARY_ATA_CONTROL) {
+    if (port == kPrimaryControlPort) {
         return WriteControlPort(ChanPrimary, value, size);
     }
-    if (port >= PORT_SECONDARY_ATA_COMMAND_BASE && port <= PORT_SECONDARY_ATA_COMMAND_LAST) {
-        return WriteCommandPort((Register)(port - PORT_SECONDARY_ATA_COMMAND_BASE), ChanSecondary, value, size);
+    if (port >= kSecondaryCommandBasePort && port <= kSecondaryCommandLastPort) {
+        return WriteCommandPort((Register)(port - kSecondaryCommandBasePort), ChanSecondary, value, size);
     }
-    if (port == PORT_SECONDARY_ATA_CONTROL) {
+    if (port == kSecondaryControlPort) {
         return WriteControlPort(ChanSecondary, value, size);
     }
 
@@ -136,9 +136,8 @@ bool ATA::WriteCommandPort(Register reg, Channel channel, uint32_t value, uint8_
 }
 
 bool ATA::ReadControlPort(Channel channel, uint32_t *value, uint8_t size) {
-    log_warning("ATA::ReadControlPort:   Unimplemented!  (channel = %d  size = %d)\n", channel, size);
-    *value = 0;
-    return false;
+    // Reading from this port returns the contents of the Status register
+    return ReadStatus(channel, value, size);
 }
 
 bool ATA::WriteControlPort(Channel channel, uint32_t value, uint8_t size) {
@@ -147,6 +146,14 @@ bool ATA::WriteControlPort(Channel channel, uint32_t value, uint8_t size) {
 }
 
 bool ATA::ReadData(Channel channel, uint32_t *value, uint8_t size) {
+    if (size != 2) {
+        log_warning("ATA::ReadData:  Unexpected read of size %d  (channel = %d)\n", size, channel);
+    }
+    if (!IsPIOMode()) {
+        log_warning("ATA::ReadData:  Attempted to read while not in PIO mode\n", size, channel);
+        *value = 0;
+        return true;
+    }
     log_warning("ATA::ReadData:  Unimplemented!  (channel = %d  size = %d)\n", channel, size);
     *value = 0;
     return false;
@@ -159,8 +166,9 @@ bool ATA::ReadError(Channel channel, uint32_t *value, uint8_t size) {
 }
 
 bool ATA::ReadStatus(Channel channel, uint32_t *value, uint8_t size) {
-    log_warning("ATA::ReadStatus:  Unimplemented!  (channel = %d  size = %d)\n", channel, size);
-    *value = 0;
+    log_spew("ATA::ReadStatus:  Reading status of device %d\n", GetSelectedDeviceIndex());
+    //log_warning("ATA::ReadStatus:  Unimplemented!  (channel = %d  size = %d)\n", channel, size);
+    *value = StReady;
     return false;
 }
 
