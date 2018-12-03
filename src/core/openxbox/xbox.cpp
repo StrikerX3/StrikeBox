@@ -337,7 +337,7 @@ EmulatorStatus Xbox::InitHardware() {
     m_i8259 = new i8259(m_cpu);
     m_i8254 = new i8254(m_i8259, m_settings.hw_sysclock_tickRate);
     m_CMOS = new CMOS();
-    m_ATA = new ATA(m_i8259);
+    m_ATA = new hw::ata::ATA(m_i8259);
     if (m_settings.hw_enableSuperIO) {
         for (int i = 0; i < SUPERIO_SERIAL_PORT_COUNT; i++) {
             switch (m_settings.hw_charDrivers[i].type) {

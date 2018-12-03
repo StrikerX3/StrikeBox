@@ -120,7 +120,7 @@ protected:
     i8254            *m_i8254;
     i8259            *m_i8259;
     CMOS             *m_CMOS;
-    ATA              *m_ATA;
+    hw::ata::ATA     *m_ATA;
     CharDriver       *m_CharDrivers[SUPERIO_SERIAL_PORT_COUNT];
     SuperIO          *m_SuperIO;
 
