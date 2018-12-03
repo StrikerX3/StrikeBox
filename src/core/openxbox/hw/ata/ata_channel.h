@@ -45,6 +45,10 @@ struct ATAChannel {
     uint16_t m_reg_cylinder = 0;
     uint8_t m_reg_deviceHead = 0;
 
+    // ----- State ------------------------------------------------------------
+
+    bool m_pendingInterrupt = false;  // [5.2.9] INTRQ (Device Interrupt)
+
     // ----- Basic I/O --------------------------------------------------------
 
     bool ReadCommandPort(Register reg, uint32_t *value, uint8_t size);
@@ -65,11 +69,11 @@ struct ATAChannel {
 
     // Retrieves the index of the currently selected device from bit 4
     // (DEV - Device select) of the Device/Head register [7.10.6]
-    inline uint8_t GetSelectedDeviceIndex() const { return m_reg_deviceHead & kDeviceHeadSelectorBitMask; }
+    inline uint8_t GetSelectedDeviceIndex() const { return (m_reg_deviceHead >> kDeviceHeadSelectorBit) & 1; }
 
     // Determines if the previous command was aborted due to an error by
     // reading bit 2 (ABRT - Command aborted) from the Error register [7.11.6]
-    inline bool IsAborted() const { return m_reg_error & kErrorAbortBitMask; }
+    inline bool IsAborted() const { return (m_reg_error >> kErrorAbortBit) & 1; }
 
     inline bool IsPIOMode() const { return m_operationMode >= PIO0 && m_operationMode <= PIO4; }
     inline bool IsUltraDMAMode() const { return m_operationMode >= UltraDMA0 && m_operationMode <= UltraDMA2; }

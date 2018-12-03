@@ -107,8 +107,12 @@ void ATAChannel::ReadData(uint16_t *value) {
 
 void ATAChannel::ReadStatus(uint8_t *value) {
     log_spew("ATAChannel::ReadStatus:  Reading status of device %d\n", GetSelectedDeviceIndex());
-    //log_warning("ATA::ReadStatus:  Unimplemented!  (channel = %d  size = %d)\n", m_channel, size);
+    
+    // TODO: implement
     *value = StReady;
+    
+    // [7.15.4]: "Reading this register when an interrupt is pending causes the interrupt to be cleared"
+    m_pendingInterrupt = false;
 }
 
 void ATAChannel::WriteData(uint16_t value) {

@@ -82,8 +82,8 @@ enum DeviceControl : uint8_t {
     DevCtlInterruptEnable = (1 << 1),  // [7.9.6] (nIEN) When set, INTRQ signal is effectively disabled
 };
 
-const uint8_t kDeviceHeadSelectorBitMask = (1 << 4);  // [7.10.6] (DEV) Selects Device 0 when cleared or Device 1 when set
-const uint8_t kErrorAbortBitMask = (1 << 2);          // [7.11.6] (ABRT) Previous command was aborted due to an error or invalid parameter
+const uint8_t kDeviceHeadSelectorBit = 4;  // [7.10.6] (DEV) Selects Device 0 when cleared or Device 1 when set
+const uint8_t kErrorAbortBit = 2;          // [7.11.6] (ABRT) Previous command was aborted due to an error or invalid parameter
 
 enum OperationMode : uint8_t {
     PIO0,
