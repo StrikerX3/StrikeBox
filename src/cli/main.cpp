@@ -103,6 +103,7 @@ int main(int argc, const char *argv[]) {
 
     OpenXBOXSettings *settings = xbox->GetSettings();
     settings->cpu_singleStep = false;
+    settings->ram_expanded = true;
     settings->emu_stopOnSMCFatalErrors = true;
     settings->emu_stopOnBugChecks = true;
     settings->debug_dumpPageTables = false;

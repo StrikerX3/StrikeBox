@@ -14,6 +14,10 @@ struct OpenXBOXSettings {
     // true: the CPU emulator will execute one instruction at a time
     bool cpu_singleStep = false;
 
+    // false: use standard 64 MiB RAM
+    // true: expand RAM to 128 MiB
+    bool ram_expanded = false;
+
     // true: the emulator will stop on a fatal error
     bool emu_stopOnSMCFatalErrors = false;
 

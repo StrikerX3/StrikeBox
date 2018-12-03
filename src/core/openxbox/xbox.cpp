@@ -173,6 +173,7 @@ EmulatorStatus Xbox::Initialize()
 EmulatorStatus Xbox::InitFixupSettings() {
     if (m_settings.hw_model == DebugKit) {
         m_settings.hw_enableSuperIO = true;
+        m_settings.ram_expanded = true;
     }
 
     return EMUS_OK;
@@ -194,7 +195,7 @@ EmulatorStatus Xbox::InitMemory() {
 
 EmulatorStatus Xbox::InitRAM() {
     // Create RAM region
-    m_ramSize = m_settings.hw_model == DebugKit ? XBOX_RAM_SIZE_DEBUG : XBOX_RAM_SIZE_RETAIL;
+    m_ramSize = m_settings.ram_expanded ? XBOX_RAM_SIZE_DEBUG : XBOX_RAM_SIZE_RETAIL;
     log_debug("Allocating RAM (%d MiB)\n", m_ramSize >> 20);
 
 #ifdef _WIN32
