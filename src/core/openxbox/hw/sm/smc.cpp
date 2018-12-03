@@ -89,16 +89,17 @@ uint8_t SMCDevice::ReadByte(uint8_t command) {
     switch (command) {
     case SMCRegister::Version:
         // See http://xboxdevwiki.net/PIC#PIC_version_string
+        char revByte;
         switch (m_revision) {
-        case SMCRevision::P01: m_buffer[0] = "P01"[m_PICVersionStringIndex]; break;
-        case SMCRevision::P2L: m_buffer[0] = "P05"[m_PICVersionStringIndex]; break; // ??
-        case SMCRevision::D01: m_buffer[0] = "DXB"[m_PICVersionStringIndex]; break;
-        case SMCRevision::D05: m_buffer[0] = "D05"[m_PICVersionStringIndex]; break; // ??
-        // default: UNREACHABLE(m_revision);
+        case SMCRevision::P01: revByte = "P01"[m_PICVersionStringIndex]; break;
+        case SMCRevision::P2L: revByte = "P05"[m_PICVersionStringIndex]; break; // ??
+        case SMCRevision::D01: revByte = "DXB"[m_PICVersionStringIndex]; break;
+        case SMCRevision::D05: revByte = "D05"[m_PICVersionStringIndex]; break; // ??
+        default: assert(0); revByte = 'P'; break;
         }
 
         m_PICVersionStringIndex = (m_PICVersionStringIndex + 1) % 3;
-        break;
+        return revByte;
     //case SMCRegister::TrayState:
     //case SMCRegister::AVPack:
     //case SMCRegister::CPUTemp:
