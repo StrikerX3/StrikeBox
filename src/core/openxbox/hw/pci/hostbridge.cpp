@@ -26,6 +26,8 @@ void HostBridgeDevice::Reset() {
 
 void HostBridgeDevice::PCIMMIORead(int barIndex, uint32_t addr, uint32_t *value, uint8_t size) {
     log_spew("HostBridgeDevice::PCIMMIORead:   Unimplemented!  bar = %d,  address = 0x%x,  size = %u\n", barIndex, addr, size);
+    
+    *value = 0;
 }
 
 void HostBridgeDevice::PCIMMIOWrite(int barIndex, uint32_t addr, uint32_t value, uint8_t size) {
