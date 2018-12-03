@@ -162,7 +162,7 @@ void NV2ADevice::PCIIOWrite(int barIndex, uint32_t port, uint32_t value, uint8_t
 }
 
 void NV2ADevice::PCIMMIORead(int barIndex, uint32_t addr, uint32_t *value, uint8_t size) {
-    log_spew("NV2ADevice::MMIORead:   bar = %d,  addr = 0x%x,  size = %u\n", barIndex, addr, size);
+    //log_spew("NV2ADevice::MMIORead:   bar = %d,  addr = 0x%x,  size = %u\n", barIndex, addr, size);
 
     if (barIndex == 1) {
         switch (size) {
@@ -194,7 +194,7 @@ void NV2ADevice::PCIMMIORead(int barIndex, uint32_t addr, uint32_t *value, uint8
 }
 
 void NV2ADevice::PCIMMIOWrite(int barIndex, uint32_t addr, uint32_t value, uint8_t size) {
-    log_spew("NV2ADevice::MMIOWrite:  bar = %d,  addr = 0x%x,  size = %u,  value = 0x%x\n", barIndex, addr, size, value);
+    //log_spew("NV2ADevice::MMIOWrite:  bar = %d,  addr = 0x%x,  size = %u,  value = 0x%x\n", barIndex, addr, size, value);
 
     if (barIndex == 1) {
         switch (size) {
