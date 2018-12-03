@@ -116,6 +116,7 @@ Xbox::~Xbox() {
     if (m_AGPBridge != nullptr) delete m_AGPBridge;
 
     if (m_CMOS != nullptr) delete m_CMOS;
+    if (m_ATA != nullptr) delete m_ATA;
     if (m_SuperIO != nullptr) delete m_SuperIO;
     if (m_i8254 != nullptr) delete m_i8254;
     if (m_i8259 != nullptr) delete m_i8259;
@@ -336,6 +337,7 @@ EmulatorStatus Xbox::InitHardware() {
     m_i8259 = new i8259(m_cpu);
     m_i8254 = new i8254(m_i8259, m_settings.hw_sysclock_tickRate);
     m_CMOS = new CMOS();
+    m_ATA = new ATA(m_i8259);
     if (m_settings.hw_enableSuperIO) {
         for (int i = 0; i < SUPERIO_SERIAL_PORT_COUNT; i++) {
             switch (m_settings.hw_charDrivers[i].type) {
@@ -362,6 +364,7 @@ EmulatorStatus Xbox::InitHardware() {
     m_i8259->Reset();
     m_i8254->Reset();
     m_CMOS->Reset();
+    m_ATA->Reset();
     if (m_settings.hw_enableSuperIO) {
         m_SuperIO->Reset();
     }
@@ -440,6 +443,7 @@ EmulatorStatus Xbox::InitHardware() {
     m_i8259->MapIO(&m_ioMapper);
     m_i8254->MapIO(&m_ioMapper);
     m_CMOS->MapIO(&m_ioMapper);
+    m_ATA->MapIO(&m_ioMapper);
     m_PCIBus->MapIO(&m_ioMapper);
     if (m_settings.hw_enableSuperIO) {
         m_SuperIO->MapIO(&m_ioMapper);

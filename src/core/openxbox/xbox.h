@@ -27,6 +27,7 @@
 #include "openxbox/hw/basic/i8259.h"
 #include "openxbox/hw/basic/superio.h"
 #include "openxbox/hw/basic/cmos.h"
+#include "openxbox/hw/basic/ata.h"
 
 #include "openxbox/hw/bus/smbus.h"
 #include "openxbox/hw/bus/pcibus.h"
@@ -101,7 +102,7 @@ protected:
     openxbox::modules::cpu::ICPUModule *m_cpuModule;
 
     // ----- Hardware ---------------------------------------------------------
-    cpu::Cpu         *m_cpu;
+    Cpu              *m_cpu;
     uint32_t          m_ramSize;
     uint8_t          *m_ram;
     uint8_t          *m_rom;
@@ -119,6 +120,7 @@ protected:
     i8254            *m_i8254;
     i8259            *m_i8259;
     CMOS             *m_CMOS;
+    ATA              *m_ATA;
     CharDriver       *m_CharDrivers[SUPERIO_SERIAL_PORT_COUNT];
     SuperIO          *m_SuperIO;
 
