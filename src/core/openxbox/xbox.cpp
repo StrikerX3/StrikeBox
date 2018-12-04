@@ -498,6 +498,13 @@ EmulatorStatus Xbox::InitDebugger() {
         m_gdb->Debug(1);
     }
 
+    /*HardwareBreakpoints bps = { 0 };
+    bps.bp[0].globalEnable = true;
+    bps.bp[0].address = 0x80016756;
+    bps.bp[0].length = HWBP_LENGTH_1_BYTE;
+    bps.bp[0].trigger = HWBP_TRIGGER_EXECUTION;
+    m_cpu->SetHardwareBreakpoints(bps);*/
+    
     return EMUS_OK;
 }
 
@@ -658,7 +665,7 @@ int Xbox::RunCpu()
         case CPU_EXIT_SW_BREAKPOINT:
         {
             uint32_t bpAddr;
-            if (m_cpu->GetBreakpointAddress(&bpAddr)) {
+            if (m_cpu->GetBreakpointAddress(&bpAddr) == CPUS_OP_OK) {
                 if (exit_info->reason == CPU_EXIT_HW_BREAKPOINT) {
                     log_info("Hardware breakpoint hit at 0x%08x\n", bpAddr);
                 }
@@ -699,6 +706,29 @@ void Xbox::Cleanup() {
             DumpCPUDisassembly(m_cpu, eip, m_settings.debug_dumpDisassembly_length, true);
             DumpCPUDisassembly(m_cpu, eip, m_settings.debug_dumpDisassembly_length, false);
         }
+
+#if 0
+        {
+            // Dump kernel to disk
+            FILE *fp = NULL;
+            errno_t err = fopen_s(&fp, "xboxkrnl.exe", "wb");
+            if (err != 0) {
+                log_debug("Could not open xboxkrnl.exe\n");
+            }
+            else {
+                log_debug("Dumping kernel to xboxkrnl.exe... ");
+                uint8_t buf[0x10000];
+                uint32_t totalLen = 0;
+                uint32_t len = 0;
+                while (m_cpu->VMemRead(0x80010000 + totalLen, sizeof(buf), buf, &len) == CPUS_OP_OK && len > 0) {
+                    totalLen += len;
+                    fwrite(buf, sizeof(uint8_t), len, fp);
+                }
+                log_debug("%d KiB -- OK\n", totalLen / 1024);
+                fclose(fp);
+            }
+        }
+#endif
 
         if (m_settings.debug_dumpPageTables) {
             uint32_t cr0;
