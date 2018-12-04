@@ -63,8 +63,8 @@ bool ATADevice::__doIdentifyDevice() {
     }
 
     // Ask the device driver to identify itself
-    uint16_t identifyData[kIdentifyDeviceWords];
-    m_driver->IdentifyDevice(identifyData);
+    IdentifyDeviceData data;
+    m_driver->IdentifyDevice(&data);
 
     // TODO: set this as the data buffer to be read
 

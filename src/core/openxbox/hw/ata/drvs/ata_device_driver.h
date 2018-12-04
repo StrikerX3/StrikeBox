@@ -29,7 +29,7 @@ namespace ata {
 class IATADeviceDriver {
 public:
     virtual bool IsAttached() = 0;
-    virtual void IdentifyDevice(uint16_t data[kIdentifyDeviceWords]) = 0;
+    virtual void IdentifyDevice(IdentifyDeviceData *data) = 0;
 };
 
 }

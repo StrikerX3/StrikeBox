@@ -20,9 +20,9 @@ namespace ata {
 
 NullATADeviceDriver g_nullATADeviceDriver;
 
-void NullATADeviceDriver::IdentifyDevice(uint16_t data[kIdentifyDeviceWords]) {
-    // Fill in with blanks
-    memset(data, 0, kIdentifyDeviceWords * sizeof(uint16_t));
+void NullATADeviceDriver::IdentifyDevice(IdentifyDeviceData *data) {
+    // Fill in with zeros
+    memset(data, 0, sizeof(IdentifyDeviceData));
 }
 
 }
