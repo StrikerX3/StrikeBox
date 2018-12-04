@@ -29,7 +29,9 @@ ATAChannel::ATAChannel(Channel channel, IRQHandler *irqHandler, uint8_t irqNum)
 }
 
 ATAChannel::~ATAChannel() {
-    delete[] m_devs;
+    for (uint8_t i = 0; i < 2; i++) {
+        delete m_devs[i];
+    }
 }
 
 bool ATAChannel::ReadCommandPort(Register reg, uint32_t *value, uint8_t size) {
@@ -42,19 +44,29 @@ bool ATAChannel::ReadCommandPort(Register reg, uint32_t *value, uint8_t size) {
     }
 
     // Check for operation size mismatch
-    if (size != kRegSizes[reg]) {
+    if ((size & kRegSizes[reg]) == 0) {
         log_debug("ATAChannel::ReadCommandPort: Unexpected read of size %d from register %d for channel %d\n", size, reg, m_channel);
     }
 
-    switch (reg) {
-    case RegData: ReadData(reinterpret_cast<uint16_t*>(value)); break;
-    case RegError: *value = m_regs.error; break;
-    case RegSectorCount: *value = m_regs.sectorCount; break;
-    case RegSectorNumber: *value = m_regs.sectorNumber; break;
-    case RegCylinderLow: *value = m_regs.cylinder & 0xFF; break;
-    case RegCylinderHigh: *value = (m_regs.cylinder >> 8) & 0xFF; break;
-    case RegDeviceHead: *value = m_regs.deviceHead; break;
-    case RegStatus: ReadStatus(reinterpret_cast<uint8_t*>(value)); break;
+    // Check that there is an attached device
+    bool attached = m_devs[GetSelectedDeviceIndex()]->IsAttached();
+
+    // If there is no attached device and the guest is attempting to read from
+    // a register other than Status, return 0
+    if (!attached && reg != RegStatus) {
+        *value = 0;
+    }
+    else {
+        switch (reg) {
+        case RegData: ReadData(value, size); break;
+        case RegError: *value = m_regs.error; break;
+        case RegSectorCount: *value = m_regs.sectorCount ; break;
+        case RegSectorNumber: *value = m_regs.sectorNumber ; break;
+        case RegCylinderLow: *value = m_regs.cylinder & 0xFF ; break;
+        case RegCylinderHigh: *value = (m_regs.cylinder >> 8) & 0xFF ; break;
+        case RegDeviceHead: *value = m_regs.deviceHead ; break;
+        case RegStatus: ReadStatus(reinterpret_cast<uint8_t*>(value)); break;
+        }
     }
 
     return true;
@@ -69,12 +81,12 @@ bool ATAChannel::WriteCommandPort(Register reg, uint32_t value, uint8_t size) {
     }
 
     // Check for operation size mismatch
-    if (size != kRegSizes[reg]) {
+    if ((size & kRegSizes[reg]) == 0) {
         log_debug("ATAChannel::ReadCommandPort: Unexpected read of size %d from register %d for channel %d\n", size, reg, m_channel);
     }
 
     switch (reg) {
-    case RegData: WriteData(value); break;
+    case RegData: WriteData(value, size); break;
     case RegFeatures: m_regs.features = value; break;
     case RegSectorCount: m_regs.sectorCount = value; break;
     case RegSectorNumber: m_regs.sectorNumber = value; break;
@@ -120,37 +132,43 @@ bool ATAChannel::WriteControlPort(uint32_t value, uint8_t size) {
     return false;
 }
 
-void ATAChannel::ReadData(uint16_t *value) {
-    log_warning("ATAChannel::ReadData:  Unimplemented!  (channel = %d)\n", m_channel);
+void ATAChannel::ReadData(uint32_t *value, uint8_t size) {
+    log_warning("ATAChannel::ReadData:  Unimplemented!  (channel = %d  device = %d  size = %d)\n", m_channel, GetSelectedDeviceIndex(), size);
     *value = 0;
 }
 
 void ATAChannel::ReadStatus(uint8_t *value) {
     log_spew("ATAChannel::ReadStatus:  Reading status of device %d\n", GetSelectedDeviceIndex());
     
-    *value = m_regs.status | StReady;
+    *value = m_regs.status;
     
     // [7.15.4]: "Reading this register when an interrupt is pending causes the interrupt to be cleared."
     SetInterrupt(false);
 }
 
-void ATAChannel::WriteData(uint16_t value) {
-    log_warning("ATAChannel::WriteData:  Unimplemented!  (channel = %d  value = 0x%04x)\n", m_channel, value);
+void ATAChannel::WriteData(uint32_t value, uint8_t size) {
+    log_warning("ATAChannel::WriteData:  Unimplemented!  (channel = %d  device = %d  size = %d, value = 0x%x)\n", m_channel, GetSelectedDeviceIndex(), size, value);
 }
 
 void ATAChannel::WriteCommand(uint8_t value) {
-    // Every protocol starts by setting BSY=1
-    m_regs.status |= StBusy;
+    const Command cmd = (Command)value;
+    // Check that the command has an protocol associated with it
+    if (kCmdProtocols.count(cmd) == 0) {
+        log_warning("ATAChannel::WriteCommand: No protocol specified for command 0x%x\n", value);
+    }
+
+    // Determine which protocol is used by the command and collect all data needed for execution
+    auto protocol = kCmdProtocols.at(cmd);
+    auto devIndex = GetSelectedDeviceIndex();
+    auto dev = m_devs[devIndex];
+    bool succeeded;
 
     // TODO: submit this entire block as a job to the command thread
     {
-        // TODO: decide which protocol to use
-        // Right now the code implements the non-data protocol only [9.9]
-        // Needs refactoring to support other protocols
-        auto devIndex = GetSelectedDeviceIndex();
-        auto dev = m_devs[devIndex];
-        bool succeeded;
-        switch (value) {
+        // Every protocol starts by setting BSY=1
+        m_regs.status |= StBusy;
+
+        switch (cmd) {
         case CmdSetFeatures:
             succeeded = dev->SetFeatures();
             break;
@@ -158,22 +176,28 @@ void ATAChannel::WriteCommand(uint8_t value) {
             succeeded = dev->IdentifyDevice();
             break;
         default:
-            log_warning("ATAChannel::WriteCommand:  Unhandled command 0x%x for channel %d, device %d\n", value, m_channel, devIndex);
+            log_warning("ATAChannel::WriteCommand:  Unhandled command 0x%x for channel %d, device %d\n", cmd, m_channel, devIndex);
             succeeded = false;
             break;
         }
 
-        // Error ?
-        if (!succeeded) {
+        if (succeeded) {
+            // On PIO data in, DRQ is asserted if the device has successfully executed the command
+            if (protocol == CmdProtoPIODataIn) {
+                m_regs.status |= StDataRequest;
+            }
+        }
+        else {
+            // Set Error status if the device reported an error
             m_regs.status |= StError;
         }
 
         // Clear BSY=0
         m_regs.status &= ~StBusy;
 
-        // nIEN=0 ?
+        // Assert INTRQ if nIEN=0
+        // INTRQ will be negated when the host reads the Status register
         if (AreInterruptsEnabled()) {
-            // Assert INTRQ
             SetInterrupt(true);
         }
     }

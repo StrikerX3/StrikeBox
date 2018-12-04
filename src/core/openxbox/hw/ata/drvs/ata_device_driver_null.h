@@ -13,28 +13,22 @@
 
 #include <cstdint>
 
-#include "openxbox/cpu.h"
-#include "../ata/defs.h"
+#include "ata_device_driver.h"
 
 namespace openxbox {
 namespace hw {
 namespace ata {
 
-enum Channel {
-    ChanPrimary,
-    ChanSecondary,
+/*!
+ * The null ATA device driver represents the absence of a device.
+ */
+class NullATADeviceDriver : public IATADeviceDriver {
+public:
+    bool IsAttached() override { return true; }
+    void IdentifyDevice(uint16_t data[kIdentifyDeviceWords]) override;
 };
 
-struct ATARegisters {
-    uint8_t status = StReady;
-    uint8_t error = 0;
-    uint8_t features = 0;
-    uint8_t sectorCount = 0;
-    uint8_t sectorNumber = 0;
-    uint16_t cylinder = 0;
-    uint8_t deviceHead = 0;
-    uint8_t control = 0;
-};
+extern NullATADeviceDriver g_nullATADeviceDriver;
 
 }
 }

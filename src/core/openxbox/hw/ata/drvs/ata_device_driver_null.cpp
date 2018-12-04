@@ -9,32 +9,21 @@
 //
 // References to particular items in the specification are denoted between brackets
 // optionally followed by a quote from the specification.
-#pragma once
+#include "ata_device_driver_null.h"
 
-#include <cstdint>
-
-#include "openxbox/cpu.h"
-#include "../ata/defs.h"
+#include "openxbox/log.h"
+#include "openxbox/io.h"
 
 namespace openxbox {
 namespace hw {
 namespace ata {
 
-enum Channel {
-    ChanPrimary,
-    ChanSecondary,
-};
+NullATADeviceDriver g_nullATADeviceDriver;
 
-struct ATARegisters {
-    uint8_t status = StReady;
-    uint8_t error = 0;
-    uint8_t features = 0;
-    uint8_t sectorCount = 0;
-    uint8_t sectorNumber = 0;
-    uint16_t cylinder = 0;
-    uint8_t deviceHead = 0;
-    uint8_t control = 0;
-};
+void NullATADeviceDriver::IdentifyDevice(uint16_t data[kIdentifyDeviceWords]) {
+    // Fill in with blanks
+    memset(data, 0, kIdentifyDeviceWords * sizeof(uint16_t));
+}
 
 }
 }

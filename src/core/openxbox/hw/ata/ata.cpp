@@ -24,7 +24,9 @@ ATA::ATA(IRQHandler *irqHandler) {
 }
 
 ATA::~ATA() {
-    delete[] m_channels;
+    for (uint8_t i = 0; i < 2; i++) {
+        delete m_channels[i];
+    }
 }
 
 void ATA::Reset() {

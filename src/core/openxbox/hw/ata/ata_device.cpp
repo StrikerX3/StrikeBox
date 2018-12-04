@@ -22,21 +22,53 @@ ATADevice::ATADevice(Channel channel, uint8_t devIndex, ATARegisters& regs)
     : m_channel(channel)
     , m_devIndex(devIndex)
     , m_regs(regs)
+    , m_driver(&g_nullATADeviceDriver)
 {
 }
 
 bool ATADevice::IdentifyDevice() {
     bool succeeded = __doIdentifyDevice();
 
-    if (!succeeded) {
-        // TODO: implement
+    // Handle normal output as specified in [8.12.5.1]
+    // TODO: support PACKET commands and implement [8.12.5.2]
+    if (succeeded) {
+        // Device/Head register:
+        //  "DEV shall indicate the selected device."
+        //     Not necessary, but the spec says so
+        m_regs.deviceHead = (m_regs.deviceHead & ~(1 << kDevSelectorBit)) | (m_devIndex << kDevSelectorBit);
+
+        // Status register:
+        //  "BSY shall be cleared to zero indicating command completion."
+        //     Already handled by the caller
+
+        //  "DRDY shall be set to one."
+        m_regs.status |= StReady;
+
+        //  "DF (Device Fault) shall be cleared to zero."
+        //  "DRQ shall be cleared to zero."
+        //  "ERR shall be cleared to zero."
+        m_regs.status &= ~(StBit5 | StDataRequest | StError);
     }
+
+    // The documentation is very terse regarding error output for this command.
+    // I'll assume this command may never fail.
 
     return succeeded;
 }
 
 bool ATADevice::__doIdentifyDevice() {
-    return false;
+    // [8.12.7] As a prerequisite, DRDY must be set equal to one
+    if ((m_regs.status & StReady) == 0) {
+        return false;
+    }
+
+    // Ask the device driver to identify itself
+    uint16_t identifyData[kIdentifyDeviceWords];
+    m_driver->IdentifyDevice(identifyData);
+
+    // TODO: set this as the data buffer to be read
+
+    return true;
 }
 
 bool ATADevice::SetFeatures() {

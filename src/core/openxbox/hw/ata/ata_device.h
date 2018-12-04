@@ -16,14 +16,25 @@
 #include "openxbox/cpu.h"
 #include "../ata/defs.h"
 #include "ata_common.h"
+#include "drvs/ata_device_driver.h"
+#include "drvs/ata_device_driver_null.h"
 
 namespace openxbox {
 namespace hw {
 namespace ata {
 
+/*!
+ * Represents one ATA device. The concrete implementation for the device is
+ * provided by the IATADeviceDriver.
+ */
 class ATADevice {
 public:
     ATADevice(Channel channel, uint8_t devIndex, ATARegisters& regs);
+
+    // ----- Device driver management -----------------------------------------
+
+    bool IsAttached() const { return m_driver->IsAttached(); }
+    void SetDeviceDriver(IATADeviceDriver *driver) { m_driver = driver; }
 
     // ----- Command handlers -------------------------------------------------
     // These functions must return false on error
@@ -42,6 +53,9 @@ private:
 
     Channel m_channel;
     uint8_t m_devIndex;
+
+    // The device driver that responds to commands
+    IATADeviceDriver *m_driver;
 
     // ----- Command handler implementations ----------------------------------
     

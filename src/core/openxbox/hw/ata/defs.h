@@ -17,6 +17,8 @@ namespace openxbox {
 namespace hw {
 namespace ata {
 
+// --- I/O resources ------------------------------------------------------------------------------
+
 // Resources for the primary IDE channel
 // IRQ 14     Command ports 0x1F0 - 0x1F7    Control port 0x3F6
 const uint8_t  kPrimaryIRQ              = 14;
@@ -33,6 +35,7 @@ const uint16_t kSecondaryCommandPortCount = 8;
 const uint16_t kSecondaryCommandLastPort  = (kSecondaryCommandBasePort + kSecondaryCommandPortCount - 1);
 const uint16_t kSecondaryControlPort      = 0x376;
 
+// --- Registers ----------------------------------------------------------------------------------
 
 // Command port registers [chapter 7]
 enum Register : uint8_t {
@@ -49,15 +52,19 @@ enum Register : uint8_t {
 };
 
 // Register sizes
+const uint8_t kRegSize8Bit = 0x01;
+const uint8_t kRegSize16Bit = 0x02;
+const uint8_t kRegSize32Bit = 0x04;
+
 const uint8_t kRegSizes[] = {
-    2,   // [7.7]  Data
-    1,   // [7.11] Error and [7.12] Features
-    1,   // [7.13] Sector count
-    1,   // [7.14] Sector number
-    1,   // [7.6]  Cylinder low
-    1,   // [7.6]  Cylinder high
-    1,   // [7.10] Device/Head
-    1,   // [7.15] Status and [7.4] Command
+    kRegSize8Bit | kRegSize16Bit | kRegSize32Bit,   // [7.7]  Data
+    kRegSize8Bit,   // [7.11] Error and [7.12] Features
+    kRegSize8Bit,   // [7.13] Sector count
+    kRegSize8Bit,   // [7.14] Sector number
+    kRegSize8Bit,   // [7.6]  Cylinder low
+    kRegSize8Bit,   // [7.6]  Cylinder high
+    kRegSize8Bit,   // [7.10] Device/Head
+    kRegSize8Bit,   // [7.15] Status and [7.4] Command
 };
 
 // Control port registers:
@@ -67,6 +74,7 @@ const uint8_t kRegSizes[] = {
 // There also exists a Data port that is used with DMA transfers
 // and cannot be directly accessed through port I/O.  [7.8]
 
+// --- Register data bits -------------------------------------------------------------------------
 
 // Status bits (read from the Status register)
 enum StatusBits : uint8_t {
@@ -92,6 +100,8 @@ enum DeviceControlBits : uint8_t {
 
 const uint8_t kDevSelectorBit = 4;  // [7.10.6] (DEV) Selects Device 0 when cleared or Device 1 when set
 
+// --- Transfer modes -----------------------------------------------------------------------------
+
 // [8.37.10 table 20] PIO transfer types for the Set Transfer Mode subcommand of the Set Features command.
 // These specify the 5 most significant bits of the transfer mode value.
 // The 3 least significant bits specify additional parameters for the mode. When applicable, they are documented below.
@@ -105,6 +115,7 @@ enum PIOTransferType : uint8_t {
 
 // The highest supported PIO flow control transfer mode
 const uint8_t kMaximumPIOTransferMode = 4;
+
 
 // [8.37.10 table 20] DMA transfer types for the Set Transfer Mode subcommand of the Set Features command.
 enum DMATransferType : uint8_t {
@@ -120,16 +131,41 @@ const uint8_t kMaximumMultiwordDMATransferMode = 2;
 // The highest supported Ultra DMA transfer mode
 const uint8_t kMaximumUltraDMATransferMode = 4;
 
+// --- Commands -----------------------------------------------------------------------------------
+
 // [8] Commands
 enum Command : uint8_t {
-    CmdIdentifyDevice = 0xEC,    // [8.12] Identify Device
-    CmdSetFeatures = 0xEF,       // [8.37] Set Features
+    CmdIdentifyDevice = 0xEC,   // [8.12] Identify Device
+    CmdSetFeatures = 0xEF,      // [8.37] Set Features
 };
 
 // [8.37.8] Set Features subcommands (specified in the Features register)
 enum SetFeaturesSubCommand : uint8_t {
-    SFCmdSetTransferMode = 0x03,    // [8.37.10] Set Transfer Mode
+    SFCmdSetTransferMode = 0x03,   // [8.37.10] Set Transfer Mode
 };
+
+// --- Command Protocols --------------------------------------------------------------------------
+
+// [9] Command Protocols
+// NOTE: Not all command protocols are included here.
+enum CommandProtocol : uint8_t {
+    CmdProtoPIODataIn = 0,   // [9.7]  PIO data in             (data transfer from device to host via Data register)
+    CmdProtoPIODataOut,      // [9.8]  PIO data out            (data transfer from host to device via Data register)
+    CmdProtoNonData,         // [9.9]  Non-data                (no data transfer)
+    CmdProtoDMA,             // [9.10] DMA                     (data transfer between host and device via DMA)
+    CmdProtoPACKET,          // [9.11] PACKET                  (non-data, PIO and DMA transfers)
+};
+
+// Map commands to their protocols
+const std::unordered_map<Command, CommandProtocol> kCmdProtocols = {
+    { CmdIdentifyDevice, CmdProtoPIODataIn },
+    { CmdSetFeatures, CmdProtoNonData },
+};
+
+// --- Command data -------------------------------------------------------------------------------
+
+// [8.12.8] Length of the data structure returned by the Identify Device command, in words
+const uint16_t kIdentifyDeviceWords = 256;
 
 }
 }

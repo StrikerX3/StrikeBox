@@ -13,6 +13,8 @@
 #include "openxbox/hw/basic/win32/char_serial.h"
 #endif
 
+#include "openxbox/hw/ata/drvs/ata_device_driver_dummy.h"
+
 #ifdef __linux__
 #include <sys/mman.h>
 #endif
@@ -115,11 +117,16 @@ Xbox::~Xbox() {
     if (m_PCIBridge != nullptr) delete m_PCIBridge;
     if (m_AGPBridge != nullptr) delete m_AGPBridge;
 
-    if (m_CMOS != nullptr) delete m_CMOS;
+    for (int i = 0; i < 2; i++) {
+        for (int j = 0; j < 2; j++) {
+            delete m_ataDrivers[i][j];
+        }
+    }
     if (m_ATA != nullptr) delete m_ATA;
     if (m_SuperIO != nullptr) delete m_SuperIO;
     if (m_i8254 != nullptr) delete m_i8254;
     if (m_i8259 != nullptr) delete m_i8259;
+    if (m_CMOS != nullptr) delete m_CMOS;
     if (m_acpiIRQs != nullptr) delete[] m_acpiIRQs;
     if (m_IRQs != nullptr) delete[] m_IRQs;
     if (m_GSI != nullptr) delete m_GSI;
@@ -337,7 +344,19 @@ EmulatorStatus Xbox::InitHardware() {
     m_i8259 = new i8259(m_cpu);
     m_i8254 = new i8254(m_i8259, m_settings.hw_sysclock_tickRate);
     m_CMOS = new CMOS();
+
+    // TODO: make this configurable, similar to Super I/O port char drivers
+    m_ataDrivers[0][0] = new hw::ata::DummyATADeviceDriver();
+    m_ataDrivers[0][1] = new hw::ata::DummyATADeviceDriver();
+    m_ataDrivers[1][0] = new hw::ata::NullATADeviceDriver();
+    m_ataDrivers[1][1] = new hw::ata::NullATADeviceDriver();
+
     m_ATA = new hw::ata::ATA(m_i8259);
+    m_ATA->GetChannel(hw::ata::ChanPrimary).GetDevice(0).SetDeviceDriver(m_ataDrivers[0][0]);
+    m_ATA->GetChannel(hw::ata::ChanPrimary).GetDevice(1).SetDeviceDriver(m_ataDrivers[0][1]);
+    m_ATA->GetChannel(hw::ata::ChanSecondary).GetDevice(0).SetDeviceDriver(m_ataDrivers[1][0]);
+    m_ATA->GetChannel(hw::ata::ChanSecondary).GetDevice(1).SetDeviceDriver(m_ataDrivers[1][1]);
+
     if (m_settings.hw_enableSuperIO) {
         for (int i = 0; i < SUPERIO_SERIAL_PORT_COUNT; i++) {
             switch (m_settings.hw_charDrivers[i].type) {

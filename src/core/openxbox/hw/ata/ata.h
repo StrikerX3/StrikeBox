@@ -33,6 +33,8 @@ public:
     bool IORead(uint32_t port, uint32_t *value, uint8_t size) override;
     bool IOWrite(uint32_t port, uint32_t value, uint8_t size) override;
 
+    ATAChannel& GetChannel(Channel channel) { return *m_channels[channel]; }
+
 private:
     ATAChannel *m_channels[2];
 };

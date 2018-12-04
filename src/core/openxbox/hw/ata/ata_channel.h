@@ -22,11 +22,17 @@ namespace openxbox {
 namespace hw {
 namespace ata {
 
-
+/*!
+ * Represents one of the two ATA channels in a machine (primary or secondary).
+ *
+ * An ATA channel contains two devices, typically called master and slave.
+ */
 class ATAChannel {
 public:
     ATAChannel(Channel channel, IRQHandler *irqHandler, uint8_t irqNum);
     ~ATAChannel();
+
+    ATADevice& GetDevice(uint8_t deviceIndex) { return *m_devs[deviceIndex]; }
 
     // ----- Basic I/O --------------------------------------------------------
 
@@ -62,10 +68,10 @@ private:
 
     // ----- Command port operations ------------------------------------------
 
-    void ReadData(uint16_t *value);
+    void ReadData(uint32_t *value, uint8_t size);
     void ReadStatus(uint8_t *value);
 
-    void WriteData(uint16_t value);
+    void WriteData(uint32_t value, uint8_t size);
     void WriteCommand(uint8_t value);
 
     // ----- Utility functions ------------------------------------------------

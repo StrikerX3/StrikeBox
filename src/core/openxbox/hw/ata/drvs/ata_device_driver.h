@@ -13,27 +13,23 @@
 
 #include <cstdint>
 
-#include "openxbox/cpu.h"
-#include "../ata/defs.h"
+#include "../../ata/defs.h"
+#include "../ata_common.h"
 
 namespace openxbox {
 namespace hw {
 namespace ata {
 
-enum Channel {
-    ChanPrimary,
-    ChanSecondary,
-};
-
-struct ATARegisters {
-    uint8_t status = StReady;
-    uint8_t error = 0;
-    uint8_t features = 0;
-    uint8_t sectorCount = 0;
-    uint8_t sectorNumber = 0;
-    uint16_t cylinder = 0;
-    uint8_t deviceHead = 0;
-    uint8_t control = 0;
+/*!
+ * Interface for an ATA device driver.
+ * ATA device drivers act as virtual devices attached to ATA channels.
+ * They typically interact with real hardware by accessing a hard drive image,
+ * an XISO, a host DVD drive or similar methods.
+ */
+class IATADeviceDriver {
+public:
+    virtual bool IsAttached() = 0;
+    virtual void IdentifyDevice(uint16_t data[kIdentifyDeviceWords]) = 0;
 };
 
 }
