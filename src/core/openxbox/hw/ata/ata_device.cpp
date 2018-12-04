@@ -46,12 +46,16 @@ void ATADevice::InitDataBuffer(uint32_t dataBufferSize) {
 uint32_t ATADevice::ReadBuffer(uint8_t *dest, uint32_t length) {
     uint32_t lenToRead = length;
     if (m_dataBufferPos + length > m_dataBufferSize) {
-        lenToRead = m_dataBufferSize - m_dataBufferPos;
+        lenToRead = GetRemainingBufferLength();
     }
 
     memcpy_s(dest, length, m_dataBuffer + m_dataBufferPos, lenToRead);
     m_dataBufferPos += lenToRead;
     return lenToRead;
+}
+
+uint32_t ATADevice::GetRemainingBufferLength() {
+    return m_dataBufferSize - m_dataBufferPos;
 }
 
 bool ATADevice::IdentifyDevice() {

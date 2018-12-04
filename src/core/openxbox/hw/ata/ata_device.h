@@ -40,6 +40,7 @@ public:
     // ----- PIO data buffer --------------------------------------------------
 
     uint32_t ReadBuffer(uint8_t *dest, uint32_t length);
+    uint32_t GetRemainingBufferLength();
 
     // ----- Command handlers -------------------------------------------------
     // These functions must return false on error

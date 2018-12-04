@@ -135,6 +135,7 @@ const uint8_t kMaximumUltraDMATransferMode = 4;
 
 // [8] Commands
 enum Command : uint8_t {
+    CmdDeviceReset = 0x08,      // [8.7]  Device Reset
     CmdIdentifyDevice = 0xEC,   // [8.12] Identify Device
     CmdSetFeatures = 0xEF,      // [8.37] Set Features
 };
@@ -149,11 +150,12 @@ enum SetFeaturesSubCommand : uint8_t {
 // [9] Command Protocols
 // NOTE: Not all command protocols are included here.
 enum CommandProtocol : uint8_t {
-    CmdProtoPIODataIn = 0,   // [9.7]  PIO data in             (data transfer from device to host via Data register)
-    CmdProtoPIODataOut,      // [9.8]  PIO data out            (data transfer from host to device via Data register)
-    CmdProtoNonData,         // [9.9]  Non-data                (no data transfer)
-    CmdProtoDMA,             // [9.10] DMA                     (data transfer between host and device via DMA)
-    CmdProtoPACKET,          // [9.11] PACKET                  (non-data, PIO and DMA transfers)
+    CmdProtoDeviceReset = 0,   // [9.2]  Device reset            (hardware reset)
+    CmdProtoPIODataIn,         // [9.7]  PIO data in             (data transfer from device to host via Data register)
+    CmdProtoPIODataOut,        // [9.8]  PIO data out            (data transfer from host to device via Data register)
+    CmdProtoNonData,           // [9.9]  Non-data                (no data transfer)
+    CmdProtoDMA,               // [9.10] DMA                     (data transfer between host and device via DMA)
+    CmdProtoPACKET,            // [9.11] PACKET                  (non-data, PIO and DMA transfers)
 };
 
 // Map commands to their protocols

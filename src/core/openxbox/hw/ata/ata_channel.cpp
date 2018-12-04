@@ -75,14 +75,23 @@ bool ATAChannel::ReadCommandPort(Register reg, uint32_t *value, uint8_t size) {
 bool ATAChannel::WriteCommandPort(Register reg, uint32_t value, uint8_t size) {
     if (reg < RegData || reg > RegCommand) {
         // Should never happen
-        log_warning("ATAChannel::ReadCommandPort:  Invalid register %d  (channel = %d  size = %d)\n", reg, m_channel, size);
+        log_warning("ATAChannel::WriteCommandPort: Invalid register %d  (channel = %d  size = %d)\n", reg, m_channel, size);
         assert(0);
         return false;
     }
 
     // Check for operation size mismatch
     if ((size & kRegSizes[reg]) == 0) {
-        log_debug("ATAChannel::ReadCommandPort: Unexpected read of size %d from register %d for channel %d\n", size, reg, m_channel);
+        log_debug("ATAChannel::WriteCommandPort: Unexpected write of size %d to register %d for channel %d\n", size, reg, m_channel);
+    }
+
+    // [7.15.6.1] While the device is busy, writes to any command register are ignored,
+    // except if sending the Device Reset command
+    if (m_regs.status & StBusy) {
+        if (reg != RegCommand || value != CmdDeviceReset) {
+            log_spew("ATAChannel::WriteCommandPort: Attempted to write register while device is busy\n");
+            return true;
+        }
     }
 
     switch (reg) {
@@ -144,6 +153,14 @@ void ATAChannel::ReadData(uint32_t *value, uint8_t size) {
     if (lenRead != size) {
         log_warning("ATAChannel::ReadData:  Buffer underflow!  channel = %d  device = %d  size = %d  read = %d\n", m_channel, devIndex, size, lenRead);
     }
+
+    // TODO: multiblock transfer
+    // - device should provide a method to request the next block of data
+    // - returns true if there is a next block, false if not
+    // - when true, set BSY=1 in addition to clearing DRQ=0
+
+    // Clear DRQ=0
+    m_regs.status &= ~StDataRequest;
 }
 
 void ATAChannel::ReadStatus(uint8_t *value) {
