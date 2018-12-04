@@ -14,27 +14,26 @@
 #include <cstdint>
 
 #include "openxbox/cpu.h"
-#include "../basic/irq.h"
 #include "../ata/defs.h"
-#include "ata_channel.h"
 
 namespace openxbox {
 namespace hw {
 namespace ata {
 
-class ATA : public IODevice {
-public:
-    ATA(IRQHandler *irqHandler);
-    virtual ~ATA();
-    void Reset();
+enum Channel {
+    ChanPrimary,
+    ChanSecondary,
+};
 
-    bool MapIO(IOMapper *mapper);
-
-    bool IORead(uint32_t port, uint32_t *value, uint8_t size) override;
-    bool IOWrite(uint32_t port, uint32_t value, uint8_t size) override;
-
-private:
-    ATAChannel *m_channels[2];
+struct ATARegisters {
+    uint8_t status = 0;
+    uint8_t error = 0;
+    uint8_t features = 0;
+    uint8_t sectorCount = 0;
+    uint8_t sectorNumber = 0;
+    uint16_t cylinder = 0;
+    uint8_t deviceHead = 0;
+    uint8_t control = 0;
 };
 
 }

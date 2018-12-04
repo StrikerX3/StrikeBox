@@ -114,12 +114,16 @@ enum DMATransferType : uint8_t {
                                       //   LSB specify mode (0 to 2)
 };
 
-// The highest supported DMA transfer mode
-const uint8_t kMaximumDMATransferMode = 4;
+// The highest supported Multiword DMA transfer mode
+const uint8_t kMaximumMultiwordDMATransferMode = 2;
+
+// The highest supported Ultra DMA transfer mode
+const uint8_t kMaximumUltraDMATransferMode = 4;
 
 // [8] Commands
 enum Command : uint8_t {
-    CmdSetFeatures = 0xEF,   // [8.37] Set Features
+    CmdIdentifyDevice = 0xEC,    // [8.12] Identify Device
+    CmdSetFeatures = 0xEF,       // [8.37] Set Features
 };
 
 // [8.37.8] Set Features subcommands (specified in the Features register)

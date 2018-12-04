@@ -18,6 +18,20 @@ namespace openxbox {
 namespace hw {
 namespace ata {
 
+ATAChannel::ATAChannel(Channel channel, IRQHandler *irqHandler, uint8_t irqNum)
+    : m_channel(channel)
+    , m_irqHandler(irqHandler)
+    , m_irqNum(irqNum)
+{
+    for (uint8_t i = 0; i < 2; i++) {
+        m_devs[i] = new ATADevice(m_channel, i, m_regs);
+    }
+}
+
+ATAChannel::~ATAChannel() {
+    delete[] m_devs;
+}
+
 bool ATAChannel::ReadCommandPort(Register reg, uint32_t *value, uint8_t size) {
     if (reg < RegData || reg > RegCommand) {
         // Should never happen
@@ -34,12 +48,12 @@ bool ATAChannel::ReadCommandPort(Register reg, uint32_t *value, uint8_t size) {
 
     switch (reg) {
     case RegData: ReadData(reinterpret_cast<uint16_t*>(value)); break;
-    case RegError: *value = m_reg_error; break;
-    case RegSectorCount: *value = m_reg_sectorCount; break;
-    case RegSectorNumber: *value = m_reg_sectorNumber; break;
-    case RegCylinderLow: *value = m_reg_cylinder & 0xFF; break;
-    case RegCylinderHigh: *value = (m_reg_cylinder >> 8) & 0xFF; break;
-    case RegDeviceHead: *value = m_reg_deviceHead; break;
+    case RegError: *value = m_regs.error; break;
+    case RegSectorCount: *value = m_regs.sectorCount; break;
+    case RegSectorNumber: *value = m_regs.sectorNumber; break;
+    case RegCylinderLow: *value = m_regs.cylinder & 0xFF; break;
+    case RegCylinderHigh: *value = (m_regs.cylinder >> 8) & 0xFF; break;
+    case RegDeviceHead: *value = m_regs.deviceHead; break;
     case RegStatus: ReadStatus(reinterpret_cast<uint8_t*>(value)); break;
     }
 
@@ -61,12 +75,12 @@ bool ATAChannel::WriteCommandPort(Register reg, uint32_t value, uint8_t size) {
 
     switch (reg) {
     case RegData: WriteData(value); break;
-    case RegFeatures: m_reg_features = value; break;
-    case RegSectorCount: m_reg_sectorCount = value; break;
-    case RegSectorNumber: m_reg_sectorNumber = value; break;
-    case RegCylinderLow: m_reg_cylinder = (m_reg_cylinder & 0xFF00) | (value & 0xFF); break;
-    case RegCylinderHigh: m_reg_cylinder = (m_reg_cylinder & 0x00FF) | ((value & 0xFF) << 8); break;
-    case RegDeviceHead: m_reg_deviceHead = value; break;
+    case RegFeatures: m_regs.features = value; break;
+    case RegSectorCount: m_regs.sectorCount = value; break;
+    case RegSectorNumber: m_regs.sectorNumber = value; break;
+    case RegCylinderLow: m_regs.cylinder = (m_regs.cylinder & 0xFF00) | (value & 0xFF); break;
+    case RegCylinderHigh: m_regs.cylinder = (m_regs.cylinder & 0x00FF) | ((value & 0xFF) << 8); break;
+    case RegDeviceHead: m_regs.deviceHead = value; break;
     case RegCommand: WriteCommand(value); break;
     }
 
@@ -101,7 +115,7 @@ bool ATAChannel::WriteControlPort(uint32_t value, uint8_t size) {
         // TODO: implement [9.3.1] for device 0 and [9.3.2] for device 1
     }
 
-    m_reg_control = value;
+    m_regs.control = value;
 
     return false;
 }
@@ -114,7 +128,7 @@ void ATAChannel::ReadData(uint16_t *value) {
 void ATAChannel::ReadStatus(uint8_t *value) {
     log_spew("ATAChannel::ReadStatus:  Reading status of device %d\n", GetSelectedDeviceIndex());
     
-    *value = m_reg_status | StReady;
+    *value = m_regs.status | StReady;
     
     // [7.15.4]: "Reading this register when an interrupt is pending causes the interrupt to be cleared."
     SetInterrupt(false);
@@ -125,36 +139,37 @@ void ATAChannel::WriteData(uint16_t value) {
 }
 
 void ATAChannel::WriteCommand(uint8_t value) {
-    // Follow the non-data protocol [8.37.3] -> [9.9]
-   
-    // Set BSY=1 and execute command
-    m_reg_status |= StBusy;
+    // Every protocol starts by setting BSY=1
+    m_regs.status |= StBusy;
 
     // TODO: submit this entire block as a job to the command thread
     {
+        // TODO: decide which protocol to use
+        // Right now the code implements the non-data protocol only [9.9]
+        // Needs refactoring to support other protocols
+        auto devIndex = GetSelectedDeviceIndex();
+        auto dev = m_devs[devIndex];
         bool succeeded;
         switch (value) {
         case CmdSetFeatures:
-            succeeded = SetFeatures();
-
-            // [8.37.6]: "If any subcommand input value is not supported or is invalid, the device shall return command aborted."
-            if (!succeeded) {
-                m_reg_error |= ErrAbort;
-            }
+            succeeded = dev->SetFeatures();
+            break;
+        case CmdIdentifyDevice:
+            succeeded = dev->IdentifyDevice();
             break;
         default:
-            log_warning("ATAChannel::WriteCommand:  Unhandled command %d for channel %d, device %d\n", value, m_channel, GetSelectedDeviceIndex());
+            log_warning("ATAChannel::WriteCommand:  Unhandled command 0x%x for channel %d, device %d\n", value, m_channel, devIndex);
             succeeded = false;
             break;
         }
 
         // Error ?
         if (!succeeded) {
-            m_reg_status |= StError;
+            m_regs.status |= StError;
         }
 
         // Clear BSY=0
-        m_reg_status &= ~StBusy;
+        m_regs.status &= ~StBusy;
 
         // nIEN=0 ?
         if (AreInterruptsEnabled()) {
@@ -162,86 +177,6 @@ void ATAChannel::WriteCommand(uint8_t value) {
             SetInterrupt(true);
         }
     }
-}
-
-bool ATAChannel::SetFeatures() {
-    log_debug("ATAChannel::SetFeatures:  Setting features for channel %d, device %d\n", m_channel, GetSelectedDeviceIndex());
-    
-    // [8.37.4] The feature to be set is specified in the Features register
-    switch (m_reg_features) {
-    case SFCmdSetTransferMode:
-        return SetTransferMode();
-    default:
-        log_warning("ATAChannel::SetFeatures:  Unimplemented feature %d for channel %d, device %d\n", m_reg_features, m_channel, GetSelectedDeviceIndex());
-        return false;
-    }
-}
-
-bool ATAChannel::SetTransferMode() {
-    // [8.37.10] The transfer mode value is specified in the Sector Count register.
-    // Parse according to [8.37.10 table 20].
-    uint8_t transferType = (m_reg_sectorCount >> 3) & 0b11111;
-    uint8_t transferMode = m_reg_sectorCount & 0b111;
-    
-    switch (transferType) {
-    case XferTypePIODefault:
-    case XferTypePIOFlowCtl:
-        return SetPIOTransferMode((PIOTransferType)transferType, transferMode);
-    case XferTypeMultiWordDMA:
-    case XferTypeUltraDMA:
-        return SetDMATransferMode((DMATransferType)transferType, transferMode);
-    default:
-        log_debug("ATAChannel::SetTransferMode:  Invalid transfer mode specified for channel %d, device %d\n", m_channel, GetSelectedDeviceIndex());
-        return false;
-    }
-}
-
-bool ATAChannel::SetPIOTransferMode(PIOTransferType type, uint8_t mode) {
-    if (type == XferTypePIODefault) {
-        if (mode > 1) {
-            log_debug("ATAChannel::SetPIOTransferMode:  Invalid PIO default transfer mode specified for channel %d, device %d\n", m_channel, GetSelectedDeviceIndex());
-            return false;
-        }
-
-        log_debug("ATAChannel::SetPIOTransferMode:  Setting PIO default transfer mode %d for channel %d, device %d\n", mode, m_channel, GetSelectedDeviceIndex());
-
-    }
-    else {  // XferTypePIOFlowCtl
-        if (mode > kMaximumPIOTransferMode) {
-            log_debug("ATAChannel::SetPIOTransferMode:  Invalid PIO flow control transfer mode specified for channel %d, device %d\n", m_channel, GetSelectedDeviceIndex());
-            return false;
-        }
-
-        log_debug("ATAChannel::SetPIOTransferMode:  Setting PIO flow control transfer mode %d for channel %d, device %d\n", mode, m_channel, GetSelectedDeviceIndex());
-    }
-
-    m_pioTransferType = type;
-    m_pioTransferMode = mode;
-    return true;
-}
-
-bool ATAChannel::SetDMATransferMode(DMATransferType type, uint8_t mode) {
-    if (type == XferTypeMultiWordDMA) {
-        if (mode > kMaximumDMATransferMode) {
-            log_debug("ATAChannel::SetDMATransferMode:  Invalid Multiword DMA transfer mode specified for channel %d, device %d\n", m_channel, GetSelectedDeviceIndex());
-            return false;
-        }
-        
-        log_debug("ATAChannel::SetDMATransferMode:  Setting Multiword DMA transfer mode %d for channel %d, device %d\n", mode, m_channel, GetSelectedDeviceIndex());
-
-    }
-    else {  // XferTypeUltraDMA
-        if (mode > kMaximumDMATransferMode) {
-            log_debug("ATAChannel::SetDMATransferMode:  Invalid Ultra DMA transfer mode specified for channel %d, device %d\n", m_channel, GetSelectedDeviceIndex());
-            return false;
-        }
-
-        log_debug("ATAChannel::SetDMATransferMode:  Setting Ultra DMA transfer mode %d for channel %d, device %d\n", mode, m_channel, GetSelectedDeviceIndex());
-    }
-
-    m_dmaTransferType = type;
-    m_dmaTransferMode = mode;
-    return true;
 }
 
 void ATAChannel::SetInterrupt(bool asserted) {

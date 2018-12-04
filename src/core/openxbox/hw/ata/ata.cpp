@@ -19,16 +19,12 @@ namespace hw {
 namespace ata {
 
 ATA::ATA(IRQHandler *irqHandler) {
-    m_states[0].m_irqHandler = irqHandler;
-    m_states[0].m_irqNum = kPrimaryIRQ;
-    m_states[0].m_channel = ChanPrimary;
-
-    m_states[1].m_irqHandler = irqHandler;
-    m_states[1].m_irqNum = kSecondaryIRQ;
-    m_states[1].m_channel = ChanSecondary;
+    m_channels[0] = new ATAChannel(ChanPrimary, irqHandler, kPrimaryIRQ);
+    m_channels[1] = new ATAChannel(ChanSecondary, irqHandler, kSecondaryIRQ);
 }
 
 ATA::~ATA() {
+    delete[] m_channels;
 }
 
 void ATA::Reset() {
@@ -45,18 +41,17 @@ bool ATA::MapIO(IOMapper *mapper) {
 }
 
 bool ATA::IORead(uint32_t port, uint32_t *value, uint8_t size) {
-    ATAChannel *state;
     if (port >= kPrimaryCommandBasePort && port <= kPrimaryCommandLastPort) {
-        return m_states[ChanPrimary].ReadCommandPort((Register)(port - kPrimaryCommandBasePort), value, size);
+        return m_channels[ChanPrimary]->ReadCommandPort((Register)(port - kPrimaryCommandBasePort), value, size);
     }
     if (port == kPrimaryControlPort) {
-        return m_states[ChanPrimary].ReadControlPort(value, size);
+        return m_channels[ChanPrimary]->ReadControlPort(value, size);
     }
     if (port >= kSecondaryCommandBasePort && port <= kSecondaryCommandLastPort) {
-        return m_states[ChanSecondary].ReadCommandPort((Register)(port - kPrimaryCommandBasePort), value, size);
+        return m_channels[ChanSecondary]->ReadCommandPort((Register)(port - kPrimaryCommandBasePort), value, size);
     }
     if (port == kSecondaryControlPort) {
-        return m_states[ChanSecondary].ReadControlPort(value, size);
+        return m_channels[ChanSecondary]->ReadControlPort(value, size);
     }
 
     log_warning("ATA::IORead:  Unhandled read!   port = 0x%x,  size = %u\n", port, size);
@@ -66,16 +61,16 @@ bool ATA::IORead(uint32_t port, uint32_t *value, uint8_t size) {
 
 bool ATA::IOWrite(uint32_t port, uint32_t value, uint8_t size) {
     if (port >= kPrimaryCommandBasePort && port <= kPrimaryCommandLastPort) {
-        return m_states[ChanPrimary].WriteCommandPort((Register)(port - kPrimaryCommandBasePort), value, size);
+        return m_channels[ChanPrimary]->WriteCommandPort((Register)(port - kPrimaryCommandBasePort), value, size);
     }
     if (port == kPrimaryControlPort) {
-        return m_states[ChanPrimary].WriteControlPort(value, size);
+        return m_channels[ChanPrimary]->WriteControlPort(value, size);
     }
     if (port >= kSecondaryCommandBasePort && port <= kSecondaryCommandLastPort) {
-        return m_states[ChanSecondary].WriteCommandPort((Register)(port - kSecondaryCommandBasePort), value, size);
+        return m_channels[ChanSecondary]->WriteCommandPort((Register)(port - kSecondaryCommandBasePort), value, size);
     }
     if (port == kSecondaryControlPort) {
-        return m_states[ChanSecondary].WriteControlPort(value, size);
+        return m_channels[ChanSecondary]->WriteControlPort(value, size);
     }
 
     log_warning("ATA::IOWrite: Unhandled write!  port = 0x%x,  size = %u,  value = 0x%x\n", port, size, value);
