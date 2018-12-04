@@ -107,12 +107,6 @@ bool ATAChannel::WriteControlPort(uint32_t value, uint8_t size) {
 }
 
 void ATAChannel::ReadData(uint16_t *value) {
-    if (m_transferMode != XferModePIODefault || m_transferMode != XferModePIOFlowCtl) {
-        log_warning("ATAChannel::ReadData:  Attempted to read while not in PIO mode\n", m_channel);
-        *value = 0;
-        return;
-    }
-
     log_warning("ATAChannel::ReadData:  Unimplemented!  (channel = %d)\n", m_channel);
     *value = 0;
 }
@@ -122,7 +116,7 @@ void ATAChannel::ReadStatus(uint8_t *value) {
     
     *value = m_reg_status | StReady;
     
-    // [7.15.4]: "Reading this register when an interrupt is pending causes the interrupt to be cleared"
+    // [7.15.4]: "Reading this register when an interrupt is pending causes the interrupt to be cleared."
     SetInterrupt(false);
 }
 
@@ -138,16 +132,25 @@ void ATAChannel::WriteCommand(uint8_t value) {
 
     // TODO: submit this entire block as a job to the command thread
     {
+        bool succeeded;
         switch (value) {
         case CmdSetFeatures:
-            log_warning("ATAChannel::WriteCommand:  Setting features for channel %d, device %d\n", value, m_channel, GetSelectedDeviceIndex());
-            // TODO: mark as failed for now
-            m_reg_status |= StError;
+            succeeded = SetFeatures();
+
+            // [8.37.6]: "If any subcommand input value is not supported or is invalid, the device shall return command aborted."
+            if (!succeeded) {
+                m_reg_error |= ErrAbort;
+            }
             break;
         default:
             log_warning("ATAChannel::WriteCommand:  Unhandled command %d for channel %d, device %d\n", value, m_channel, GetSelectedDeviceIndex());
-            m_reg_status |= StError;
+            succeeded = false;
             break;
+        }
+
+        // Error ?
+        if (!succeeded) {
+            m_reg_status |= StError;
         }
 
         // Clear BSY=0
@@ -159,6 +162,86 @@ void ATAChannel::WriteCommand(uint8_t value) {
             SetInterrupt(true);
         }
     }
+}
+
+bool ATAChannel::SetFeatures() {
+    log_debug("ATAChannel::SetFeatures:  Setting features for channel %d, device %d\n", m_channel, GetSelectedDeviceIndex());
+    
+    // [8.37.4] The feature to be set is specified in the Features register
+    switch (m_reg_features) {
+    case SFCmdSetTransferMode:
+        return SetTransferMode();
+    default:
+        log_warning("ATAChannel::SetFeatures:  Unimplemented feature %d for channel %d, device %d\n", m_reg_features, m_channel, GetSelectedDeviceIndex());
+        return false;
+    }
+}
+
+bool ATAChannel::SetTransferMode() {
+    // [8.37.10] The transfer mode value is specified in the Sector Count register.
+    // Parse according to [8.37.10 table 20].
+    uint8_t transferType = (m_reg_sectorCount >> 3) & 0b11111;
+    uint8_t transferMode = m_reg_sectorCount & 0b111;
+    
+    switch (transferType) {
+    case XferTypePIODefault:
+    case XferTypePIOFlowCtl:
+        return SetPIOTransferMode((PIOTransferType)transferType, transferMode);
+    case XferTypeMultiWordDMA:
+    case XferTypeUltraDMA:
+        return SetDMATransferMode((DMATransferType)transferType, transferMode);
+    default:
+        log_debug("ATAChannel::SetTransferMode:  Invalid transfer mode specified for channel %d, device %d\n", m_channel, GetSelectedDeviceIndex());
+        return false;
+    }
+}
+
+bool ATAChannel::SetPIOTransferMode(PIOTransferType type, uint8_t mode) {
+    if (type == XferTypePIODefault) {
+        if (mode > 1) {
+            log_debug("ATAChannel::SetPIOTransferMode:  Invalid PIO default transfer mode specified for channel %d, device %d\n", m_channel, GetSelectedDeviceIndex());
+            return false;
+        }
+
+        log_debug("ATAChannel::SetPIOTransferMode:  Setting PIO default transfer mode %d for channel %d, device %d\n", mode, m_channel, GetSelectedDeviceIndex());
+
+    }
+    else {  // XferTypePIOFlowCtl
+        if (mode > kMaximumPIOTransferMode) {
+            log_debug("ATAChannel::SetPIOTransferMode:  Invalid PIO flow control transfer mode specified for channel %d, device %d\n", m_channel, GetSelectedDeviceIndex());
+            return false;
+        }
+
+        log_debug("ATAChannel::SetPIOTransferMode:  Setting PIO flow control transfer mode %d for channel %d, device %d\n", mode, m_channel, GetSelectedDeviceIndex());
+    }
+
+    m_pioTransferType = type;
+    m_pioTransferMode = mode;
+    return true;
+}
+
+bool ATAChannel::SetDMATransferMode(DMATransferType type, uint8_t mode) {
+    if (type == XferTypeMultiWordDMA) {
+        if (mode > kMaximumDMATransferMode) {
+            log_debug("ATAChannel::SetDMATransferMode:  Invalid Multiword DMA transfer mode specified for channel %d, device %d\n", m_channel, GetSelectedDeviceIndex());
+            return false;
+        }
+        
+        log_debug("ATAChannel::SetDMATransferMode:  Setting Multiword DMA transfer mode %d for channel %d, device %d\n", mode, m_channel, GetSelectedDeviceIndex());
+
+    }
+    else {  // XferTypeUltraDMA
+        if (mode > kMaximumDMATransferMode) {
+            log_debug("ATAChannel::SetDMATransferMode:  Invalid Ultra DMA transfer mode specified for channel %d, device %d\n", m_channel, GetSelectedDeviceIndex());
+            return false;
+        }
+
+        log_debug("ATAChannel::SetDMATransferMode:  Setting Ultra DMA transfer mode %d for channel %d, device %d\n", mode, m_channel, GetSelectedDeviceIndex());
+    }
+
+    m_dmaTransferType = type;
+    m_dmaTransferMode = mode;
+    return true;
 }
 
 void ATAChannel::SetInterrupt(bool asserted) {

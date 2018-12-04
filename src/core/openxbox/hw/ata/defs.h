@@ -72,6 +72,8 @@ const uint8_t kRegSizes[] = {
 enum StatusBits : uint8_t {
     StBusy = (1 << 7),          // [7.15.6.1] (BSY) The device is busy
     StReady = (1 << 6),         // [7.15.6.2] (DRDY) The device is ready to accept commands
+    StBit5 = (1 << 5),          // [7.15.6.3] Command dependent bit
+    StBit4 = (1 << 4),          // [7.15.6.3] Command dependent bit
     StDataRequest = (1 << 3),   // [7.15.6.4] (DRQ) The device is ready to transfer a word of data
     StError = (1 << 0),         // [7.15.6.6] (ERR) An error occurred during execution of the previous command
 };
@@ -90,20 +92,30 @@ enum DeviceControlBits : uint8_t {
 
 const uint8_t kDevSelectorBit = 4;  // [7.10.6] (DEV) Selects Device 0 when cleared or Device 1 when set
 
-// [8.37.10 table 20] Transfer modes for the Set Transfer Mode subcommand of the Set Features command.
-// These specify the 5 most significant bits of the transfer mode.
+// [8.37.10 table 20] PIO transfer types for the Set Transfer Mode subcommand of the Set Features command.
+// These specify the 5 most significant bits of the transfer mode value.
 // The 3 least significant bits specify additional parameters for the mode. When applicable, they are documented below.
-enum TransferMode : uint8_t {
-    XferModePIODefault = 0b00000,     // PIO default mode
+enum PIOTransferType : uint8_t {
+    XferTypePIODefault = 0b00000,     // PIO default mode:
                                       //   000b = IORDY enabled
                                       //   001b = IORDY disabled
-    XferModePIOFlowCtl = 0b00001,     // PIO flow control transfer mode
-                                      //   LSB specify mode (from 0 to 4)
-    XferModeMultiWordDMA = 0b00100,   // Multiword DMA mode
-                                      //   LSB specify mode (from 0 to 2)
-    XferModeUltraDMA = 0b01000,       // Ultra DMA mode
-                                      //   LSB specify mode (from 0 to 2)
+    XferTypePIOFlowCtl = 0b00001,     // PIO flow control transfer mode
+                                      //   LSB specify mode (0 to 4)
 };
+
+// The highest supported PIO flow control transfer mode
+const uint8_t kMaximumPIOTransferMode = 4;
+
+// [8.37.10 table 20] DMA transfer types for the Set Transfer Mode subcommand of the Set Features command.
+enum DMATransferType : uint8_t {
+    XferTypeMultiWordDMA = 0b00100,   // Multiword DMA mode
+                                      //   LSB specify mode (0 to 2)
+    XferTypeUltraDMA = 0b01000,       // Ultra DMA mode
+                                      //   LSB specify mode (0 to 2)
+};
+
+// The highest supported DMA transfer mode
+const uint8_t kMaximumDMATransferMode = 4;
 
 // [8] Commands
 enum Command : uint8_t {

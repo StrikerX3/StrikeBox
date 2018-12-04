@@ -37,7 +37,13 @@ struct ATAChannel {
 
     // ----- Registers --------------------------------------------------------
 
-    TransferMode m_transferMode = XferModePIODefault;
+    // [8.37.10] PIO and DMA modes are separate
+    PIOTransferType m_pioTransferType = XferTypePIODefault;
+    uint8_t m_pioTransferMode = 0;
+    
+    DMATransferType m_dmaTransferType = XferTypeMultiWordDMA;
+    uint8_t m_dmaTransferMode = 0;
+
     uint8_t m_reg_status = 0;
     uint8_t m_reg_error = 0;
     uint8_t m_reg_features = 0;
@@ -59,13 +65,25 @@ struct ATAChannel {
     bool ReadControlPort(uint32_t *value, uint8_t size);
     bool WriteControlPort(uint32_t value, uint8_t size);
 
-    // ----- Command operations -----------------------------------------------
+    // ----- Command port operations ------------------------------------------
 
     void ReadData(uint16_t *value);
     void ReadStatus(uint8_t *value);
 
     void WriteData(uint16_t value);
     void WriteCommand(uint8_t value);
+
+    // ----- Command handlers -------------------------------------------------
+
+    // These functions must return false on error
+    bool SetFeatures();
+
+    // ----- Set Features subcommand handlers ---------------------------------
+    
+    // These functions must return false on error
+    bool SetTransferMode();
+    bool SetPIOTransferMode(PIOTransferType type, uint8_t mode);
+    bool SetDMATransferMode(DMATransferType type, uint8_t mode);
 
     // ----- Interrupt handling -----------------------------------------------
 
