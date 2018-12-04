@@ -26,6 +26,34 @@ ATADevice::ATADevice(Channel channel, uint8_t devIndex, ATARegisters& regs)
 {
 }
 
+ATADevice::~ATADevice() {
+    if (m_dataBuffer != nullptr) {
+        delete[] m_dataBuffer;
+    }
+}
+
+void ATADevice::InitDataBuffer(uint32_t dataBufferSize) {
+    if (m_dataBufferSize < dataBufferSize) {
+        if (m_dataBuffer != nullptr) {
+            delete[] m_dataBuffer;
+        }
+        m_dataBuffer = new uint8_t[dataBufferSize];
+    }
+    m_dataBufferSize = dataBufferSize;
+    m_dataBufferPos = 0;
+}
+
+uint32_t ATADevice::ReadBuffer(uint8_t *dest, uint32_t length) {
+    uint32_t lenToRead = length;
+    if (m_dataBufferPos + length > m_dataBufferSize) {
+        lenToRead = m_dataBufferSize - m_dataBufferPos;
+    }
+
+    memcpy_s(dest, length, m_dataBuffer + m_dataBufferPos, lenToRead);
+    m_dataBufferPos += lenToRead;
+    return lenToRead;
+}
+
 bool ATADevice::IdentifyDevice() {
     bool succeeded = __doIdentifyDevice();
 
@@ -63,11 +91,9 @@ bool ATADevice::__doIdentifyDevice() {
     }
 
     // Ask the device driver to identify itself
-    IdentifyDeviceData data;
-    m_driver->IdentifyDevice(&data);
-
-    // TODO: set this as the data buffer to be read
-
+    InitDataBuffer(sizeof(IdentifyDeviceData));
+    m_driver->IdentifyDevice(reinterpret_cast<IdentifyDeviceData *>(m_dataBuffer));
+    
     return true;
 }
 

@@ -133,17 +133,24 @@ bool ATAChannel::WriteControlPort(uint32_t value, uint8_t size) {
 }
 
 void ATAChannel::ReadData(uint32_t *value, uint8_t size) {
-    log_warning("ATAChannel::ReadData:  Unimplemented!  (channel = %d  device = %d  size = %d)\n", m_channel, GetSelectedDeviceIndex(), size);
+    // Read from device buffer
+    auto devIndex = GetSelectedDeviceIndex();
+    auto dev = m_devs[devIndex];
+
+    // Clear the destination value before reading from the buffer, in case
+    // there are not enough bytes to fulfill the request
     *value = 0;
+    uint32_t lenRead = dev->ReadBuffer(reinterpret_cast<uint8_t *>(value), size);
+    if (lenRead != size) {
+        log_warning("ATAChannel::ReadData:  Buffer underflow!  channel = %d  device = %d  size = %d  read = %d\n", m_channel, devIndex, size, lenRead);
+    }
 }
 
 void ATAChannel::ReadStatus(uint8_t *value) {
-    log_spew("ATAChannel::ReadStatus:  Reading status of device %d\n", GetSelectedDeviceIndex());
-    
-    *value = m_regs.status;
-    
     // [7.15.4]: "Reading this register when an interrupt is pending causes the interrupt to be cleared."
     SetInterrupt(false);
+
+    *value = m_regs.status;
 }
 
 void ATAChannel::WriteData(uint32_t value, uint8_t size) {

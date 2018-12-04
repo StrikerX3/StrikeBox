@@ -30,11 +30,16 @@ namespace ata {
 class ATADevice {
 public:
     ATADevice(Channel channel, uint8_t devIndex, ATARegisters& regs);
+    ~ATADevice();
 
     // ----- Device driver management -----------------------------------------
 
     bool IsAttached() const { return m_driver->IsAttached(); }
     void SetDeviceDriver(IATADeviceDriver *driver) { m_driver = driver; }
+
+    // ----- PIO data buffer --------------------------------------------------
+
+    uint32_t ReadBuffer(uint8_t *dest, uint32_t length);
 
     // ----- Command handlers -------------------------------------------------
     // These functions must return false on error
@@ -73,6 +78,19 @@ private:
 
     DMATransferType m_dmaTransferType = XferTypeMultiWordDMA;
     uint8_t m_dmaTransferMode = 0;
+
+    // ----- Data buffer ------------------------------------------------------
+
+    uint8_t *m_dataBuffer = nullptr;
+    uint32_t m_dataBufferSize = 0;
+    uint32_t m_dataBufferPos = 0;
+
+    /*!
+     * Initializes a data buffer of the specified size. If the current buffer
+     * is not large enough to fit the requested number of bytes, a new buffer
+     * is allocated in memory, replacing the existing buffer.
+     */
+    void InitDataBuffer(uint32_t dataBufferSize);
 };
 
 }
