@@ -419,7 +419,7 @@ CPUStatus HaxmCpu::HandleIO(uint8_t df, uint16_t port, uint8_t direction, uint16
             m_ioMapper->IOWrite(port, value, size);
         }
         else {
-            m_ioMapper->IORead(port, reinterpret_cast<uint32_t*>(buffer), size);
+            m_ioMapper->IORead(port, reinterpret_cast<uint32_t*>(ptr), size);
         }
 
         if (df) {
