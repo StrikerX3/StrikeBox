@@ -179,6 +179,8 @@ void ATAChannel::WriteCommand(uint8_t value) {
     // Check that the command has an protocol associated with it
     if (kCmdProtocols.count(cmd) == 0) {
         log_warning("ATAChannel::WriteCommand: No protocol specified for command 0x%x\n", value);
+        m_regs.status |= StError;
+        return;
     }
 
     // Determine which protocol is used by the command and collect all data needed for execution
