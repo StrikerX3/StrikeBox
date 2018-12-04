@@ -17,7 +17,7 @@
 #include "../ata/defs.h"
 #include "ata_common.h"
 #include "drvs/ata_device_driver.h"
-#include "drvs/ata_device_driver_null.h"
+#include "drvs/drv_null.h"
 
 namespace openxbox {
 namespace hw {

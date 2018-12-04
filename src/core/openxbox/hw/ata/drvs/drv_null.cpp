@@ -9,7 +9,7 @@
 //
 // References to particular items in the specification are denoted between brackets
 // optionally followed by a quote from the specification.
-#include "ata_device_driver_null.h"
+#include "drv_null.h"
 
 #include "openxbox/log.h"
 #include "openxbox/io.h"

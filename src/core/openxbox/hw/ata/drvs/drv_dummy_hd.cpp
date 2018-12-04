@@ -9,7 +9,7 @@
 //
 // References to particular items in the specification are denoted between brackets
 // optionally followed by a quote from the specification.
-#include "ata_device_driver_dummy.h"
+#include "drv_dummy_hd.h"
 
 #include "openxbox/log.h"
 #include "openxbox/io.h"
@@ -18,7 +18,7 @@ namespace openxbox {
 namespace hw {
 namespace ata {
 
-DummyATADeviceDriver g_dummyATADeviceDriver;
+DummyHardDriveATADeviceDriver g_dummyATADeviceDriver;
 
 static void padString(uint8_t *dest, const char *src, uint32_t length) {
     for (uint32_t i = 0; i < length; i++) {
@@ -31,8 +31,8 @@ static void padString(uint8_t *dest, const char *src, uint32_t length) {
     }
 }
 
-void DummyATADeviceDriver::IdentifyDevice(IdentifyDeviceData *data) {
-    // Fill in with reasonable data for a 10 GB hard drive
+void DummyHardDriveATADeviceDriver::IdentifyDevice(IdentifyDeviceData *data) {
+    // Fill in with reasonable parameters for a 10 GB hard drive
     memset(data, 0, sizeof(IdentifyDeviceData));
 
     // Adapted from https://github.com/mirror/vbox/blob/master/src/VBox/Devices/Storage/DevATA.cpp
@@ -72,6 +72,9 @@ void DummyATADeviceDriver::IdentifyDevice(IdentifyDeviceData *data) {
     data->commandSetsEnabled3 = IDCmdSet3Bit14AlwaysOne;
     
     data->ultraDMASettings = IDUltraDMA0Supported | IDUltraDMA1Supported | IDUltraDMA2Supported;
+
+    // Xbox hard drive must be locked
+    data->securityStatus |= IDSecStatusSupported | IDSecStatusEnabled | IDSecStatusLocked;
 }
 
 }

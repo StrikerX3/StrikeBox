@@ -22,13 +22,13 @@ namespace ata {
 /*!
  * The dummy ATA device driver represents a basic hard drive that is filled with zeros.
  */
-class DummyATADeviceDriver : public IATADeviceDriver {
+class DummyHardDriveATADeviceDriver : public IATADeviceDriver {
 public:
     bool IsAttached() override { return true; }
     void IdentifyDevice(IdentifyDeviceData *data) override;
 };
 
-extern DummyATADeviceDriver g_dummyATADeviceDriver;
+extern DummyHardDriveATADeviceDriver g_dummyATADeviceDriver;
 
 }
 }

@@ -387,12 +387,18 @@ enum IdentifyDeviceRemovableMediaStatus : uint16_t {
     IDRemMediaStatusNotSupported = 0b00,   // Removable Media Status Notification feature set not supported
     IDRemMediaStatusSupported = 0b01,      // Removable Media Status Notification feature set supported
 };
-/*
+
 // [8.12.8 table 11 word 128] Bits for the securityStatus field in the IdentifyDeviceData struct
 enum IdentifyDeviceSecurityStatus : uint16_t {
     IDSecStatusSecurityLevel = (1 << 8),   // Security level (0 = high, 1 = maximum)
-    IDSecStatusEnhancedSecurityEraseSupported = (1 << 5),   // Enhanced security erase supported    IDSecStatusCountExpired = (1 << 4),    // Security count expired    IDSecStatusFrozen = (1 << 3),          // Security frozen    IDSecStatusLocked = (1 << 2),          // Security locked    IDSecStatusEnabled = (1 << 1),         // Security enabled    IDSecStatusSupported = (1 << 0),       // Security supported};
-*/
+    IDSecStatusEnhancedSecurityEraseSupported = (1 << 5),   // Enhanced security erase supported
+    IDSecStatusCountExpired = (1 << 4),    // Security count expired
+    IDSecStatusFrozen = (1 << 3),          // Security frozen
+    IDSecStatusLocked = (1 << 2),          // Security locked
+    IDSecStatusEnabled = (1 << 1),         // Security enabled
+    IDSecStatusSupported = (1 << 0),       // Security supported
+};
+
 }
 }
 }

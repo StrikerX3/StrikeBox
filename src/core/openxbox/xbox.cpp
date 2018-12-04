@@ -13,7 +13,7 @@
 #include "openxbox/hw/basic/win32/char_serial.h"
 #endif
 
-#include "openxbox/hw/ata/drvs/ata_device_driver_dummy.h"
+#include "openxbox/hw/ata/drvs/drv_dummy_hd.h"
 
 #ifdef __linux__
 #include <sys/mman.h>
@@ -346,8 +346,8 @@ EmulatorStatus Xbox::InitHardware() {
     m_CMOS = new CMOS();
 
     // TODO: make this configurable, similar to Super I/O port char drivers
-    m_ataDrivers[0][0] = new hw::ata::DummyATADeviceDriver();
-    m_ataDrivers[0][1] = new hw::ata::DummyATADeviceDriver();
+    m_ataDrivers[0][0] = new hw::ata::DummyHardDriveATADeviceDriver();
+    m_ataDrivers[0][1] = new hw::ata::NullATADeviceDriver();
     m_ataDrivers[1][0] = new hw::ata::NullATADeviceDriver();
     m_ataDrivers[1][1] = new hw::ata::NullATADeviceDriver();
 
