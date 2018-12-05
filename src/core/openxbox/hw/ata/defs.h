@@ -138,6 +138,7 @@ enum Command : uint8_t {
     CmdDeviceReset = 0x08,      // [8.7]  Device Reset
     CmdIdentifyDevice = 0xEC,   // [8.12] Identify Device
     CmdSetFeatures = 0xEF,      // [8.37] Set Features
+    CmdSecurityUnlock = 0xF2,   // [8.34] Security Unlock
 };
 
 // [8.37.8] Set Features subcommands (specified in the Features register)
@@ -162,6 +163,7 @@ enum CommandProtocol : uint8_t {
 const std::unordered_map<Command, CommandProtocol> kCmdProtocols = {
     { CmdIdentifyDevice, CmdProtoPIODataIn },
     { CmdSetFeatures, CmdProtoNonData },
+    { CmdSecurityUnlock, CmdProtoPIODataOut },
 };
 
 // --- Command data -------------------------------------------------------------------------------

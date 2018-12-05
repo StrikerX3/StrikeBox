@@ -189,11 +189,11 @@ void ATAChannel::WriteCommand(uint8_t value) {
     auto dev = m_devs[devIndex];
     bool succeeded;
 
-    // TODO: submit this entire block as a job to the command thread
+    // Every protocol starts by setting BSY=1
+    m_regs.status |= StBusy;
+    
+    // TODO: submit this entire block as a job to the command processor thread
     {
-        // Every protocol starts by setting BSY=1
-        m_regs.status |= StBusy;
-
         switch (cmd) {
         case CmdSetFeatures:
             succeeded = dev->SetFeatures();
@@ -209,7 +209,8 @@ void ATAChannel::WriteCommand(uint8_t value) {
 
         if (succeeded) {
             // On PIO data in, DRQ is asserted if the device has successfully executed the command
-            if (protocol == CmdProtoPIODataIn) {
+            // On PIO data out, DRQ is asserted when the device is ready to accept data
+            if (protocol == CmdProtoPIODataIn || protocol == CmdProtoPIODataOut) {
                 m_regs.status |= StDataRequest;
             }
         }
