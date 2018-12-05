@@ -386,9 +386,9 @@ typedef struct {
 } NV2APFB;
 
 typedef struct ChannelControl {
-    uint32_t dma_put;
-    uint32_t dma_get;
-    uint32_t ref;
+    uint32_t dma_put = 0;
+    uint32_t dma_get = 0;
+    uint32_t ref = 0;
 } ChannelControl;
 
 typedef struct {
