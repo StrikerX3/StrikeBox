@@ -158,7 +158,7 @@ void ATAChannel::ReadData(uint32_t *value, uint8_t size) {
     // - device should provide a method to request the next block of data
     // - returns true if there is a next block, false if not
     // - when true, set BSY=1 in addition to clearing DRQ=0
-
+        
     // Clear DRQ=0
     m_regs.status &= ~StDataRequest;
 }
@@ -201,32 +201,36 @@ void ATAChannel::WriteCommand(uint8_t value) {
         case CmdIdentifyDevice:
             succeeded = dev->IdentifyDevice();
             break;
+        case CmdReadDMA:
+            succeeded = dev->BeginReadDMA();
+            break;
         default:
             log_warning("ATAChannel::WriteCommand:  Unhandled command 0x%x for channel %d, device %d\n", cmd, m_channel, devIndex);
             succeeded = false;
             break;
         }
 
+        // Assert and negate status flags according to the protocol and the outcome
         if (succeeded) {
-            // On PIO data in, DRQ is asserted if the device has successfully executed the command
-            // On PIO data out, DRQ is asserted when the device is ready to accept data
-            if (protocol == CmdProtoPIODataIn || protocol == CmdProtoPIODataOut) {
-                m_regs.status |= StDataRequest;
-            }
+            m_regs.status |= protocol.statusAssertedOnSuccess;
         }
         else {
-            // Set Error status if the device reported an error
             m_regs.status |= StError;
+            m_regs.status &= ~protocol.statusNegatedOnError;
         }
 
         // Clear BSY=0
         m_regs.status &= ~StBusy;
 
-        // Assert INTRQ if nIEN=0
-        // INTRQ will be negated when the host reads the Status register
-        if (AreInterruptsEnabled()) {
-            SetInterrupt(true);
+        // Always assert INTRQ on error, or on success if specified by the protocol
+        if (!succeeded || protocol.assertINTRQOnSuccess) {
+            // INTRQ is not asserted if nIEN=1
+            // INTRQ will be negated when the host reads the Status register
+            if (AreInterruptsEnabled()) {
+                SetInterrupt(true);
+            }
         }
+
     }
 }
 

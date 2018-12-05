@@ -74,6 +74,10 @@ bool ATADevice::IdentifyDevice() {
     return succeeded;
 }
 
+bool ATADevice::BeginReadDMA() {
+    return false;
+}
+
 bool ATADevice::__doIdentifyDevice() {
     // [8.12.7] As a prerequisite, DRDY must be set equal to one
     if ((m_regs.status & StReady) == 0) {
@@ -85,6 +89,10 @@ bool ATADevice::__doIdentifyDevice() {
     m_driver->IdentifyDevice(reinterpret_cast<IdentifyDeviceData *>(m_dataBuffer));
     
     return true;
+}
+
+bool ATADevice::__doBeginReadDMA() {
+    return false;
 }
 
 bool ATADevice::SetFeatures() {

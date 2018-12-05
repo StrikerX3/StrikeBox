@@ -95,7 +95,6 @@ enum ErrorBits : uint8_t {
     ErrAbort = (1 << 2),        // [7.11.6] (ABRT) Previous command was aborted due to an error or invalid parameter
 };
 
-
 // Device control bits (written to the Device Control register)
 enum DeviceControlBits : uint8_t {
     DevCtlSoftwareReset = (1 << 2),          // [7.9.6] (SRST) Execute a software reset
@@ -141,8 +140,9 @@ const uint8_t kMaximumUltraDMATransferMode = 4;
 enum Command : uint8_t {
     CmdDeviceReset = 0x08,      // [8.7]  Device Reset
     CmdIdentifyDevice = 0xEC,   // [8.12] Identify Device
-    CmdSetFeatures = 0xEF,      // [8.37] Set Features
+    CmdReadDMA = 0xC8,          // [8.23] Read DMA
     CmdSecurityUnlock = 0xF2,   // [8.34] Security Unlock
+    CmdSetFeatures = 0xEF,      // [8.37] Set Features
 };
 
 // [8.37.8] Set Features subcommands (specified in the Features register)
@@ -153,21 +153,31 @@ enum SetFeaturesSubCommand : uint8_t {
 // --- Command Protocols --------------------------------------------------------------------------
 
 // [9] Command Protocols
-// NOTE: Not all command protocols are included here.
-enum CommandProtocol : uint8_t {
-    CmdProtoDeviceReset = 0,   // [9.2]  Device reset            (hardware reset)
-    CmdProtoPIODataIn,         // [9.7]  PIO data in             (data transfer from device to host via Data register)
-    CmdProtoPIODataOut,        // [9.8]  PIO data out            (data transfer from host to device via Data register)
-    CmdProtoNonData,           // [9.9]  Non-data                (no data transfer)
-    CmdProtoDMA,               // [9.10] DMA                     (data transfer between host and device via DMA)
-    CmdProtoPACKET,            // [9.11] PACKET                  (non-data, PIO and DMA transfers)
+// This struct specifies the behavior of commands that follow a particular protocol.
+// Flags and the INTRQ are asserted or negated depending on the outcome.
+// The BSY status flag is automatically managed by the code; it will be ignored if specified here.
+struct CommandProtocol {
+    uint8_t statusAssertedOnSuccess;   // Status flags asserted on successful command execution
+    uint8_t statusNegatedOnError;      // Status flags negated on failed command execution
+    bool assertINTRQOnSuccess;         // Command triggers INTRQ on success
 };
 
+// NOTE: Not all command protocols are included here.
+
+const CommandProtocol kCmdProtoDeviceReset = { 0, 0, false };                    // [9.2]  Device reset  (hardware reset)
+const CommandProtocol kCmdProtoPIODataIn = { StDataRequest, 0, true };           // [9.7]  PIO data in   (data transfer from device to host via Data register)
+const CommandProtocol kCmdProtoPIODataOut = { StDataRequest, 0, false };         // [9.8]  PIO data out  (data transfer from host to device via Data register)
+const CommandProtocol kCmdProtoNonData = { 0, 0, true, };                        // [9.9]  Non-data      (no data transfer)
+const CommandProtocol kCmdProtoDMA = { StDataRequest, StDataRequest, false, };   // [9.10] DMA           (data transfer between host and device via DMA)
+// TODO: CmdProtoPACKET  // [9.11] PACKET        (non-data, PIO and DMA transfers)
+
 // Map commands to their protocols
-const std::unordered_map<Command, CommandProtocol, std::hash<uint8_t>> kCmdProtocols = {
-    { CmdIdentifyDevice, CmdProtoPIODataIn },
-    { CmdSetFeatures, CmdProtoNonData },
-    { CmdSecurityUnlock, CmdProtoPIODataOut }
+const std::unordered_map<Command, const CommandProtocol&, std::hash<uint8_t>> kCmdProtocols = {
+    { CmdDeviceReset, kCmdProtoDeviceReset },
+    { CmdIdentifyDevice, kCmdProtoPIODataIn },
+    { CmdReadDMA, kCmdProtoDMA },
+    { CmdSecurityUnlock, kCmdProtoPIODataOut },
+    { CmdSetFeatures, kCmdProtoNonData },
 };
 
 // --- Command data -------------------------------------------------------------------------------

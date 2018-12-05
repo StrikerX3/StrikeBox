@@ -46,6 +46,7 @@ public:
     // These functions must return false on error
 
     bool IdentifyDevice();     // [8.12] 0xEC   Identify Device
+    bool BeginReadDMA();       // [8.23] 0xC8   Read DMA
     bool SetFeatures();        // [8.37] 0xEF   Set Features
 
     // ----- Set Features subcommand handlers ---------------------------------
@@ -66,6 +67,7 @@ private:
     // ----- Command handler implementations ----------------------------------
     
     bool __doIdentifyDevice();
+    bool __doBeginReadDMA();
     bool __doSetFeatures();
 
     // ----- Registers --------------------------------------------------------
