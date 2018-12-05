@@ -67,7 +67,7 @@ $ ./vixen-cli -c <path-to-MCPX-ROM> -b <path-to-BIOS-ROM> -x <path-to-XBE> -m [d
 
 ### macOS
 macOS is currently unsupported. Feel free to submit a pull request to add
-support for this platform! (See #3)
+support for this platform! (See issue [#3](https://github.com/StrikerX3/viXen/issues/3))
 
 Project Structure
 -----------------
