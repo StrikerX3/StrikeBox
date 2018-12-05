@@ -18,7 +18,7 @@ HostBridgeDevice::~HostBridgeDevice() {
 // PCI Device functions
 
 void HostBridgeDevice::Init() {
-    RegisterBAR(0, 1024 * 1024 * 1024, PCI_BAR_TYPE_MEMORY); // 0x40000000 - 0x7FFFFFFF
+    //RegisterBAR(0, 1024 * 1024 * 1024, PCI_BAR_TYPE_MEMORY); // 0x40000000 - 0x7FFFFFFF
 }
 
 void HostBridgeDevice::Reset() {
