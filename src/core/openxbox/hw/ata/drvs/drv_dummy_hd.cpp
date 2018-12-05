@@ -74,7 +74,7 @@ void DummyHardDriveATADeviceDriver::IdentifyDevice(IdentifyDeviceData *data) {
     data->ultraDMASettings = IDUltraDMA0Supported | IDUltraDMA1Supported | IDUltraDMA2Supported;
 
     // Xbox hard drive must be locked
-    data->securityStatus |= IDSecStatusSupported | IDSecStatusEnabled | IDSecStatusLocked;
+    data->securityStatus |= IDSecStatusSupported | IDSecStatusEnabled/* | IDSecStatusLocked*/;
 }
 
 }
