@@ -92,14 +92,14 @@ typedef struct ContextSurfaces2DState {
 } ContextSurfaces2DState;
 
 typedef struct DMAObject {
-    unsigned int dma_class;
-    unsigned int dma_target;
-    uint32_t address;
-    uint32_t limit;
+    unsigned int dma_class = 0;
+    unsigned int dma_target = 0;
+    uint32_t address = 0;
+    uint32_t limit = 0;
 } DMAObject;
 
 typedef struct GraphicsObject {
-    uint8_t graphics_class;
+    uint8_t graphics_class = 0;
     union {
         ContextSurfaces2DState context_surfaces_2d;
 
@@ -110,22 +110,22 @@ typedef struct GraphicsObject {
 } GraphicsObject;
 
 typedef struct GraphicsSubchannel {
-    uint32_t object_instance;
+    uint32_t object_instance = 0;
     GraphicsObject object;
-    uint32_t object_cache[5];
+    uint32_t object_cache[5] = { 0 };
 } GraphicsSubchannel;
 
 typedef struct GraphicsContext {
-    bool channel_3d;
-    unsigned int subchannel;
+    bool channel_3d = false;
+    unsigned int subchannel = 0;
 } GraphicsContext;
 
 typedef struct RAMHTEntry {
-    uint32_t handle;
-    uint32_t instance;
-    enum FIFOEngine engine;
+    uint32_t handle = 0;
+    uint32_t instance = 0;
+    enum FIFOEngine engine = ENGINE_SOFTWARE;
     unsigned int channel_id : 5;
-    bool valid;
+    bool valid = false;
 } RAMHTEntry;
 
 typedef struct {
@@ -140,103 +140,103 @@ typedef struct {
 } NV2APVIDEO;
 
 typedef struct {
-    uint8_t cr_index;
-    uint8_t cr[256]; /* CRT registers */
+    uint8_t cr_index = 0;
+    uint8_t cr[256] = { 0 }; /* CRT registers */
 } NV2APRMCIO;
 
 typedef struct {
-    uint32_t pendingInterrupts;
-    uint32_t enabledInterrupts;
+    uint32_t pendingInterrupts = 0;
+    uint32_t enabledInterrupts = 0;
 } NV2APMC;
 
 typedef struct Surface {
-    bool draw_dirty;
-    bool buffer_dirty;
-    bool write_enabled_cache;
-    unsigned int pitch;
+    bool draw_dirty = false;
+    bool buffer_dirty = false;
+    bool write_enabled_cache = false;
+    unsigned int pitch = 0;
 
-    uint32_t offset;
+    uint32_t offset = 0;
 } Surface;
 
 typedef struct SurfaceShape {
-    unsigned int z_format;
-    unsigned int color_format;
-    unsigned int zeta_format;
-    unsigned int log_width, log_height;
-    unsigned int clip_x, clip_y;
-    unsigned int clip_width, clip_height;
-    unsigned int anti_aliasing;
+    unsigned int z_format = 0;
+    unsigned int color_format = 0;
+    unsigned int zeta_format = 0;
+    unsigned int log_width = 0, log_height = 0;
+    unsigned int clip_x = 0, clip_y = 0;
+    unsigned int clip_width = 0, clip_height = 0;
+    unsigned int anti_aliasing = 0;
 } SurfaceShape;
 
 typedef struct TextureShape {
-    bool cubemap;
-    unsigned int dimensionality;
-    unsigned int color_format;
-    unsigned int levels;
-    unsigned int width, height, depth;
+    bool cubemap = false;
+    unsigned int dimensionality = 0;
+    unsigned int color_format = 0;
+    unsigned int levels = 0;
+    unsigned int width = 0, height = 0, depth = 0;
 
-    unsigned int min_mipmap_level;
-    unsigned int max_mipmap_level;
-    unsigned int pitch;
+    unsigned int min_mipmap_level = 0;
+    unsigned int max_mipmap_level = 0;
+    unsigned int pitch = 0;
 } TextureShape;
 
 typedef struct TextureKey {
     TextureShape state;
-    uint64_t data_hash;
-    uint8_t* texture_data;
-    uint8_t* palette_data;
+    uint64_t data_hash = 0;
+    uint8_t* texture_data = nullptr;
+    uint8_t* palette_data = nullptr;
 } TextureKey;
 
 typedef struct TextureBinding {
     // FIXME: no OpenGL allowed here
     //GLenum gl_target;
     //GLuint gl_texture;
-    unsigned int refcnt;
+    unsigned int refcnt = 0;
 } TextureBinding;
 
 typedef struct NV2APGRAPH {
     std::mutex mutex;
 
-    uint32_t pending_interrupts;
-    uint32_t enabled_interrupts;
+    uint32_t pending_interrupts = 0;
+    uint32_t enabled_interrupts = 0;
     std::condition_variable interrupt_cond;
 
-    uint32_t context_table;
-    uint32_t context_address;
+    uint32_t context_table = 0;
+    uint32_t context_address = 0;
 
 
-    unsigned int trapped_method;
-    unsigned int trapped_subchannel;
-    unsigned int trapped_channel_id;
-    uint32_t trapped_data[2];
-    uint32_t notify_source;
+    unsigned int trapped_method = 0;
+    unsigned int trapped_subchannel = 0;
+    unsigned int trapped_channel_id = 0;
+    uint32_t trapped_data[2] = { 0 };
+    uint32_t notify_source = 0;
 
-    bool fifo_access;
+    bool fifo_access = false;
     std::condition_variable fifo_access_cond;
     std::condition_variable flip_3d;
 
-    unsigned int channel_id;
-    bool channel_valid;
+    unsigned int channel_id = 0;
+    bool channel_valid = false;
     GraphicsContext context[NV2A_NUM_CHANNELS];
 
-    uint32_t dma_color;
-    uint32_t dma_zeta;
+    uint32_t dma_color = 0;
+    uint32_t dma_zeta = 0;
     Surface surface_color;
     Surface surface_zeta;
-    unsigned int surface_type;
+    unsigned int surface_type = 0;
     SurfaceShape surface_shape;
     SurfaceShape last_surface_shape;
 
-    uint32_t dma_a;
-    uint32_t dma_b;
+    uint32_t dma_a = 0;
+    uint32_t dma_b = 0;
     //GLruCache *texture_cache;
-    bool texture_dirty[NV2A_MAX_TEXTURES];
-    TextureBinding *texture_binding[NV2A_MAX_TEXTURES];
+    bool texture_dirty[NV2A_MAX_TEXTURES] = { false };
+    TextureBinding *texture_binding[NV2A_MAX_TEXTURES] = { nullptr };
 
     //GHashTable *shader_cache;
     //ShaderBinding *shader_binding;
 
-    bool texture_matrix_enable[NV2A_MAX_TEXTURES];
+    bool texture_matrix_enable[NV2A_MAX_TEXTURES] = { false };
 
     /* FIXME: Move to NV_PGRAPH_BUMPMAT... */
     float bump_env_matrix[NV2A_MAX_TEXTURES - 1][4]; /* 3 allowed stages with 2x2 matrix each */
@@ -247,54 +247,54 @@ typedef struct NV2APGRAPH {
     //GLuint gl_color_buffer, gl_zeta_buffer;
     GraphicsSubchannel subchannel_data[NV2A_NUM_SUBCHANNELS];
 
-    uint32_t dma_report;
-    uint32_t report_offset;
-    bool zpass_pixel_count_enable;
-    unsigned int zpass_pixel_count_result;
-    unsigned int gl_zpass_pixel_count_query_count;
+    uint32_t dma_report = 0;
+    uint32_t report_offset = 0;
+    bool zpass_pixel_count_enable = 0;
+    unsigned int zpass_pixel_count_result = 0;
+    unsigned int gl_zpass_pixel_count_query_count = 0;
     // FIXME: no OpenGL allowed here
     //GLuint* gl_zpass_pixel_count_queries;
 
-    uint32_t dma_vertex_a;
-    uint32_t dma_vertex_b;
+    uint32_t dma_vertex_a = 0;
+    uint32_t dma_vertex_b = 0;
 
-    unsigned int primitive_mode;
+    unsigned int primitive_mode = 0;
 
-    bool enable_vertex_program_write;
+    bool enable_vertex_program_write = false;
 
     //uint32_t program_data[NV2A_MAX_TRANSFORM_PROGRAM_LENGTH][VSH_TOKEN_SIZE];
 
-    uint32_t vsh_constants[NV2A_VERTEXSHADER_CONSTANTS][4];
-    bool vsh_constants_dirty[NV2A_VERTEXSHADER_CONSTANTS];
+    uint32_t vsh_constants[NV2A_VERTEXSHADER_CONSTANTS][4] = { { 0 } };
+    bool vsh_constants_dirty[NV2A_VERTEXSHADER_CONSTANTS] = { 0 };
 
     /* lighting constant arrays */
-    uint32_t ltctxa[NV2A_LTCTXA_COUNT][4];
-    bool ltctxa_dirty[NV2A_LTCTXA_COUNT];
-    uint32_t ltctxb[NV2A_LTCTXB_COUNT][4];
-    bool ltctxb_dirty[NV2A_LTCTXB_COUNT];
-    uint32_t ltc1[NV2A_LTC1_COUNT][4];
-    bool ltc1_dirty[NV2A_LTC1_COUNT];
+    uint32_t ltctxa[NV2A_LTCTXA_COUNT][4] = { { 0 } };
+    bool ltctxa_dirty[NV2A_LTCTXA_COUNT] = { false };
+    uint32_t ltctxb[NV2A_LTCTXB_COUNT][4] = { { 0 } };
+    bool ltctxb_dirty[NV2A_LTCTXB_COUNT] = { false };
+    uint32_t ltc1[NV2A_LTC1_COUNT][4] = { { 0 } };
+    bool ltc1_dirty[NV2A_LTC1_COUNT] = { false };
 
     // should figure out where these are in lighting context
-    float light_infinite_half_vector[NV2A_MAX_LIGHTS][3];
-    float light_infinite_direction[NV2A_MAX_LIGHTS][3];
-    float light_local_position[NV2A_MAX_LIGHTS][3];
-    float light_local_attenuation[NV2A_MAX_LIGHTS][3];
+    float light_infinite_half_vector[NV2A_MAX_LIGHTS][3] = { { 0 } };
+    float light_infinite_direction[NV2A_MAX_LIGHTS][3] = { { 0 } };
+    float light_local_position[NV2A_MAX_LIGHTS][3] = { { 0 } };
+    float light_local_attenuation[NV2A_MAX_LIGHTS][3] = { { 0 } };
 
     //VertexAttribute vertex_attributes[NV2A_VERTEXSHADER_ATTRIBUTES];
 
-    unsigned int inline_array_length;
-    uint32_t inline_array[NV2A_MAX_BATCH_LENGTH];
+    unsigned int inline_array_length = 0;
+    uint32_t inline_array[NV2A_MAX_BATCH_LENGTH] = { 0 };
     // FIXME: no OpenGL allowed here
     //GLuint gl_inline_array_buffer;
 
-    unsigned int inline_elements_length;
-    uint32_t inline_elements[NV2A_MAX_BATCH_LENGTH];
+    unsigned int inline_elements_length = 0;
+    uint32_t inline_elements[NV2A_MAX_BATCH_LENGTH] = { 0 };
 
-    unsigned int inline_buffer_length;
+    unsigned int inline_buffer_length = 0;
 
-    unsigned int draw_arrays_length;
-    unsigned int draw_arrays_max_count;
+    unsigned int draw_arrays_length = 0;
+    unsigned int draw_arrays_max_count = 0;
 
     // FIXME: no OpenGL allowed here
     /* FIXME: Unknown size, possibly endless, 1000 will do for now */
@@ -305,66 +305,66 @@ typedef struct NV2APGRAPH {
     //GLuint gl_memory_buffer;
     //GLuint gl_vertex_array;
 
-    uint32_t regs[NV_PGRAPH_SIZE]; // TODO : union
+    uint32_t regs[NV_PGRAPH_SIZE] = { 0 }; // TODO : union
 } NV2APGRAPH;
 
 typedef struct {
-    uint32_t pendingInterrupts;
-    uint32_t enabledInterrupts;
-    uint32_t start;
-    uint32_t regs[NV_PCRTC_SIZE]; // TODO : union
+    uint32_t pendingInterrupts = 0;
+    uint32_t enabledInterrupts = 0;
+    uint32_t start = 0;
+    uint32_t regs[NV_PCRTC_SIZE] = { 0 }; // TODO : union
 } NV2APCRTC;
 
 typedef struct {
-    uint32_t pending_interrupts;
-    uint32_t enabled_interrupts;
-    uint32_t numerator;
-    uint32_t denominator;
-    uint32_t alarm_time;
-    uint32_t regs[NV_PTIMER_SIZE];
+    uint32_t pending_interrupts = 0;
+    uint32_t enabled_interrupts = 0;
+    uint32_t numerator = 0;
+    uint32_t denominator = 0;
+    uint32_t alarm_time = 0;
+    uint32_t regs[NV_PTIMER_SIZE] = { 0 };
 } NV2APTIMER;
 
 typedef struct {
-    uint32_t core_clock_coeff;
-    uint64_t core_clock_freq;
-    uint32_t memory_clock_coeff;
-    uint32_t video_clock_coeff;
-    uint32_t regs[NV_PRAMDAC_SIZE];
+    uint32_t core_clock_coeff = 0;
+    uint64_t core_clock_freq = 0;
+    uint32_t memory_clock_coeff = 0;
+    uint32_t video_clock_coeff = 0;
+    uint32_t regs[NV_PRAMDAC_SIZE] = { 0 };
 } NV2APRAMDAC;
 
 typedef struct CacheEntry {
     unsigned int method : 14;
     unsigned int subchannel : 3;
-    bool nonincreasing;
-    uint32_t parameter;
+    bool nonincreasing = false;
+    uint32_t parameter = 0;
 } CacheEntry;
 
 typedef struct Cache1State {
-    unsigned int channel_id;
-    FifoMode mode;
+    unsigned int channel_id = 0;
+    FifoMode mode = FIFO_PIO;
 
     /* Pusher state */
-    bool push_enabled;
-    bool dma_push_enabled;
-    bool dma_push_suspended;
-    uint32_t dma_instance;
+    bool push_enabled = false;
+    bool dma_push_enabled = false;
+    bool dma_push_suspended = false;
+    uint32_t dma_instance = 0;
 
-    bool method_nonincreasing;
+    bool method_nonincreasing = false;
     unsigned int method : 14;
     unsigned int subchannel : 3;
     unsigned int method_count : 24;
-    uint32_t dcount;
+    uint32_t dcount = 0;
 
-    bool subroutine_active;
-    uint32_t subroutine_return;
-    uint32_t get_jmp_shadow;
-    uint32_t rsvd_shadow;
-    uint32_t data_shadow;
-    uint32_t error;
+    bool subroutine_active = false;
+    uint32_t subroutine_return = 0;
+    uint32_t get_jmp_shadow = 0;
+    uint32_t rsvd_shadow = 0;
+    uint32_t data_shadow = 0;
+    uint32_t error = 0;
 
-    bool pull_enabled;
-    enum FIFOEngine bound_engines[NV2A_NUM_SUBCHANNELS];
-    enum FIFOEngine last_engine;
+    bool pull_enabled = false;
+    enum FIFOEngine bound_engines[NV2A_NUM_SUBCHANNELS] = { ENGINE_SOFTWARE };
+    enum FIFOEngine last_engine = ENGINE_SOFTWARE;
 
     /* The actual command queue */
     std::mutex mutex;
@@ -374,15 +374,15 @@ typedef struct Cache1State {
 } Cache1State;
 
 typedef struct {
-    uint32_t pending_interrupts;
-    uint32_t enabled_interrupts;
+    uint32_t pending_interrupts = 0;
+    uint32_t enabled_interrupts = 0;
     Cache1State cache1;
-    uint32_t regs[NV_PFIFO_SIZE];
+    uint32_t regs[NV_PFIFO_SIZE] = { 0 };
     std::thread puller_thread;
 } NV2APFIFO;
 
 typedef struct {
-    uint32_t registers[NV_PFB_SIZE];
+    uint32_t registers[NV_PFB_SIZE] = { 0 };
 } NV2APFB;
 
 typedef struct ChannelControl {
