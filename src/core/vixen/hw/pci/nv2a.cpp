@@ -59,10 +59,8 @@ static inline uint32_t ldl_le_p(const void *p) {
 	case (v)+(step) * 3
 
 
-NV2ADevice::NV2ADevice(uint16_t vendorID, uint16_t deviceID, uint8_t revisionID,
-    uint8_t *pSystemRAM, uint32_t systemRAMSize,
-    IRQHandler *irqHandler)
-	: PCIDevice(PCI_HEADER_TYPE_NORMAL, vendorID, deviceID, revisionID,
+NV2ADevice::NV2ADevice(uint8_t *pSystemRAM, uint32_t systemRAMSize, IRQHandler *irqHandler)
+	: PCIDevice(PCI_HEADER_TYPE_NORMAL, PCI_VENDOR_ID_NVIDIA, 0x02A0, 0xA1,
 		0x03, 0x00, 0x00) // VGA-compatible controller
     , m_pSystemRAM(pSystemRAM)
     , m_systemRAMSize(systemRAMSize)

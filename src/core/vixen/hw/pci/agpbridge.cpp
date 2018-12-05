@@ -3,8 +3,8 @@
 
 namespace vixen {
 
-AGPBridgeDevice::AGPBridgeDevice(uint16_t vendorID, uint16_t deviceID, uint8_t revisionID)
-    : PCIBridgeDevice(vendorID, deviceID, revisionID)
+AGPBridgeDevice::AGPBridgeDevice()
+    : PCIBridgeDevice(PCI_VENDOR_ID_NVIDIA, 0x01B7, 0xA1)
 {
 }
 

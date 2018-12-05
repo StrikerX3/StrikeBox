@@ -57,8 +57,8 @@ using namespace vixen::cpu;
 #define SETUP_STATE_ACK     3
 #define SETUP_STATE_PARAM   4
 
-USBPCIDevice::USBPCIDevice(uint16_t vendorID, uint16_t deviceID, uint8_t revisionID, uint8_t irqn, Cpu* cpu)
-    : PCIDevice(PCI_HEADER_TYPE_NORMAL, vendorID, deviceID, revisionID,
+USBPCIDevice::USBPCIDevice(uint8_t irqn, Cpu* cpu)
+    : PCIDevice(PCI_HEADER_TYPE_NORMAL, PCI_VENDOR_ID_NVIDIA, 0x02A5, 0xA1,
         0x0c, 0x03, 0x10) // USB OHCI
     , m_irqn(irqn)
     , m_cpu(cpu)

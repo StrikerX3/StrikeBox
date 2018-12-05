@@ -28,8 +28,8 @@
 
 namespace vixen {
 
-LPCDevice::LPCDevice(uint16_t vendorID, uint16_t deviceID, uint8_t revisionID, IRQ *irqs, uint8_t *rom, uint8_t *bios, uint32_t biosSize, uint8_t *mcpxROM, bool initMcpxROM)
-    : PCIDevice(PCI_HEADER_TYPE_BRIDGE, vendorID, deviceID, revisionID,
+LPCDevice::LPCDevice(IRQ *irqs, uint8_t *rom, uint8_t *bios, uint32_t biosSize, uint8_t *mcpxROM, bool initMcpxROM)
+    : PCIDevice(PCI_HEADER_TYPE_BRIDGE, PCI_VENDOR_ID_NVIDIA, 0x01B2, 0xD4,
         0x06, 0x01, 0x00, // ISA bridge
         /*TODO: subsystemVendorID*/0x00, /*TODO: subsystemID*/0x00)
     , m_irqs(irqs)

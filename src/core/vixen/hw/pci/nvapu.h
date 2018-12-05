@@ -59,7 +59,7 @@ namespace vixen {
 class NVAPUDevice : public PCIDevice {
 public:
     // constructor
-    NVAPUDevice(uint16_t vendorID, uint16_t deviceID, uint8_t revisionID);
+    NVAPUDevice();
     virtual ~NVAPUDevice();
 
     // PCI Device functions

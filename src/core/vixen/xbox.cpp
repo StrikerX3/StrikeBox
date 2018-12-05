@@ -108,7 +108,7 @@ Xbox::~Xbox() {
     if (m_NVNet != nullptr) delete m_NVNet;
     if (m_NVAPU != nullptr) delete m_NVAPU;
     if (m_AC97 != nullptr) delete m_AC97;
-    if (m_IDE != nullptr) delete m_IDE;
+    if (m_BMIDE != nullptr) delete m_BMIDE;
     if (m_NV2A != nullptr) delete m_NV2A;
     
     if (m_PCIBus != nullptr) delete m_PCIBus;
@@ -393,18 +393,18 @@ EmulatorStatus Xbox::InitHardware() {
 
     m_SMC = new SMCDevice(smcRevision);
     m_EEPROM = new EEPROMDevice();
-    m_HostBridge = new HostBridgeDevice(PCI_VENDOR_ID_NVIDIA, 0x02A5, 0xA1);
-    m_MCPXRAM = new MCPXRAMDevice(PCI_VENDOR_ID_NVIDIA, 0x02A6, 0xA1, mcpxRevision);
-    m_LPC = new LPCDevice(PCI_VENDOR_ID_NVIDIA, 0x01B2, 0xD4, m_IRQs, m_rom, m_bios, m_biosSize, m_mcpxROM, m_settings.hw_model != DebugKit);
-    m_USB1 = new USBPCIDevice(PCI_VENDOR_ID_NVIDIA, 0x02A5, 0xA1, 1, m_cpu);
-    m_USB2 = new USBPCIDevice(PCI_VENDOR_ID_NVIDIA, 0x02A5, 0xA1, 9, m_cpu);
-    m_NVNet = new NVNetDevice(PCI_VENDOR_ID_NVIDIA, 0x01C3, 0xD2);
-    m_NVAPU = new NVAPUDevice(PCI_VENDOR_ID_NVIDIA, 0x01B0, 0xD2);
-    m_AC97 = new AC97Device(PCI_VENDOR_ID_NVIDIA, 0x01B1, 0xD2);
-    m_PCIBridge = new PCIBridgeDevice(PCI_VENDOR_ID_NVIDIA, 0x01B8, 0xD2);
-    m_IDE = new IDEDevice(PCI_VENDOR_ID_NVIDIA, 0x01BC, 0xD2);
-    m_AGPBridge = new AGPBridgeDevice(PCI_VENDOR_ID_NVIDIA, 0x01B7, 0xA1);
-    m_NV2A = new NV2ADevice(PCI_VENDOR_ID_NVIDIA, 0x02A0, 0xA1, (uint8_t*)m_ram, m_ramSize, m_i8259);
+    m_HostBridge = new HostBridgeDevice();
+    m_MCPXRAM = new MCPXRAMDevice(mcpxRevision);
+    m_LPC = new LPCDevice(m_IRQs, m_rom, m_bios, m_biosSize, m_mcpxROM, m_settings.hw_model != DebugKit);
+    m_USB1 = new USBPCIDevice(1, m_cpu);
+    m_USB2 = new USBPCIDevice(9, m_cpu);
+    m_NVNet = new NVNetDevice();
+    m_NVAPU = new NVAPUDevice();
+    m_AC97 = new AC97Device();
+    m_PCIBridge = new PCIBridgeDevice();
+    m_BMIDE = new BMIDEDevice(m_ram, m_ramSize);
+    m_AGPBridge = new AGPBridgeDevice();
+    m_NV2A = new NV2ADevice(m_ram, m_ramSize, m_i8259);
 
     // Configure IRQs
     m_acpiIRQs = AllocateIRQs(m_LPC, 2);
@@ -451,7 +451,7 @@ EmulatorStatus Xbox::InitHardware() {
     m_PCIBus->ConnectDevice(PCI_DEVID(0, PCI_DEVFN(5, 0)), m_NVAPU);
     m_PCIBus->ConnectDevice(PCI_DEVID(0, PCI_DEVFN(6, 0)), m_AC97);
     m_PCIBus->ConnectDevice(PCI_DEVID(0, PCI_DEVFN(8, 0)), m_PCIBridge);
-    m_PCIBus->ConnectDevice(PCI_DEVID(0, PCI_DEVFN(9, 0)), m_IDE);
+    m_PCIBus->ConnectDevice(PCI_DEVID(0, PCI_DEVFN(9, 0)), m_BMIDE);
     m_PCIBus->ConnectDevice(PCI_DEVID(0, PCI_DEVFN(30, 0)), m_AGPBridge);
     m_PCIBus->ConnectDevice(PCI_DEVID(1, PCI_DEVFN(0, 0)), m_NV2A);
 

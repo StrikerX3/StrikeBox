@@ -12,7 +12,7 @@ namespace vixen {
 class PCIBridgeDevice : public PCIDevice {
 public:
     // constructor
-    PCIBridgeDevice(uint16_t vendorID, uint16_t deviceID, uint8_t revisionID);
+    PCIBridgeDevice();
     virtual ~PCIBridgeDevice();
 
     // PCI Device functions
@@ -24,6 +24,7 @@ public:
     inline PCIBus *GetSecondaryBus() { return m_secBus; }
 
 protected:
+    PCIBridgeDevice(uint16_t vendorID, uint16_t deviceID, uint8_t revisionID);
     virtual IRQMapper *GetIRQMapper();
 
 private:

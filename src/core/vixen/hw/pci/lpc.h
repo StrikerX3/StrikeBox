@@ -22,7 +22,7 @@ namespace vixen {
 class LPCDevice : public PCIDevice, public IRQHandler {
 public:
     // constructor
-    LPCDevice(uint16_t vendorID, uint16_t deviceID, uint8_t revisionID, IRQ *irqs, uint8_t *rom, uint8_t *bios, uint32_t biosSize, uint8_t *mcpxROM, bool initMcpxROM);
+    LPCDevice(IRQ *irqs, uint8_t *rom, uint8_t *bios, uint32_t biosSize, uint8_t *mcpxROM, bool initMcpxROM);
     virtual ~LPCDevice();
 
     void HandleIRQ(uint8_t irqNum, bool level) override;

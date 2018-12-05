@@ -9,7 +9,7 @@ namespace vixen {
 
 class NVNetDevice : public PCIDevice {
 public:
-    NVNetDevice(uint16_t vendorID, uint16_t deviceID, uint8_t revisionID);
+    NVNetDevice();
     virtual ~NVNetDevice();
 
     // PCI Device functions

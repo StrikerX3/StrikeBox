@@ -46,7 +46,7 @@
 #include "vixen/hw/pci/nvnet.h"
 #include "vixen/hw/pci/nvapu.h"
 #include "vixen/hw/pci/ac97.h"
-#include "vixen/hw/pci/ide.h"
+#include "vixen/hw/pci/bmide.h"
 #include "vixen/hw/pci/nv2a.h"
 
 #include "vixen/cpu_module.h"
@@ -141,7 +141,7 @@ protected:
     NVAPUDevice      *m_NVAPU;
     AC97Device       *m_AC97;
     PCIBridgeDevice  *m_PCIBridge;
-    IDEDevice        *m_IDE;
+    BMIDEDevice        *m_BMIDE;
     AGPBridgeDevice  *m_AGPBridge;
     NV2ADevice       *m_NV2A;
 

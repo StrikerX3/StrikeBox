@@ -12,9 +12,7 @@ namespace vixen {
 
 class NV2ADevice : public PCIDevice {
 public:
-    NV2ADevice(uint16_t vendorID, uint16_t deviceID, uint8_t revisionID,
-        uint8_t *pSystemRAM, uint32_t systemRAMSize,
-        IRQHandler *irqHandler);
+    NV2ADevice(uint8_t *pSystemRAM, uint32_t systemRAMSize, IRQHandler *irqHandler);
     
     virtual ~NV2ADevice();
 

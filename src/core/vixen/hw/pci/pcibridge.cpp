@@ -38,6 +38,11 @@
 
 namespace vixen {
 
+PCIBridgeDevice::PCIBridgeDevice()
+    : PCIBridgeDevice(PCI_VENDOR_ID_NVIDIA, 0x01B8, 0xD2)
+{
+}
+
 PCIBridgeDevice::PCIBridgeDevice(uint16_t vendorID, uint16_t deviceID, uint8_t revisionID)
     : PCIDevice(PCI_HEADER_TYPE_BRIDGE, vendorID, deviceID, revisionID,
         0x06, 0x04, 0x00, // PCI bridge

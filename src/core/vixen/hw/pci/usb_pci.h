@@ -66,7 +66,7 @@ class OHCI;
 class USBPCIDevice : public PCIDevice {
 public:
     // constructor
-    USBPCIDevice(uint16_t vendorID, uint16_t deviceID, uint8_t revisionID, uint8_t m_irqn, Cpu *cpu);
+    USBPCIDevice(uint8_t irqn, Cpu *cpu);
     virtual ~USBPCIDevice();
 
     // PCI Device functions

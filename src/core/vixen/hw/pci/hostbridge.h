@@ -10,7 +10,7 @@ namespace vixen {
 class HostBridgeDevice : public PCIDevice {
 public:
     // constructor
-    HostBridgeDevice(uint16_t vendorID, uint16_t deviceID, uint8_t revisionID);
+    HostBridgeDevice();
     virtual ~HostBridgeDevice();
 
     // PCI Device functions

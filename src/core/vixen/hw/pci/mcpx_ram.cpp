@@ -3,8 +3,8 @@
 
 namespace vixen {
 
-MCPXRAMDevice::MCPXRAMDevice(uint16_t vendorID, uint16_t deviceID, uint8_t revisionID, MCPXRevision revision)
-    : PCIDevice(PCI_HEADER_TYPE_NORMAL, vendorID, deviceID, revisionID,
+MCPXRAMDevice::MCPXRAMDevice(MCPXRevision revision)
+    : PCIDevice(PCI_HEADER_TYPE_NORMAL, PCI_VENDOR_ID_NVIDIA, 0x02A6, 0xA1,
         0x05, 0x00, 0x00) // RAM controller
 {
     m_revision = revision;
