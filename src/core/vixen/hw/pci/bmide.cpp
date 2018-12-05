@@ -96,8 +96,13 @@ void BMIDEDevice::ReadPRDTableAddress(Channel channel, uint32_t *value, uint8_t 
 }
 
 void BMIDEDevice::WriteCommand(Channel channel, uint32_t value, uint8_t size) {
-    log_spew("BMIDEDevice::WriteCommand:  Unimplemented!  channel = %d,  value = 0x%x,  size = %u\n", channel, value, size);
     m_command[channel] = value;
+    if (value & CmdStartStopBusMaster) {
+        KickOffBusMaster(channel, m_command[channel] & CmdReadWriteControl);
+    }
+    else {
+        StopBusMaster(channel);
+    }
 }
 
 void BMIDEDevice::WriteStatus(Channel channel, uint32_t value, uint8_t size) {
@@ -128,6 +133,16 @@ void BMIDEDevice::WritePRDTableAddress(Channel channel, uint32_t value, uint8_t 
     else {
         m_prdTableAddrs[channel] = value;
     }
+}
+
+void BMIDEDevice::KickOffBusMaster(Channel channel, bool write) {
+    log_spew("BMIDEDevice::KickOffBusMaster:  Starting operation: channel = %d,  %s\n", channel, (write ? "write" : "read"));
+    log_spew("BMIDEDevice::KickOffBusMaster:  Unimplemented!  channel = %d,  %s\n", channel, (write ? "write" : "read"));
+}
+
+void BMIDEDevice::StopBusMaster(Channel channel) {
+    log_spew("BMIDEDevice::StopBusMaster:  Stopping operation on channel = %d\n", channel);
+    log_spew("BMIDEDevice::StopBusMaster:  Unimplemented!  channel = %d\n", channel);
 }
 
 }

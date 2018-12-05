@@ -48,6 +48,9 @@ private:
     void WriteCommand(hw::bmide::Channel channel, uint32_t value, uint8_t size);
     void WriteStatus(hw::bmide::Channel channel, uint32_t value, uint8_t size);
     void WritePRDTableAddress(hw::bmide::Channel channel, uint32_t value, uint8_t size);
+
+    void KickOffBusMaster(hw::bmide::Channel channel, bool write);
+    void StopBusMaster(hw::bmide::Channel channel);
 };
 
 }
