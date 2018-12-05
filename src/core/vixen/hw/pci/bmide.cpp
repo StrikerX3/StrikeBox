@@ -7,6 +7,7 @@
 // https://parisc.wiki.kernel.org/images-parisc/0/0a/PC87415.pdf
 #include "bmide.h"
 #include "vixen/log.h"
+#include "vixen/thread.h"
 
 namespace vixen {
 
@@ -18,9 +19,14 @@ BMIDEDevice::BMIDEDevice(uint8_t *ram, uint32_t ramSize)
     , m_ram(ram)
     , m_ramSize(ramSize)
 {
+    m_channels[ChanPrimary] = new BMIDEChannel(ChanPrimary);
+    m_channels[ChanSecondary] = new BMIDEChannel(ChanSecondary);
 }
 
 BMIDEDevice::~BMIDEDevice() {
+    for (int i = 0; i < 2; i++) {
+        delete m_channels[i];
+    }
 }
 
 // PCI Device functions
@@ -41,12 +47,12 @@ void BMIDEDevice::PCIIORead(int barIndex, uint32_t port, uint32_t *value, uint8_
     // I/O registers can be accessed as bytes, words or dwords; no size checking is needed here.
 
     switch (port) {
-    case RegPrimaryCommand: ReadCommand(ChanPrimary, value, size); break;
-    case RegPrimaryStatus: ReadStatus(ChanPrimary, value, size); break;
-    case RegPrimaryPRDTableAddress: ReadPRDTableAddress(ChanPrimary, value, size); break;  // TODO: handle unaligned accesses
-    case RegSecondaryCommand: ReadCommand(ChanSecondary, value, size); break;
-    case RegSecondaryStatus: ReadStatus(ChanSecondary, value, size); break;
-    case RegSecondaryPRDTableAddress: ReadPRDTableAddress(ChanSecondary, value, size); break;  // TODO: handle unaligned accesses
+    case RegPrimaryCommand: m_channels[ChanPrimary]->ReadCommand(value, size); break;
+    case RegPrimaryStatus: m_channels[ChanPrimary]->ReadStatus(value, size); break;
+    case RegPrimaryPRDTableAddress: m_channels[ChanPrimary]->ReadPRDTableAddress(value, size); break;  // TODO: handle unaligned accesses
+    case RegSecondaryCommand: m_channels[ChanSecondary]->ReadCommand(value, size); break;
+    case RegSecondaryStatus: m_channels[ChanSecondary]->ReadStatus(value, size); break;
+    case RegSecondaryPRDTableAddress: m_channels[ChanSecondary]->ReadPRDTableAddress(value, size); break;  // TODO: handle unaligned accesses
     default:
         *value = 0;
         log_spew("BMIDEDevice::PCIIORead:   Unimplemented!  bar = %d,  port = 0x%x,  size = %u\n", barIndex, port, size);
@@ -63,87 +69,16 @@ void BMIDEDevice::PCIIOWrite(int barIndex, uint32_t port, uint32_t value, uint8_
     // I/O registers can be accessed as bytes, words or dwords; no size checking is needed here.
 
     switch (port) {
-    case RegPrimaryCommand: WriteCommand(ChanPrimary, value, size); break;
-    case RegPrimaryStatus: WriteStatus(ChanPrimary, value, size); break;
-    case RegPrimaryPRDTableAddress: WritePRDTableAddress(ChanPrimary, value, size); break;
-    case RegSecondaryCommand: WriteCommand(ChanSecondary, value, size); break;
-    case RegSecondaryStatus: WriteStatus(ChanSecondary, value, size); break;
-    case RegSecondaryPRDTableAddress: WritePRDTableAddress(ChanSecondary, value, size); break;
+    case RegPrimaryCommand: m_channels[ChanPrimary]->WriteCommand(value, size); break;
+    case RegPrimaryStatus: m_channels[ChanPrimary]->WriteStatus(value, size); break;
+    case RegPrimaryPRDTableAddress: m_channels[ChanPrimary]->WritePRDTableAddress(value, size); break;
+    case RegSecondaryCommand: m_channels[ChanSecondary]->WriteCommand(value, size); break;
+    case RegSecondaryStatus: m_channels[ChanSecondary]->WriteStatus(value, size); break;
+    case RegSecondaryPRDTableAddress: m_channels[ChanSecondary]->WritePRDTableAddress(value, size); break;
     default:
         log_spew("BMIDEDevice::PCIIOWrite:  Unimplemented!  bar = %d,  port = 0x%x,  value = 0x%x,  size = %u\n", barIndex, port, value, size);
         break;
     }
-}
-
-void BMIDEDevice::ReadCommand(Channel channel, uint32_t *value, uint8_t size) {
-    *value = m_command[channel] & kCommandRegMask;
-}
-
-void BMIDEDevice::ReadStatus(Channel channel, uint32_t *value, uint8_t size) {
-    *value = m_status[channel] & kStatusRegMask;
-}
-
-void BMIDEDevice::ReadPRDTableAddress(Channel channel, uint32_t *value, uint8_t size) {
-    if (size == 1) {
-        *(uint8_t*)value = m_prdTableAddrs[channel];
-    }
-    else if (size == 2) {
-        *(uint16_t*)value = m_prdTableAddrs[channel];
-    }
-    else {
-        *value = m_prdTableAddrs[channel];
-    }
-}
-
-void BMIDEDevice::WriteCommand(Channel channel, uint32_t value, uint8_t size) {
-    m_command[channel] = value;
-    if (value & CmdStartStopBusMaster) {
-        KickOffBusMaster(channel, m_command[channel] & CmdReadWriteControl);
-    }
-    else {
-        StopBusMaster(channel);
-    }
-}
-
-void BMIDEDevice::WriteStatus(Channel channel, uint32_t value, uint8_t size) {
-    // Clear interrupt and error flags if requested
-    m_status[channel] &= ~(value & kStatusRegWriteClearMask);
-
-    // Update writable bits
-    m_status[channel] &= ~kStatusRegWriteMask;
-    m_status[channel] |= value & kStatusRegWriteMask;
-}
-
-void BMIDEDevice::WritePRDTableAddress(Channel channel, uint32_t value, uint8_t size) {
-    // Clear least significant bit, which must always be zero
-    value &= ~1;
-
-    // Check for unaligned address
-    if (value & (sizeof(uint32_t) - 1)) {
-        log_warning("BMIDEDevice::WritePRDTableAddress:  Guest wrote unaligned PRD table address: 0x%x\n", value);
-    }
-
-    // Update register value
-    if (size == 1) {
-        m_prdTableAddrs[channel] = (uint8_t)value;
-    }
-    else if (size == 2) {
-        m_prdTableAddrs[channel] = (uint16_t)value;
-    }
-    else {
-        m_prdTableAddrs[channel] = value;
-    }
-    log_spew("BMIDEDevice::WritePRDTableAddress:  channel = %d,  address = 0x%x\n", channel, m_prdTableAddrs[channel]);
-}
-
-void BMIDEDevice::KickOffBusMaster(Channel channel, bool write) {
-    log_spew("BMIDEDevice::KickOffBusMaster:  Starting operation: channel = %d,  %s\n", channel, (write ? "write" : "read"));
-    log_spew("BMIDEDevice::KickOffBusMaster:  Unimplemented!  channel = %d,  %s\n", channel, (write ? "write" : "read"));
-}
-
-void BMIDEDevice::StopBusMaster(Channel channel) {
-    log_spew("BMIDEDevice::StopBusMaster:  Stopping operation on channel = %d\n", channel);
-    log_spew("BMIDEDevice::StopBusMaster:  Unimplemented!  channel = %d\n", channel);
 }
 
 }

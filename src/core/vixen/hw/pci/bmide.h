@@ -8,10 +8,12 @@
 #pragma once
 
 #include <cstdint>
+#include <mutex>
 
 #include "../defs.h"
 #include "pci.h"
 #include "bmide/defs.h"
+#include "bmide_channel.h"
 
 namespace vixen {
 
@@ -28,29 +30,14 @@ public:
     void PCIIORead(int barIndex, uint32_t port, uint32_t *value, uint8_t size) override;
     void PCIIOWrite(int barIndex, uint32_t port, uint32_t value, uint8_t size) override;
 private:
-    // ----- Registers --------------------------------------------------------
-
-    uint8_t m_command[hw::bmide::kNumChannels] = { 0 };
-    uint8_t m_status[hw::bmide::kNumChannels] = { 0 };
-    uint32_t m_prdTableAddrs[hw::bmide::kNumChannels] = { 0 };
-
     // ----- System memory ----------------------------------------------------
 
     uint8_t *m_ram = nullptr;
     uint32_t m_ramSize = 0;
 
-    // ----- Operations -------------------------------------------------------
+    // ----- Channels ---------------------------------------------------------
 
-    void ReadCommand(hw::bmide::Channel channel, uint32_t *value, uint8_t size);
-    void ReadStatus(hw::bmide::Channel channel, uint32_t *value, uint8_t size);
-    void ReadPRDTableAddress(hw::bmide::Channel channel, uint32_t *value, uint8_t size);
-
-    void WriteCommand(hw::bmide::Channel channel, uint32_t value, uint8_t size);
-    void WriteStatus(hw::bmide::Channel channel, uint32_t value, uint8_t size);
-    void WritePRDTableAddress(hw::bmide::Channel channel, uint32_t value, uint8_t size);
-
-    void KickOffBusMaster(hw::bmide::Channel channel, bool write);
-    void StopBusMaster(hw::bmide::Channel channel);
+    BMIDEChannel *m_channels[2];
 };
 
 }
