@@ -35,6 +35,10 @@ const uint16_t kSecondaryCommandPortCount = 8;
 const uint16_t kSecondaryCommandLastPort  = (kSecondaryCommandBasePort + kSecondaryCommandPortCount - 1);
 const uint16_t kSecondaryControlPort      = 0x376;
 
+// --- Sector size --------------------------------------------------------------------------------
+
+const uint32_t kSectorSize = 512;
+
 // --- Registers ----------------------------------------------------------------------------------
 
 // Command port registers [chapter 7]
