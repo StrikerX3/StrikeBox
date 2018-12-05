@@ -1,9 +1,9 @@
 #include <assert.h>
 #include "cpu_whvp.h"
 
-#include "openxbox/log.h"
+#include "vixen/log.h"
 
-namespace openxbox {
+namespace vixen {
 namespace cpu {
 
 WhvpCpu::WhvpCpu() {

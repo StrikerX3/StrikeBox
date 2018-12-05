@@ -1,10 +1,10 @@
 #include <assert.h>
 
-#include "openxbox/cpu_module_decl.h"
+#include "vixen/cpu_module_decl.h"
 #include "cpu_haxm_module.h"
 #include "cpu_haxm.h"
 
-namespace openxbox {
+namespace vixen {
 namespace modules {
 namespace cpu {
 

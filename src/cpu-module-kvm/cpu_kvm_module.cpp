@@ -1,11 +1,11 @@
-#include "openxbox/cpu_module_decl.h"
+#include "vixen/cpu_module_decl.h"
 #include "cpu_kvm_module.h"
 
-namespace openxbox {
+namespace vixen {
 namespace modules {
 namespace cpu {
 
-using namespace openxbox::cpu;
+using namespace vixen::cpu;
 
 CPU_MODULE_BEGIN
 CPU_MODULE_INFO(KvmCPUModule, "KVM CPU Module", "0.0.1")

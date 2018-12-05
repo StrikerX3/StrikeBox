@@ -1,13 +1,13 @@
 
 #include "cpu_kvm.h"
-#include "openxbox/log.h"
+#include "vixen/log.h"
 
 #include <fcntl.h>
 #include <cassert>
 #include <linux/kvm.h>
-#include <openxbox/gdt.h>
+#include <vixen/gdt.h>
 
-namespace openxbox {
+namespace vixen {
 namespace cpu {
 
 KvmCpu::KvmCpu() {

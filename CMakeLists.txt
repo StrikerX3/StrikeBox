@@ -9,7 +9,7 @@ if(UNIX AND NOT APPLE)
 	set(LINUX TRUE)
 endif()
 
-project (openxbox)
+project (vixen)
 
 if(MSVC)
 	# Set platform names
@@ -39,7 +39,7 @@ if(NOT MSVC)
 	add_definitions("-Wall -Werror -O0 -g")
 endif()
 
-# Add OpenXBOX projects
+# Add viXen projects
 add_subdirectory("${CMAKE_SOURCE_DIR}/src/common")
 add_subdirectory("${CMAKE_SOURCE_DIR}/src/module-common")
 add_subdirectory("${CMAKE_SOURCE_DIR}/src/cpu-module")

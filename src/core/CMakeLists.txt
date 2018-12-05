@@ -1,13 +1,13 @@
 file(GLOB DIR_HEADERS
-    ${CMAKE_CURRENT_SOURCE_DIR}/openxbox/*.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/vixen/*.h
     )
 
 file(GLOB DIR_SOURCES
-    ${CMAKE_CURRENT_SOURCE_DIR}/openxbox/*.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/vixen/*.cpp
     )
 
-add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/openxbox/hw")
-add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/openxbox/util")
+add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/vixen/hw")
+add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/vixen/util")
 
 set(SOURCES ${SOURCES}
     ${DIR_HEADERS}
@@ -18,7 +18,7 @@ include("${CMAKE_SOURCE_DIR}/cmake/PrecompiledHeader.cmake")
 include(ExternalProject)
 
 # Add Visual Studio filters to better organize the code
-vs_set_filters("${SOURCES}" "openxbox")
+vs_set_filters("${SOURCES}" "vixen")
 
 # Main Executable
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
@@ -26,11 +26,11 @@ if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
 endif()
 add_library(core STATIC
 	${SOURCES}
-	"${CMAKE_CURRENT_SOURCE_DIR}/openxbox/pch.cpp"
-	"${CMAKE_CURRENT_SOURCE_DIR}/openxbox/pch.h")
+	"${CMAKE_CURRENT_SOURCE_DIR}/vixen/pch.cpp"
+	"${CMAKE_CURRENT_SOURCE_DIR}/vixen/pch.h")
 
 # Use precompiled headers to speed up compilation
-add_precompiled_header(core openxbox/pch.h FORCEINCLUDE SOURCE_CXX "${CMAKE_CURRENT_SOURCE_DIR}/openxbox/pch.cpp")
+add_precompiled_header(core vixen/pch.h FORCEINCLUDE SOURCE_CXX "${CMAKE_CURRENT_SOURCE_DIR}/vixen/pch.cpp")
 
 # Include Zydis
 add_definitions(-DZYDIS_STATIC_DEFINE)
@@ -52,7 +52,7 @@ endif()
 
 target_include_directories(core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${install_dir}/src/Zydis/include)
 
-# Include OpenXBOX module interfaces
+# Include viXen module interfaces
 target_link_libraries(core common cpu-module)
 
 # Make the Debug and RelWithDebInfo targets use Program Database for Edit and Continue for easier debugging

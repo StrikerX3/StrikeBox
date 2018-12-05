@@ -1,9 +1,9 @@
 #pragma once
 
-#include "openxbox/cpu.h"
+#include "vixen/cpu.h"
 #include "cpu_whvp.h"
 
-namespace openxbox {
+namespace vixen {
 namespace modules {
 namespace cpu {
 

@@ -1,15 +1,15 @@
 #pragma once
 
-#include "openxbox/cpu.h"
+#include "vixen/cpu.h"
 #include "kvm/kvm.h"
 
 #include <linux/kvm.h>
 #include <vector>
 #include <queue>
 #include <mutex>
-#include <openxbox/bitmap.h>
+#include <vixen/bitmap.h>
 
-namespace openxbox {
+namespace vixen {
 namespace cpu {
 
 class KvmCpu : public Cpu {

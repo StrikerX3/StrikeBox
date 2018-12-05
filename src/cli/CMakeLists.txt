@@ -24,11 +24,11 @@ endif()
 add_executable(cli ${SOURCES})
 target_include_directories(cli PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
-# Include OpenXBOX Core
+# Include viXen core
 target_link_libraries(cli core)
 
-# Name the output file "openxbox-cli"
-set_target_properties(cli PROPERTIES OUTPUT_NAME "openxbox-cli")
+# Name the output file "vixen-cli"
+set_target_properties(cli PROPERTIES OUTPUT_NAME "vixen-cli")
 
 # Make the Debug and RelWithDebInfo targets use Program Database for Edit and Continue for easier debugging
 vs_use_edit_and_continue()
@@ -56,7 +56,7 @@ if(MSVC)
         message(STATUS "CLI front-end will use Windows Hypervisor Platform CPU module")
         target_link_libraries(cli cpu-module-whvp)
     elseif(CPU_MODULE_LC STREQUAL none)
-        message(WARNING "No CPU module specified. OpenXBOX requires at least one CPU module to run. "
+        message(WARNING "No CPU module specified. viXen requires at least one CPU module to run. "
             "Make sure to add one to the module subdirectory in the build output directory, or set the CPU_MODULE option to one of the available options.")
     else()
         message(SEND_ERROR "Invalid CPU module specified. Check your CPU_MODULE option.")
@@ -74,7 +74,7 @@ elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
         message(STATUS "CLI front-end will use KVM CPU module")
         target_link_libraries(cli cpu-module-kvm)
     elseif(CPU_MODULE_LC STREQUAL none)
-        message(WARNING "No CPU module specified. OpenXBOX requires at least one CPU module to run. "
+        message(WARNING "No CPU module specified. viXen requires at least one CPU module to run. "
             "Make sure to add one to the module subdirectory in the build output directory, or set the CPU_MODULE option to one of the available options.")
     else()
         message(SEND_ERROR "Invalid CPU module specified. Check your CPU_MODULE option.")

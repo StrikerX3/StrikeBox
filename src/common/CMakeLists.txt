@@ -1,9 +1,9 @@
 file(GLOB DIR_HEADERS
-    ${CMAKE_CURRENT_SOURCE_DIR}/openxbox/*.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/vixen/*.h
     )
 
 file(GLOB DIR_SOURCES
-    ${CMAKE_CURRENT_SOURCE_DIR}/openxbox/*.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/vixen/*.cpp
     )
 
 set(SOURCES ${SOURCES}
@@ -12,14 +12,14 @@ set(SOURCES ${SOURCES}
     )
 
 if (WIN32)
-    add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/openxbox/win32")
+    add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/vixen/win32")
 endif ()
 if (UNIX)
-    add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/openxbox/linux")
+    add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/vixen/linux")
 endif ()
 
 # Add Visual Studio filters to better organize the code
-vs_set_filters("${SOURCES}" "openxbox")
+vs_set_filters("${SOURCES}" "vixen")
 
 # Main Executable
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")

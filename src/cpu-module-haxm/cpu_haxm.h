@@ -1,13 +1,13 @@
 #pragma once
 
 #include "haxm/haxm.h"
-#include "openxbox/cpu.h"
-#include "openxbox/bitmap.h"
+#include "vixen/cpu.h"
+#include "vixen/bitmap.h"
 
 #include <mutex>
 #include <queue>
 
-namespace openxbox {
+namespace vixen {
 namespace cpu {
 
 /*!

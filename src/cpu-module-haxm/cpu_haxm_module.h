@@ -1,13 +1,13 @@
 #pragma once
 
-#include "openxbox/cpu.h"
+#include "vixen/cpu.h"
 #include "cpu_haxm.h"
 
-namespace openxbox {
+namespace vixen {
 namespace modules {
 namespace cpu {
 
-using namespace openxbox::cpu;
+using namespace vixen::cpu;
 
 class HaxmCPUModule : public ICPUModule {
 public:

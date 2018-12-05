@@ -3,8 +3,8 @@ or [Cxbx-Reloaded](https://github.com/Cxbx-Reloaded/Cxbx-Reloaded).**
 
 ---
 
-# OpenXBOX
-Open-Source (Original) Xbox Emulation Project
+# viXen
+6th Generation (Original) Xbox Emulator
 
 The current state of this thing is just a tad bit more tangible than vaporware.
 Essentially right now it just initializes an x86 system (courtesy of one of the
@@ -18,19 +18,19 @@ have to provide their own dump of the MCPX and BIOS ROMs from an Xbox machine,
 as well as the appropriate game media dump in XISO format or from an extracted
 directory.
 
-In the future, OpenXBOX will attempt to provide high level emulation of the
-kernel in order to sidestep the ROM requirements. It is a long way off, as
-research on the kernel is still incipient and existing implementations are
-incomplete, incorrect or straight up copies of illegally obtained code.
+In the future, viXen will attempt to provide high level emulation of the kernel
+in order to sidestep the ROM requirements. It is a long way off, as research on
+the kernel is still incipient and existing implementations are incomplete,
+incorrect or straight up copies of illegally obtained code.
 
 How to Build
 ------------
-OpenXBOX uses [CMake](https://cmake.org/) build files to generate projects for
-your preferred development platform. OpenXBOX contains multiple modules, as
+viXen uses [CMake](https://cmake.org/) build files to generate projects for
+your preferred development platform. viXen contains multiple modules, as
 described in the [Project Structure](#project-structure) section below.
 
-You will need to specify a CPU module for OpenXBOX to run. The CMake option
-`CPU_MODULE` gives you a choice of default modules bundled with OpenXBOX that
+You will need to specify a CPU module for viXen to run. The CMake option
+`CPU_MODULE` gives you a choice of default modules bundled with viXen that
 can be used for development and release builds.
 
 ### Windows
@@ -62,7 +62,7 @@ $ sudo apt-get install cmake
 $ mkdir build; cd build
 $ cmake .. -DCPU_MODULE=kvm && make
 $ cd src/cli
-$ ./openxbox-cli -c <path-to-MCPX-ROM> -b <path-to-BIOS-ROM> -x <path-to-XBE> -m [debug|retail]
+$ ./vixen-cli -c <path-to-MCPX-ROM> -b <path-to-BIOS-ROM> -x <path-to-XBE> -m [debug|retail]
 ```
 
 ### macOS
@@ -71,13 +71,13 @@ support for this platform!
 
 Project Structure
 -----------------
-OpenXBOX is split into multiple modules:
+viXen is split into multiple modules:
 - `core`: the core of the emulator, providing basic emulation logic and a
 module interface for the various pieces of hardware that composes the Xbox.
 This is a static library meant to be used by front-end engines.
-- `cli`: a command line front-end for OpenXBOX.
+- `cli`: a command line front-end for viXen.
 - `common`: common code shared across all modules.
-- `module-common`: contains common definitions and types for OpenXBOX modules.
+- `module-common`: contains common definitions and types for viXen modules.
 - `cpu-module`: defines the interface and basic types for CPU modules.
 - `cpu-module-haxm`: Windows-only CPU module implementation using [Intel HAXM](https://github.com/intel/haxm).
 - `cpu-module-whvp`: Windows-only CPU module implementation using the [Windows Hypervisor Platform](https://docs.microsoft.com/en-us/virtualization/api/).

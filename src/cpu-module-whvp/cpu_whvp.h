@@ -1,9 +1,9 @@
 #pragma once
 
 #include "whvp/whvp.h"
-#include "openxbox/cpu.h"
+#include "vixen/cpu.h"
 
-namespace openxbox {
+namespace vixen {
 namespace cpu {
 
 /*!

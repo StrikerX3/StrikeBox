@@ -1,9 +1,9 @@
 #include <assert.h>
 #include "cpu_haxm.h"
 
-#include "openxbox/log.h"
+#include "vixen/log.h"
 
-namespace openxbox {
+namespace vixen {
 namespace cpu {
 
 static bool parity8(uint8_t x) {
