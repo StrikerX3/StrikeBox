@@ -323,7 +323,7 @@ CPUOperationStatus KvmCpu::SetIDT(uint32_t addr, uint32_t size) {
 
 CPUStatus KvmCpu::HandleIO(uint8_t direction, uint16_t port, uint8_t size, uint32_t count, uint64_t dataOffset) {
     uint8_t *ptr;
-    if (count > 1) {
+    if (direction) {
         ptr = (uint8_t*)((((uint64_t)m_vcpu->kvmRun()) + dataOffset) + size * count - size);
     }
     else {
@@ -342,10 +342,10 @@ CPUStatus KvmCpu::HandleIO(uint8_t direction, uint16_t port, uint8_t size, uint3
             m_ioMapper->IOWrite(port, value, size);
         }
         else {
-            m_ioMapper->IORead(port, (uint32_t*)(((uint64_t)m_vcpu->kvmRun()) + dataOffset), size);
+            m_ioMapper->IORead(port, (uint32_t*)ptr, size);
         }
 
-        if (count > 0) {
+        if (direction) {
             ptr -= size;
         }
         else {
