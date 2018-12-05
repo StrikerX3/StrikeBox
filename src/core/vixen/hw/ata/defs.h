@@ -93,12 +93,25 @@ enum StatusBits : uint8_t {
 // Error bits (read from the Error register)
 enum ErrorBits : uint8_t {
     ErrAbort = (1 << 2),        // [7.11.6] (ABRT) Previous command was aborted due to an error or invalid parameter
+    
+    // [8.23.6] Read DMA and [8.45.6] Write DMA error flags
+    ErrDMACRC = (1 << 7),                  // (ICRC) CRC error occurred during Ultra DMA transfer
+    ErrDMAUncorrectable = (1 << 6),        // (UNC) Data is uncorrectable
+    ErrDMARemMediaChanged = (1 << 5),      // (MC) Removable media changed since last command was issued
+    ErrDMADataNotFound = (1 << 4),         // (IDNF) Tried to read outside user-accessible range
+    ErrDMAMediaChangeRequest = (1 << 2),   // (MCR) Media changed requested during the operation
+    ErrDMANoMedia = (1 << 1),              // (NM) No media is present in removable media device
 };
 
 // Device control bits (written to the Device Control register)
 enum DeviceControlBits : uint8_t {
     DevCtlSoftwareReset = (1 << 2),          // [7.9.6] (SRST) Execute a software reset
     DevCtlNegateInterruptEnable = (1 << 1),  // [7.9.6] (nIEN) When set, INTRQ signal is effectively disabled
+};
+
+// Device/Head bits
+enum DeviceHeadBits : uint8_t {
+    DevHeadDMALBA = (1 << 6),   // [8.23.4 and 8.45.4] On DMA operations, determines if the operation will use LBA address or CHS numbers
 };
 
 const uint8_t kDevSelectorBit = 4;  // [7.10.6] (DEV) Selects Device 0 when cleared or Device 1 when set

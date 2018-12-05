@@ -24,9 +24,17 @@ namespace ata {
  */
 class DummyHardDriveATADeviceDriver : public IATADeviceDriver {
 public:
+    DummyHardDriveATADeviceDriver();
     ~DummyHardDriveATADeviceDriver() override;
     bool IsAttached() override { return true; }
     void IdentifyDevice(IdentifyDeviceData *data) override;
+    bool IsLBAAddressUserAccessible(uint32_t lbaAddress) override;
+    bool IsCHSAddressUserAccessible(uint16_t cylinder, uint8_t head, uint8_t sector) override;
+
+private:
+    uint16_t m_numCylinders;
+    uint8_t m_numHeadsPerCylinder;
+    uint8_t m_numSectorsPerTrack;
 };
 
 extern DummyHardDriveATADeviceDriver g_dummyATADeviceDriver;

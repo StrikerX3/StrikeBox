@@ -31,6 +31,15 @@ static void padString(uint8_t *dest, const char *src, uint32_t length) {
     }
 }
 
+// Initialize with parameters for a 10 GB hard drive
+DummyHardDriveATADeviceDriver::DummyHardDriveATADeviceDriver()
+    : m_numCylinders(20480)
+    , m_numHeadsPerCylinder(16)
+    , m_numSectorsPerTrack(63)
+{
+
+}
+
 DummyHardDriveATADeviceDriver::~DummyHardDriveATADeviceDriver() {
 }
 
@@ -40,9 +49,9 @@ void DummyHardDriveATADeviceDriver::IdentifyDevice(IdentifyDeviceData *data) {
 
     // Adapted from https://github.com/mirror/vbox/blob/master/src/VBox/Devices/Storage/DevATA.cpp
     data->generalConfiguration = IDGenConfATADevice;
-    data->numLogicalCylinders = 5120;
-    data->numLogicalHeads = 15;
-    data->numLogicalSectorsPerTrack = 255;
+    data->numLogicalCylinders = m_numCylinders;
+    data->numLogicalHeads = m_numHeadsPerCylinder;
+    data->numLogicalSectorsPerTrack = m_numSectorsPerTrack;
     
     padString((uint8_t *)data->serialNumber, "1234567890", kSerialNumberLength);
     padString((uint8_t *)data->firmwareRevision, "1.00", kFirmwareRevLength);
@@ -78,6 +87,21 @@ void DummyHardDriveATADeviceDriver::IdentifyDevice(IdentifyDeviceData *data) {
 
     // Xbox hard drive must be locked
     data->securityStatus |= IDSecStatusSupported | IDSecStatusEnabled/* | IDSecStatusLocked*/;
+}
+
+bool DummyHardDriveATADeviceDriver::IsLBAAddressUserAccessible(uint32_t lbaAddress) {
+    uint32_t maxLBAAddress = m_numCylinders * m_numHeadsPerCylinder * m_numSectorsPerTrack;
+    return lbaAddress <= maxLBAAddress;
+}
+
+bool DummyHardDriveATADeviceDriver::IsCHSAddressUserAccessible(uint16_t cylinder, uint8_t head, uint8_t sector) {
+    if (cylinder > m_numCylinders) {
+        return false;
+    }
+    if (head > m_numHeadsPerCylinder) {
+        return false;
+    }
+    return sector > m_numSectorsPerTrack;
 }
 
 }

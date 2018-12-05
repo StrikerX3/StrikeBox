@@ -133,6 +133,7 @@ void BMIDEDevice::WritePRDTableAddress(Channel channel, uint32_t value, uint8_t 
     else {
         m_prdTableAddrs[channel] = value;
     }
+    log_spew("BMIDEDevice::WritePRDTableAddress:  channel = %d,  address = 0x%x\n", channel, m_prdTableAddrs[channel]);
 }
 
 void BMIDEDevice::KickOffBusMaster(Channel channel, bool write) {

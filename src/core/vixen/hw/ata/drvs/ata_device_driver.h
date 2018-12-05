@@ -31,6 +31,8 @@ public:
     virtual ~IATADeviceDriver();
     virtual bool IsAttached() = 0;
     virtual void IdentifyDevice(IdentifyDeviceData *data) = 0;
+    virtual bool IsLBAAddressUserAccessible(uint32_t lbaAddress) = 0;
+    virtual bool IsCHSAddressUserAccessible(uint16_t cylinder, uint8_t sector, uint8_t head) = 0;
 };
 
 }

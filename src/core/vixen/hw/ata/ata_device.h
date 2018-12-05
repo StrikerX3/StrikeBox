@@ -64,12 +64,6 @@ private:
     // The device driver that responds to commands
     IATADeviceDriver *m_driver;
 
-    // ----- Command handler implementations ----------------------------------
-    
-    bool __doIdentifyDevice();
-    bool __doBeginReadDMA();
-    bool __doSetFeatures();
-
     // ----- Registers --------------------------------------------------------
 
     // A reference to the registers of the ATA channel that owns this device
@@ -86,6 +80,19 @@ private:
 
     uint8_t m_dataBuffer[kSectorSize];
     uint32_t m_dataBufferPos;
+
+    // ----- State ------------------------------------------------------------
+
+    bool m_transferActive;
+
+    // ----- DMA transfer parameters ------------------------------------------
+    
+    uint8_t m_dma_sectorCount;  // Total number of sectors to transfer (0x00 = 1 sector and 0xFF = 256 sectors)
+    bool m_dma_useLBA;          // If true, use LBA parameter; if false, use CHS parameters
+    uint32_t m_dma_lbaAddress;  // Starting LBA address
+    uint16_t m_dma_cylinder;    // Starting cylinder number
+    uint8_t m_dma_sector;       // Starting sector number
+    uint8_t m_dma_head;         // Starting head number
 };
 
 }

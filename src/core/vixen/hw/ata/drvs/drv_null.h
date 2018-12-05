@@ -27,6 +27,8 @@ public:
     ~NullATADeviceDriver() override;
     bool IsAttached() override { return true; }
     void IdentifyDevice(IdentifyDeviceData *data) override;
+    bool IsLBAAddressUserAccessible(uint32_t lbaAddress) { return false; }
+    bool IsCHSAddressUserAccessible(uint16_t cylinder, uint8_t head, uint8_t sector) { return false; }
 };
 
 extern NullATADeviceDriver g_nullATADeviceDriver;
