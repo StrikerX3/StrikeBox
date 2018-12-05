@@ -30,7 +30,8 @@ public:
 private:
     // ----- Registers --------------------------------------------------------
 
-    // Pointer to Physical Region Descriptor Table
+    uint8_t m_command[hw::bmide::kNumChannels] = { 0 };
+    uint8_t m_status[hw::bmide::kNumChannels] = { 0 };
     uint32_t m_prdTableAddrs[hw::bmide::kNumChannels] = { 0 };
 
     // ----- System memory ----------------------------------------------------

@@ -25,6 +25,26 @@ enum Register {
     RegSecondaryPRDTableAddress = 0x0C,  // Secondary channel PRD Table address (ports 04h to 07h)
 };
 
+enum CommandRegisterBits {
+    CmdReadWriteControl = (1 << 3),     // Read/Write Control: 0 = read, 1 = write
+    CmdStartStopBusMaster = (1 << 0),   // Start/Stop Bus Master: 1 = start, 0 = stop (edge detected)
+};
+
+const uint8_t kCommandRegMask = CmdReadWriteControl | CmdStartStopBusMaster;
+
+enum StatusRegisterBits {
+    StSimplexOnly = (1 << 7),          // 0 = duplex (primary and secondary channels are independent), 1 = simplex
+    StDrive1DMACapable = (1 << 6),     // Drive 1 is capable of DMA transfers
+    StDrive0DMACapable = (1 << 5),     // Drive 0 is capable of DMA transfers
+    StInterrupt = (1 << 2),            // Interrupt level (set to 1 when IDE raises the interrupt line, write 1 to clear)
+    StError = (1 << 1),                // Error (set when a command fails, write 1 to clear)
+    StBusMasterIDEActive = (1 << 0),   // Indicates ongoing transfer
+};
+
+const uint8_t kStatusRegMask = StSimplexOnly | StDrive1DMACapable | StDrive0DMACapable | StInterrupt | StError | StBusMasterIDEActive;
+const uint8_t kStatusRegWriteClearMask = StInterrupt | StError;
+const uint8_t kStatusRegWriteMask = StDrive1DMACapable | StDrive0DMACapable;
+
 // --- Channels ---------------------------------------------------------------
 
 const uint8_t kNumChannels = 2;

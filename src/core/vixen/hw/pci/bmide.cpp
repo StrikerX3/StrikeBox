@@ -76,26 +76,49 @@ void BMIDEDevice::PCIIOWrite(int barIndex, uint32_t port, uint32_t value, uint8_
 }
 
 void BMIDEDevice::ReadCommand(Channel channel, uint32_t *value, uint8_t size) {
-    log_spew("BMIDEDevice::ReadCommand:   Unimplemented!  channel = %d,  size = %u\n", channel, size);
+    *value = m_command[channel] & kCommandRegMask;
 }
 
 void BMIDEDevice::ReadStatus(Channel channel, uint32_t *value, uint8_t size) {
-    log_spew("BMIDEDevice::ReadStatus:   Unimplemented!  channel = %d,  size = %u\n", channel, size);
+    *value = m_status[channel] & kStatusRegMask;
 }
 
 void BMIDEDevice::ReadPRDTableAddress(Channel channel, uint32_t *value, uint8_t size) {
-    log_spew("BMIDEDevice::ReadPRDTableAddress:   Unimplemented!  channel = %d,  size = %u\n", channel, size);
+    if (size == 1) {
+        *(uint8_t*)value = m_prdTableAddrs[channel];
+    }
+    else if (size == 2) {
+        *(uint16_t*)value = m_prdTableAddrs[channel];
+    }
+    else {
+        *value = m_prdTableAddrs[channel];
+    }
 }
 
 void BMIDEDevice::WriteCommand(Channel channel, uint32_t value, uint8_t size) {
     log_spew("BMIDEDevice::WriteCommand:  Unimplemented!  channel = %d,  value = 0x%x,  size = %u\n", channel, value, size);
+    m_command[channel] = value;
 }
 
 void BMIDEDevice::WriteStatus(Channel channel, uint32_t value, uint8_t size) {
-    log_spew("BMIDEDevice::WriteStatus:  Unimplemented!  channel = %d,  value = 0x%x,  size = %u\n", channel, value, size);
+    // Clear interrupt and error flags if requested
+    m_status[channel] &= ~(value & kStatusRegWriteClearMask);
+
+    // Update writable bits
+    m_status[channel] &= ~kStatusRegWriteMask;
+    m_status[channel] |= value & kStatusRegWriteMask;
 }
 
 void BMIDEDevice::WritePRDTableAddress(Channel channel, uint32_t value, uint8_t size) {
+    // Clear least significant bit, which must always be zero
+    value &= ~1;
+
+    // Check for unaligned address
+    if (value & (sizeof(uint32_t) - 1)) {
+        log_warning("BMIDEDevice::WritePRDTableAddress:  Guest wrote unaligned PRD table address: 0x%x\n", value);
+    }
+
+    // Update register value
     if (size == 1) {
         m_prdTableAddrs[channel] = (uint8_t)value;
     }
