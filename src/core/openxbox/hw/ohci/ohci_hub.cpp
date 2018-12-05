@@ -440,7 +440,7 @@ void Hub::UsbHub_HandleControl(XboxDeviceState* dev, USBPacket* p, int request, 
 
     case GetHubDescriptor:
     {
-        std::memcpy(data, HubDescriptor, sizeof(HubDescriptor));
+        memcpy(data, HubDescriptor, sizeof(HubDescriptor));
         p->ActualLength = sizeof(HubDescriptor);
         break;
     }
@@ -473,7 +473,7 @@ void Hub::UsbHub_HandleData(XboxDeviceState* dev, USBPacket* p) {
                 if (p->IoVec.Size == 1) { // FreeBSD workaround
                     n = 1;
                 }
-                else if (n > p->IoVec.Size) {
+                else if ((unsigned int)n > p->IoVec.Size) {
                     p->Status = USB_RET_BABBLE;
                     return;
                 }

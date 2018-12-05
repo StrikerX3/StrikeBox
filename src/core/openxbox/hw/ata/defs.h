@@ -160,10 +160,10 @@ enum CommandProtocol : uint8_t {
 };
 
 // Map commands to their protocols
-const std::unordered_map<Command, CommandProtocol> kCmdProtocols = {
+const std::unordered_map<Command, CommandProtocol, std::hash<uint8_t>> kCmdProtocols = {
     { CmdIdentifyDevice, CmdProtoPIODataIn },
     { CmdSetFeatures, CmdProtoNonData },
-    { CmdSecurityUnlock, CmdProtoPIODataOut },
+    { CmdSecurityUnlock, CmdProtoPIODataOut }
 };
 
 // --- Command data -------------------------------------------------------------------------------
@@ -181,7 +181,9 @@ const uint8_t kFirmwareRevLength = 8;
 const uint8_t kModelNumberLength = 40;
 
 // [8.12.8 table 11] Data returned by the Identify Device command
+#ifdef _MSC_VER
 #include <pshpack2.h>
+#endif
 struct IdentifyDeviceData {
     uint16_t generalConfiguration;                   // word 0
     uint16_t numLogicalCylinders;                    // word 1
@@ -240,8 +242,12 @@ struct IdentifyDeviceData {
     uint16_t securityStatus;                         // word 128
     uint16_t _vendor[31];                            // word 129-159
     uint16_t _reserved_10[96];                       // word 160-255
+#ifdef _MSC_VER
 };
 #include <poppack.h>
+#else
+} __attribute__((aligned(2),packed));
+#endif
 
 // [8.12.8 table 11 word 0] Bits for the generalConfiguration field in the IdentifyDeviceData struct
 enum IdentifyDeviceGeneralConfiguration : uint16_t {

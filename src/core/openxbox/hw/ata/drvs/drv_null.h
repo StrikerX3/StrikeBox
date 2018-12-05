@@ -24,6 +24,7 @@ namespace ata {
  */
 class NullATADeviceDriver : public IATADeviceDriver {
 public:
+    ~NullATADeviceDriver() override;
     bool IsAttached() override { return true; }
     void IdentifyDevice(IdentifyDeviceData *data) override;
 };

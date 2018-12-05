@@ -40,6 +40,7 @@
 
 #include <string>
 #include <functional>
+#include <algorithm>
 
 #include "openxbox/log.h"
 
@@ -437,7 +438,7 @@ void USBPCIDevice::DoTokenIn(XboxDeviceState* s, USBPacket* p) {
 
     case SETUP_STATE_DATA:
         if (s->SetupBuffer[0] & USB_DIR_IN) {
-            int len = s->SetupLength - s->SetupIndex;
+            unsigned int len = s->SetupLength - s->SetupIndex;
             if (len > p->IoVec.Size) {
                 len = p->IoVec.Size;
             }
@@ -473,7 +474,7 @@ void USBPCIDevice::DoTokenOut(XboxDeviceState* s, USBPacket* p) {
 
     case SETUP_STATE_DATA:
         if (!(s->SetupBuffer[0] & USB_DIR_IN)) {
-            int len = s->SetupLength - s->SetupIndex;
+            unsigned int len = s->SetupLength - s->SetupIndex;
             if (len > p->IoVec.Size) {
                 len = p->IoVec.Size;
             }
@@ -1016,10 +1017,10 @@ int USBPCIDevice::USBDesc_HandleStandardGetDescriptor(XboxDeviceState* dev, USBP
     }
 
     if (ret > 0) {
-        if (ret > len) {
+        if ((unsigned int)ret > len) {
             ret = len;
         }
-        std::memcpy(dest, buf, ret);
+        memcpy(dest, buf, ret);
         p->ActualLength = ret;
         ret = 0;
     }
@@ -1148,7 +1149,7 @@ size_t USBPCIDevice::USB_ReadOtherDesc(const USBDescOther* desc, uint8_t* dest, 
         return -1;
     }
 
-    std::memcpy(dest, desc->data, bLength);
+    memcpy(dest, desc->data, bLength);
     return bLength;
 }
 
@@ -1177,7 +1178,7 @@ int USBPCIDevice::USB_ReadEndpointDesc(const USBDescEndpoint* ep, int flags, uin
     // Dropped from XQEMU the reading of SuperSpeed Endpoint Companion descriptors since those are usb 3.0 specific
 
     if (ep->extra) {
-        std::memcpy(dest + bLength, ep->extra, extralen);
+        memcpy(dest + bLength, ep->extra, extralen);
     }
 
     return bLength + extralen;
@@ -1212,7 +1213,7 @@ int USBPCIDevice::USB_ReadStringDesc(XboxDeviceState* dev, int index, uint8_t* d
     // From the standard: "The UNICODE string descriptor is not NULL-terminated. The string length is
     // computed by subtracting two from the value of the first byte of the descriptor"
 
-    bLength = std::strlen(str) * 2 + 2;
+    bLength = strlen(str) * 2 + 2;
     dest[0] = bLength;
     dest[1] = USB_DT_STRING;
     i = 0; pos = 2;

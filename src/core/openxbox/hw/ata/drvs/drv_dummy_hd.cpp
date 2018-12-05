@@ -31,6 +31,9 @@ static void padString(uint8_t *dest, const char *src, uint32_t length) {
     }
 }
 
+DummyHardDriveATADeviceDriver::~DummyHardDriveATADeviceDriver() {
+}
+
 void DummyHardDriveATADeviceDriver::IdentifyDevice(IdentifyDeviceData *data) {
     // Fill in with reasonable parameters for a 10 GB hard drive
     memset(data, 0, sizeof(IdentifyDeviceData));

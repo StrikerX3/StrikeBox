@@ -39,7 +39,7 @@
 // ******************************************************************
 
 #include "xid_gamepad.h"
-#include "..\ohci\ohci.h"
+#include "../ohci/ohci.h"
 #include "../pci/usb_pci.h"
 
 #include <string>
@@ -227,7 +227,6 @@ XboxDeviceState* XidGamepad::ClassInitFn() {
 
 int XidGamepad::UsbXidClaimPort(XboxDeviceState* dev, int port) {
     int i;
-    int port_offset;
     std::vector<USBPort*>::iterator it;
 
     assert(dev->Port == nullptr);
@@ -282,10 +281,10 @@ int XidGamepad::UsbXid_Initfn(XboxDeviceState* dev) {
     m_XidState->out_state.length = sizeof(m_XidState->out_state);
     m_XidState->out_state.report_id = 0;
 
-    std::memset(&m_XidState->in_state_capabilities, 0xFF, sizeof(m_XidState->in_state_capabilities));
+    memset(&m_XidState->in_state_capabilities, 0xFF, sizeof(m_XidState->in_state_capabilities));
     m_XidState->in_state_capabilities.bLength = sizeof(m_XidState->in_state_capabilities);
     m_XidState->in_state_capabilities.bReportId = 0;
-    std::memset(&m_XidState->out_state_capabilities, 0xFF, sizeof(m_XidState->out_state_capabilities));
+    memset(&m_XidState->out_state_capabilities, 0xFF, sizeof(m_XidState->out_state_capabilities));
     m_XidState->out_state_capabilities.length = sizeof(m_XidState->out_state_capabilities);
     m_XidState->out_state_capabilities.report_id = 0;
 
@@ -351,7 +350,7 @@ void XidGamepad::UsbXid_HandleControl(XboxDeviceState* dev, USBPacket* p,
                 //    p->Status = USB_RET_STALL;
                 //    assert(0);
                 //}
-                std::memcpy(data, &m_XidState->in_state, m_XidState->in_state.bLength);
+                memcpy(data, &m_XidState->in_state, m_XidState->in_state.bLength);
                 p->ActualLength = length;
             }
             else {
@@ -380,7 +379,7 @@ void XidGamepad::UsbXid_HandleControl(XboxDeviceState* dev, USBPacket* p,
         if (value == 0x0200) {
             if (length == m_XidState->out_state.length) {
                 // Read length, then the entire packet
-                std::memcpy(&m_XidState->out_state, data, sizeof(m_XidState->out_state));
+                memcpy(&m_XidState->out_state, data, sizeof(m_XidState->out_state));
                 /* FIXME: This should also be a STALL */
                 assert(m_XidState->out_state.length == sizeof(m_XidState->out_state));
                 p->ActualLength = length;
@@ -403,7 +402,7 @@ void XidGamepad::UsbXid_HandleControl(XboxDeviceState* dev, USBPacket* p,
         log_debug("XID: Gamepad GET_DESCRIPTOR 0x%x", value);
         if (value == 0x4200) {
             assert(m_XidState->xid_desc->bLength <= length);
-            std::memcpy(data, m_XidState->xid_desc, m_XidState->xid_desc->bLength);
+            memcpy(data, m_XidState->xid_desc, m_XidState->xid_desc->bLength);
             p->ActualLength = m_XidState->xid_desc->bLength;
         }
         else {
@@ -420,14 +419,14 @@ void XidGamepad::UsbXid_HandleControl(XboxDeviceState* dev, USBPacket* p,
             if (length > m_XidState->in_state_capabilities.bLength) {
                 length = m_XidState->in_state_capabilities.bLength;
             }
-            std::memcpy(data, &m_XidState->in_state_capabilities, length);
+            memcpy(data, &m_XidState->in_state_capabilities, length);
             p->ActualLength = length;
         }
         else if (value == 0x0200) {
             if (length > m_XidState->out_state_capabilities.length) {
                 length = m_XidState->out_state_capabilities.length;
             }
-            std::memcpy(data, &m_XidState->out_state_capabilities, length);
+            memcpy(data, &m_XidState->out_state_capabilities, length);
             p->ActualLength = length;
         }
         else {
@@ -441,7 +440,7 @@ void XidGamepad::UsbXid_HandleControl(XboxDeviceState* dev, USBPacket* p,
     {
         /* FIXME: ! */
         log_debug("XID: Gamepad unknown xpad request 0x%X: value = 0x%X", request, value);
-        std::memset(data, 0x00, length);
+        memset(data, 0x00, length);
         //FIXME: Intended for the hub: usbd_get_hub_descriptor, UT_READ_CLASS?!
         p->Status = USB_RET_STALL;
         //assert(false);
@@ -452,7 +451,7 @@ void XidGamepad::UsbXid_HandleControl(XboxDeviceState* dev, USBPacket* p,
     {
         /* FIXME: ! */
         log_debug("XID: Gamepad unknown xpad request 0x%X: value = 0x%X", request, value);
-        std::memset(data, 0x00, length);
+        memset(data, 0x00, length);
         p->Status = USB_RET_STALL;
         break;
     }

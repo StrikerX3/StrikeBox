@@ -159,7 +159,7 @@ void DumpCPUDisassembly(Cpu* cpu, uint32_t address, uint32_t count, bool physica
 
 	ZydisDecodedInstruction instruction;
 
-	for (int i = 0; i < count; i++) {
+	for (uint32_t i = 0; i < count; i++) {
         if (physical) {
             if (cpu->MemRead(address, 16, mem)) {
                 log_debug("<invalid address>\n\n");

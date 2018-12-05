@@ -21,8 +21,8 @@ namespace ata {
 ATADevice::ATADevice(Channel channel, uint8_t devIndex, ATARegisters& regs)
     : m_channel(channel)
     , m_devIndex(devIndex)
-    , m_regs(regs)
     , m_driver(&g_nullATADeviceDriver)
+    , m_regs(regs)
 {
 }
 
@@ -49,7 +49,7 @@ uint32_t ATADevice::ReadBuffer(uint8_t *dest, uint32_t length) {
         lenToRead = GetRemainingBufferLength();
     }
 
-    memcpy_s(dest, length, m_dataBuffer + m_dataBufferPos, lenToRead);
+    memcpy(dest, m_dataBuffer + m_dataBufferPos, lenToRead);
     m_dataBufferPos += lenToRead;
     return lenToRead;
 }

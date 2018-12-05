@@ -211,7 +211,7 @@ EmulatorStatus Xbox::InitRAM() {
 #endif
 
 #ifdef __linux__
-    m_ram = (char *)mmap(nullptr, m_ramSize, PROT_READ | PROT_WRITE,
+    m_ram = (uint8_t *)mmap(nullptr, m_ramSize, PROT_READ | PROT_WRITE,
         MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE, -1, 0);
 #endif
 
@@ -239,7 +239,7 @@ EmulatorStatus Xbox::InitROM() {
 #endif
 
 #ifdef __linux__
-    m_rom = (char *)mmap(nullptr, XBOX_ROM_AREA_SIZE, PROT_READ | PROT_WRITE,
+    m_rom = (uint8_t *)mmap(nullptr, XBOX_ROM_AREA_SIZE, PROT_READ | PROT_WRITE,
         MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE, -1, 0);
 #endif
 
@@ -822,7 +822,7 @@ bool Xbox::LocateKernelData() {
     if (eip >= 0x80000000) {
         uint16_t mzMagic = 0;
         if (m_cpu->VMemRead(0x80010000, sizeof(uint16_t), &mzMagic)) return false;
-        if (mzMagic != 'ZM') {
+        if (mzMagic != 0x5a4d) {
             return false;
         }
     }
@@ -836,7 +836,7 @@ bool Xbox::LocateKernelData() {
     peHeaderAddress += 0x80010000;
     uint16_t peMagic = 0;
     if (m_cpu->VMemRead(peHeaderAddress, sizeof(uint16_t), &peMagic)) return false;
-    if (peMagic != 'EP') {
+    if (peMagic != 0x4550) {
         peHeaderAddress = 0x00000000;
         return false;
     }

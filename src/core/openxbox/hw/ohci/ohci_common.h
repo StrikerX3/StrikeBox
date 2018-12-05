@@ -404,8 +404,8 @@ struct XboxDeviceState {
     uint8_t DataBuffer[4096];              // buffer where to write the data requested during usb requests
     int32_t RemoteWakeup;                  // wakeup flag
     int32_t SetupState;                    // result of a control transfer processing operation
-    int32_t SetupLength;                   // this field specifies the length of the data transferred during the second phase of the control transfer
-    int32_t SetupIndex;                    // index of the parameter in a setup token?
+    uint32_t SetupLength;                  // this field specifies the length of the data transferred during the second phase of the control transfer
+    uint32_t SetupIndex;                   // index of the parameter in a setup token?
 
     USBEndpoint EP_ctl;                    // endpoints for SETUP tokens
     USBEndpoint EP_in[USB_MAX_ENDPOINTS];  // endpoints for OUT tokens
@@ -433,7 +433,7 @@ struct USBPacket {
     bool ShortNotOK;                         // the bufferRounding mode of the TD for this packet
     bool IntReq;                             // whether or not to generate an interrupt for this packet (DelayInterrupt of the TD is zero)
     int Status;                              // USB_RET_* status code
-    int ActualLength;                        // number of bytes actually written to DataBuffer
+    unsigned int ActualLength;               // number of bytes actually written to DataBuffer
     // Internal use by the USB layer
     USBPacketState State;
     QTAILQ_ENTRY(USBPacket) Queue;

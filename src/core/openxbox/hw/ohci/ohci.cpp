@@ -37,6 +37,8 @@
 #include "ohci.h"
 #include "openxbox/log.h"
 
+#include <stddef.h>
+
 //#define DEBUG_PACKET
 //#define DEBUG_ISOCH
 
@@ -279,7 +281,7 @@ void OHCI::OHCI_FrameBoundaryWorker()
 	if (m_OldHcControl & (~m_Registers.HcControl) & (OHCI_CTL_BLE | OHCI_CTL_CLE)) {
 		if (m_AsyncTD) {
 			m_UsbDevice->USB_CancelPacket(&m_UsbPacket);
-			m_AsyncTD = NULL;
+			m_AsyncTD = 0;
 		}
 		OHCI_StopEndpoints();
 	}
@@ -360,8 +362,8 @@ bool OHCI::OHCI_ReadHCCA(uint32_t Paddr, OHCI_HCCA* Hcca)
 
 	// NOTE: this shared memory contains the HCCA + EDs and TDs
 
-	if (Paddr != NULL) {
-		std::memcpy(Hcca, reinterpret_cast<void*>(Paddr + CONTIGUOUS_MEMORY_BASE), sizeof(OHCI_HCCA));
+	if (Paddr != 0) {
+		memcpy(Hcca, reinterpret_cast<void*>(Paddr + CONTIGUOUS_MEMORY_BASE), sizeof(OHCI_HCCA));
 		return false;
 	}
 
@@ -370,11 +372,11 @@ bool OHCI::OHCI_ReadHCCA(uint32_t Paddr, OHCI_HCCA* Hcca)
 
 bool OHCI::OHCI_WriteHCCA(uint32_t Paddr, OHCI_HCCA* Hcca)
 {
-	if (Paddr != NULL) {
+	if (Paddr != 0) {
 		// We need to calculate the offset of the HccaFrameNumber member to avoid overwriting HccaInterrruptTable
 		size_t OffsetOfFrameNumber = offsetof(OHCI_HCCA, HccaFrameNumber);
 
-		std::memcpy(reinterpret_cast<void*>(Paddr + OffsetOfFrameNumber + CONTIGUOUS_MEMORY_BASE),
+		memcpy(reinterpret_cast<void*>(Paddr + OffsetOfFrameNumber + CONTIGUOUS_MEMORY_BASE),
 			reinterpret_cast<uint8_t*>(Hcca) + OffsetOfFrameNumber, 8);
 		return false;
 	}
@@ -384,7 +386,7 @@ bool OHCI::OHCI_WriteHCCA(uint32_t Paddr, OHCI_HCCA* Hcca)
 
 bool OHCI::OHCI_ReadED(uint32_t Paddr, OHCI_ED* Ed)
 {
-	if (Paddr != NULL) {
+	if (Paddr != 0) {
         m_cpu->VMemRead(Paddr, sizeof(*Ed), Ed);
 		return false;
 	}
@@ -393,7 +395,7 @@ bool OHCI::OHCI_ReadED(uint32_t Paddr, OHCI_ED* Ed)
 
 bool OHCI::OHCI_WriteED(uint32_t Paddr, OHCI_ED* Ed)
 {
-	if (Paddr != NULL) {
+	if (Paddr != 0) {
 		// According to the standard, only the HeadP field is writable by the HC, so we'll write just that
 		size_t OffsetOfHeadP = offsetof(OHCI_ED, HeadP);
         m_cpu->VMemWrite(Paddr, 4, Ed + OffsetOfHeadP);
@@ -404,7 +406,7 @@ bool OHCI::OHCI_WriteED(uint32_t Paddr, OHCI_ED* Ed)
 
 bool OHCI::OHCI_ReadTD(uint32_t Paddr, OHCI_TD* Td)
 {
-	if (Paddr != NULL) {
+	if (Paddr != 0) {
         m_cpu->VMemRead(Paddr, sizeof(*Td), Td);
 		return false;
 	}
@@ -413,7 +415,7 @@ bool OHCI::OHCI_ReadTD(uint32_t Paddr, OHCI_TD* Td)
 
 bool OHCI::OHCI_WriteTD(uint32_t Paddr, OHCI_TD* Td)
 {
-	if (Paddr != NULL) {
+	if (Paddr != 0) {
         m_cpu->VMemWrite(Paddr, sizeof(*Td), Td);
 		return false;
 	}
@@ -421,7 +423,7 @@ bool OHCI::OHCI_WriteTD(uint32_t Paddr, OHCI_TD* Td)
 }
 
 bool OHCI::OHCI_ReadIsoTD(uint32_t Paddr, OHCI_ISO_TD* td) {
-    if (Paddr != NULL) {
+    if (Paddr != 0) {
         m_cpu->VMemRead(Paddr, sizeof(*td), td);
         return false;
     }
@@ -429,7 +431,7 @@ bool OHCI::OHCI_ReadIsoTD(uint32_t Paddr, OHCI_ISO_TD* td) {
 }
 
 bool OHCI::OHCI_WriteIsoTD(uint32_t Paddr, OHCI_ISO_TD* td) {
-    if (Paddr != NULL) {
+    if (Paddr != 0) {
         m_cpu->VMemWrite(Paddr, sizeof(*td), td);
         return false;
     }
@@ -443,14 +445,14 @@ bool OHCI::OHCI_CopyTD(OHCI_TD* Td, uint8_t* Buffer, int Length, bool bIsWrite)
 	// Figure out if we are crossing a 4K page boundary
 	ptr = Td->CurrentBufferPointer;
 	n = 0x1000 - (ptr & 0xFFF);
-	if (n > Length) {
-		n = Length;
+	if (n > (unsigned int)Length) {
+		n = (unsigned int)Length;
 	}
 
 	if (OHCI_FindAndCopyTD(ptr, Buffer, n, bIsWrite)) {
 		return true; // error
 	}
-	if (n == Length) {
+	if (n == (unsigned int)Length) {
 		return false; // no bytes left to copy
 	}
 
@@ -471,14 +473,14 @@ bool OHCI::OHCI_CopyIsoTD(uint32_t start_addr, uint32_t end_addr, uint8_t* Buffe
 
     ptr = start_addr;
     n = 0x1000 - (ptr & 0xFFF);
-    if (n > Length) {
+    if (n > (unsigned int)Length) {
         n = Length;
     }
 
     if (OHCI_FindAndCopyTD(ptr, Buffer, n, bIsWrite)) {
         return true; // error
     }
-    if (n == Length) {
+    if (n == (unsigned int)Length) {
         return false; // no bytes left to copy
     }
     ptr = end_addr & ~0xfffu;
@@ -501,7 +503,7 @@ bool OHCI::OHCI_FindAndCopyTD(uint32_t Paddr, uint8_t* Buffer, int Length, bool 
 
 	int offset = 0;
 
-	if (Paddr == NULL) {
+	if (Paddr == 0) {
 		return true; // error
 	}
 
@@ -517,10 +519,10 @@ bool OHCI::OHCI_FindAndCopyTD(uint32_t Paddr, uint8_t* Buffer, int Length, bool 
 	}*/
 
 	if (bIsWrite) {
-		std::memcpy(reinterpret_cast<void*>(Paddr + offset), Buffer, Length);
+		memcpy(reinterpret_cast<void*>(Paddr + offset), Buffer, Length);
 	}
 	else {
-		std::memcpy(Buffer, reinterpret_cast<void*>(Paddr + offset), Length);
+		memcpy(Buffer, reinterpret_cast<void*>(Paddr + offset), Length);
 	}
 
 	return false;
@@ -535,7 +537,7 @@ int OHCI::OHCI_ServiceEDlist(uint32_t Head, int Completion)
 
 	active = 0;
 
-	if (Head == NULL) {
+	if (Head == 0) {
 		// no ED here, nothing to do
 		return 0;
 	}
@@ -556,7 +558,7 @@ int OHCI::OHCI_ServiceEDlist(uint32_t Head, int Completion)
 			uint32_t addr = ed.HeadP & OHCI_DPTR_MASK;
 			if (m_AsyncTD && addr == m_AsyncTD) {
 				m_UsbDevice->USB_CancelPacket(&m_UsbPacket);
-				m_AsyncTD = NULL;
+				m_AsyncTD = 0;
 				m_UsbDevice->USB_DeviceEPstopped(m_UsbPacket.Endpoint->Dev, m_UsbPacket.Endpoint);
 			}
 			continue;
@@ -782,9 +784,9 @@ int OHCI::OHCI_ServiceTD(OHCI_ED* Ed)
 	}
 
 	// Writeback
-	if (ret == packetlen || (direction == OHCI_TD_DIR_IN && ret >= 0 && flag_r)) {
+	if ((unsigned int)ret == packetlen || (direction == OHCI_TD_DIR_IN && ret >= 0 && flag_r)) {
 		// Transmission succeeded
-		if (ret == length) {
+		if ((unsigned int)ret == length) {
 			td.CurrentBufferPointer = 0;
 		}
 		td.Flags |= OHCI_TD_T1;
@@ -792,7 +794,7 @@ int OHCI::OHCI_ServiceTD(OHCI_ED* Ed)
 		OHCI_SET_BM(td.Flags, TD_CC, OHCI_CC_NOERROR);
 		OHCI_SET_BM(td.Flags, TD_EC, 0);
 
-		if ((direction != OHCI_TD_DIR_IN) && (ret != length)) {
+		if ((direction != OHCI_TD_DIR_IN) && ((unsigned int)ret != length)) {
 			// Partial packet transfer: TD not ready to retire yet
 			goto exit_no_retire;
 		}
@@ -918,7 +920,7 @@ void OHCI::OHCI_StateReset()
 	}
 	if (m_AsyncTD) {
 		m_UsbDevice->USB_CancelPacket(&m_UsbPacket);
-		m_AsyncTD = NULL;
+		m_AsyncTD = 0;
 	}
 
 	OHCI_StopEndpoints();
@@ -1535,7 +1537,7 @@ void OHCI::OHCI_AsyncCancelDevice(XboxDeviceState* dev)
 		m_UsbDevice->USB_IsPacketInflight(&m_UsbPacket) &&
 		m_UsbPacket.Endpoint->Dev == dev) {
 		m_UsbDevice->USB_CancelPacket(&m_UsbPacket);
-        m_AsyncTD = NULL;
+        m_AsyncTD = 0;
 	}
 }
 
@@ -1773,7 +1775,7 @@ int OHCI::OHCI_ServiceIsoTD(OHCI_ED* ed, int completion)
 	// represent the size of the transfer.Together, these two fields constitute the Packet Status Word(PacketStatusWord)."
 	
     // Writeback
-	if (dir == OHCI_TD_DIR_IN && ret >= 0 && ret <= len) {
+	if (dir == OHCI_TD_DIR_IN && ret >= 0 && (unsigned int)ret <= len) {
 		// IN transfer succeeded
 		if (OHCI_CopyIsoTD(start_addr, end_addr, m_UsbBuffer, ret, true)) {
 			OHCI_FatalError();
@@ -1782,7 +1784,7 @@ int OHCI::OHCI_ServiceIsoTD(OHCI_ED* ed, int completion)
 		OHCI_SET_BM(iso_td.Offset[relative_frame_number], TD_PSW_CC, OHCI_CC_NOERROR);
 		OHCI_SET_BM(iso_td.Offset[relative_frame_number], TD_PSW_SIZE, ret);
 	}
-	else if (dir == OHCI_TD_DIR_OUT && ret == len) {
+	else if (dir == OHCI_TD_DIR_OUT && (unsigned int)ret == len) {
 		// OUT transfer succeeded
 		OHCI_SET_BM(iso_td.Offset[relative_frame_number], TD_PSW_CC, OHCI_CC_NOERROR);
 		OHCI_SET_BM(iso_td.Offset[relative_frame_number], TD_PSW_SIZE, 0);

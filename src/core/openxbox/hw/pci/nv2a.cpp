@@ -138,7 +138,7 @@ void NV2ADevice::Reset() {
     m_PRAMDAC.memory_clock_coeff = 0;
     m_PRAMDAC.video_clock_coeff = 0x0003C20D; /* 25182Khz...? */
 
-    VGACommonState m_VGAState;
+    //VGACommonState m_VGAState;
 }
 
 const NV2ABlockInfo* NV2ADevice::FindBlock(uint32_t addr) {

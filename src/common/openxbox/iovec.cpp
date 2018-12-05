@@ -46,8 +46,9 @@
 #endif
 
 namespace openxbox {
-
+#ifdef _MSC_VER
 #pragma warning(pop)
+#endif
 
 void IoVecReset(IOVector* qiov) {
     assert(qiov->AllocNumber != -1);

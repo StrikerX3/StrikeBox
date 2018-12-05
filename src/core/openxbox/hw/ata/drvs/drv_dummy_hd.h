@@ -24,6 +24,7 @@ namespace ata {
  */
 class DummyHardDriveATADeviceDriver : public IATADeviceDriver {
 public:
+    ~DummyHardDriveATADeviceDriver() override;
     bool IsAttached() override { return true; }
     void IdentifyDevice(IdentifyDeviceData *data) override;
 };

@@ -18,6 +18,9 @@ namespace openxbox {
 namespace hw {
 namespace ata {
 
+IATADeviceDriver::~IATADeviceDriver() {
+}
+
 }
 }
 }

@@ -45,7 +45,7 @@ namespace openxbox {
 typedef void(*pTimerCB)(void*);
 typedef struct _TimerObject {
     int Type;                            // timer type (virtual or real)
-    std::atomic_uint64_t ExpireTime_MS;  // when the timer expires (ms)
+    std::atomic<std::uint64_t> ExpireTime_MS;  // when the timer expires (ms)
     std::atomic_bool Exit;               // indicates that the timer should be destroyed
     pTimerCB Callback;                   // function to call when the timer expires
     void* Opaque;                        // opaque argument to pass to the callback

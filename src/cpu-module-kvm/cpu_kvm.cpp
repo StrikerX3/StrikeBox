@@ -132,6 +132,9 @@ CPUMemMapStatus KvmCpu::MemMapSubregion(MemoryRegion *subregion) {
         case KVMVMS_MEMSIZE_MISALIGNED: return CPUS_MMAP_MEMORY_SIZE_MISALIGNED;
         case KVMVMS_MEM_ERROR: return CPUS_MMAP_MAPPING_FAILED;
             return CPUS_MMAP_UNHANDLED_ERROR;
+        case KVMVMS_CREATE_FAILED:
+            // Shouldn't happen
+            return CPUS_MMAP_UNHANDLED_ERROR;
         }
     }
     default:

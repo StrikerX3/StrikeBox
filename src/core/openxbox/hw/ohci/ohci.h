@@ -181,7 +181,7 @@ private:
     // Done Queue Interrupt Counter
     int m_DoneCount;
     // the address of the pending TD
-    uint32_t m_AsyncTD = NULL;
+    uint32_t m_AsyncTD = 0;
     // indicates if there is a pending asynchronous packet to process
     bool m_AsyncComplete = 0;
 

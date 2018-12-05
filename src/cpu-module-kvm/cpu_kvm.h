@@ -59,8 +59,8 @@ private:
     void UpdateRegisters();
     CPUStatus HandleExecResult(KvmVCPUStatus status);
 
-    CPUOperationStatus HandleIO(uint8_t direction, uint16_t port, uint8_t size, uint32_t count, uint64_t dataOffset);
-    CPUOperationStatus HandleMMIO(uint32_t physAddress, uint32_t *data, uint8_t size, uint8_t isWrite);
+    CPUStatus HandleIO(uint8_t direction, uint16_t port, uint8_t size, uint32_t count, uint64_t dataOffset);
+    CPUStatus HandleMMIO(uint32_t physAddress, uint32_t *data, uint8_t size, uint8_t isWrite);
 
     CPUOperationStatus RefreshRegisters(bool refreshFPU);
 
