@@ -133,6 +133,8 @@ int main(int argc, const char *argv[]) {
         settings->vhd_parameters.image.preserveImage = true;
     }
 
+    settings->vdvd_type = VDVD_Dummy;
+
     EmulatorStatus status = xbox->Run();
     if (status == EMUS_OK) {
         log_info("Emulator exited successfully\n");

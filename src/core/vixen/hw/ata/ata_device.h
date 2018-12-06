@@ -60,7 +60,8 @@ public:
     // These functions must return false on error
 
     bool IdentifyDevice();               // [8.12] 0xEC   Identify Device
-    bool InitializeDeviceParameters();   // [8.16] Initialize Device Parameters
+    bool IdentifyPACKETDevice();         // [8.13] 0xA1   Identify PACKET Device
+    bool InitializeDeviceParameters();   // [8.16] 0x91   Initialize Device Parameters
     bool BeginReadDMA();                 // [8.23] 0xC8   Read DMA
     bool BeginSecurityUnlock();          // [8.34] 0xF2   Security Unlock
     bool SetFeatures();                  // [8.37] 0xEF   Set Features
@@ -92,6 +93,10 @@ private:
 
     DMATransferType m_dmaTransferType = XferTypeMultiWordDMA;
     uint8_t m_dmaTransferMode = 0;
+
+    // ----- Signature and Persistence [9.1] ----------------------------------
+
+    void WriteSignature(bool packetFeatureSet);
 
     // ----- Data buffer (for PIO transfers) ----------------------------------
 

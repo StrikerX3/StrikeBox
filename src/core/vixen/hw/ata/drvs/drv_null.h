@@ -25,18 +25,23 @@ namespace ata {
 class NullATADeviceDriver : public IATADeviceDriver {
 public:
     ~NullATADeviceDriver() override;
-    
+
     // ----- ATA commands -----------------------------------------------------
-    
+
     void IdentifyDevice(IdentifyDeviceData *data) override;
+    bool IdentifyPACKETDevice(IdentifyPACKETDeviceData *data) override { return false; }
     bool SecurityUnlock(uint8_t unlockData[kSectorSize]) override { return false; }
     bool SetDeviceParameters(uint8_t heads, uint8_t sectorsPerTrack) override { return false; }
-    
+
     // ----- Sector access ----------------------------------------------------
 
     bool ReadSector(uint32_t lbaAddress, uint8_t destBuffer[kSectorSize]) override { return false; }
     bool WriteSector(uint32_t lbaAddress, uint8_t destBuffer[kSectorSize]) override { return false; }
-    
+
+    // ----- Feature sets -----------------------------------------------------
+
+    bool SupportsPACKETCommands() override { return false; }
+
     // ----- Utility functions ------------------------------------------------
  
     bool IsAttached() override { return true; }

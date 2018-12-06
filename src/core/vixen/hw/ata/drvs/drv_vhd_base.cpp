@@ -93,6 +93,10 @@ void BaseHardDriveATADeviceDriver::IdentifyDevice(IdentifyDeviceData *data) {
     }
 }
 
+bool BaseHardDriveATADeviceDriver::IdentifyPACKETDevice(IdentifyPACKETDeviceData *data) {
+    return false;
+}
+
 bool BaseHardDriveATADeviceDriver::SecurityUnlock(uint8_t unlockData[kSectorSize]) {
     // We don't really care if the unlock data is correct or even valid; just unlock the drive
     m_locked = false;

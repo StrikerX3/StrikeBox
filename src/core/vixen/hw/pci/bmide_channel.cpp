@@ -128,7 +128,7 @@ uint32_t BMIDEChannel::WorkerThreadFunc(void *data) {
     return 0;
 }
 
-static struct PRDHelper {
+struct PRDHelper {
     uint8_t *m_ram;
     uint32_t m_ramSize;
     PhysicalRegionDescriptor *m_currPRD;
@@ -152,7 +152,7 @@ static struct PRDHelper {
             // Get byte count from the PRD
             uint16_t byteCount = m_currPRD->byteCount;
             if (byteCount == 0) {
-                byteCount = KiB(64);
+                byteCount = 65536;
             }
 
             // Go to the next PRD if we reached the end of the current PRD

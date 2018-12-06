@@ -33,6 +33,7 @@ public:
     // ----- ATA commands -----------------------------------------------------
 
     virtual void IdentifyDevice(IdentifyDeviceData *data) = 0;
+    virtual bool IdentifyPACKETDevice(IdentifyPACKETDeviceData *data) = 0;
     virtual bool SecurityUnlock(uint8_t unlockData[kSectorSize]) = 0;
     virtual bool SetDeviceParameters(uint8_t heads, uint8_t sectorsPerTrack) = 0;
 
@@ -40,7 +41,11 @@ public:
 
     virtual bool ReadSector(uint32_t lbaAddress, uint8_t buffer[kSectorSize]) = 0;
     virtual bool WriteSector(uint32_t lbaAddress, uint8_t buffer[kSectorSize]) = 0;
- 
+    
+    // ----- Feature sets -----------------------------------------------------
+
+    virtual bool SupportsPACKETCommands() = 0;
+
     // ----- Utility functions ------------------------------------------------
 
     virtual bool IsAttached() = 0;

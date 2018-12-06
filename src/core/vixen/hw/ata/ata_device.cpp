@@ -395,17 +395,59 @@ bool ATADevice::IdentifyDevice() {
         return false;
     }
 
-    // The documentation is very terse regarding error output for this command.
-    // I'll assume this command may never fail.
+    // Check if the device supports the PACKET Command feature set
+    if (m_driver->SupportsPACKETCommands()) {
+        // Respond as specified in [8.12.5.2], which follows the
+        // Signature and Persistence protocol [9.1]
+        WriteSignature(true);
+        m_regs.error |= ErrAbort;
+        return false;
+    }
 
     // Ask the device driver to identify itself
     m_dataBufferPos = 0;
     m_transferHasCommand = false;
     m_driver->IdentifyDevice(reinterpret_cast<IdentifyDeviceData *>(m_dataBuffer));
 
+    // The documentation does not specify error output for this command when
+    // the device does not support the PACKET Command feature set.
+    // Assume this command never fails.
+
     // Handle normal output as specified in [8.12.5.1]
-    // TODO: support PACKET commands and implement [8.12.5.2]
     
+    // Device/Head register:
+    //  "DEV shall indicate the selected device."
+    //     Not necessary, but the spec says so
+    m_regs.deviceHead = (m_regs.deviceHead & ~(1 << kDevSelectorBit)) | (m_devIndex << kDevSelectorBit);
+
+    // Status register:
+    //  "BSY shall be cleared to zero indicating command completion."
+    //     Already handled by the caller
+
+    //  "DRDY shall be set to one."
+    m_regs.status |= StReady;
+
+    //  "DF (Device Fault) shall be cleared to zero."
+    //  "DRQ shall be cleared to zero."
+    //  "ERR shall be cleared to zero."
+    m_regs.status &= ~(StDeviceFault | StDataRequest | StError);
+
+    return true;
+}
+
+bool ATADevice::IdentifyPACKETDevice() {
+    // Ask the device driver to identify itself
+    m_dataBufferPos = 0;
+    m_transferHasCommand = false;
+    if (!m_driver->IdentifyPACKETDevice(reinterpret_cast<IdentifyPACKETDeviceData *>(m_dataBuffer))) {
+        // The device does not implement the Identify PACKET Device command
+        // Return command aborted as specified in the error output section [8.13.6]
+        m_regs.error |= ErrAbort;
+        return false;
+    }
+
+    // Handle normal output as specified in [8.13.5]
+
     // Device/Head register:
     //  "DEV shall indicate the selected device."
     //     Not necessary, but the spec says so
@@ -643,6 +685,22 @@ void ATADevice::ExecuteCommand() {
         log_warning("ATADevice::ExecuteCommand: Unknown command 0x%x\n", m_command);
         m_transferError = true;
         break;
+    }
+}
+
+void ATADevice::WriteSignature(bool packetFeatureSet) {
+    // Write signature according to Signature and Persistence protocol [9.1]
+    if (packetFeatureSet) {
+        m_regs.sectorCount = 0x01;
+        m_regs.sectorNumber = 0x01;
+        m_regs.cylinder = 0xEB14;
+        m_regs.deviceHead = 0x10;
+    }
+    else {
+        m_regs.sectorCount = 0x01;
+        m_regs.sectorNumber = 0x01;
+        m_regs.cylinder = 0x0000;
+        m_regs.deviceHead = 0x00;
     }
 }
 

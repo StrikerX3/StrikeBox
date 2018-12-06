@@ -158,6 +158,7 @@ const uint8_t kMaximumUltraDMATransferMode = 4;
 enum Command : uint8_t {
     CmdDeviceReset = 0x08,                  // [8.7]  Device Reset
     CmdIdentifyDevice = 0xEC,               // [8.12] Identify Device
+    CmdIdentifyPACKETDevice = 0xA1,         // [8.12] Identify PACKET Device
     CmdInitializeDeviceParameters = 0x91,   // [8.16] Initialize Device Parameters
     CmdReadDMA = 0xC8,                      // [8.23] Read DMA
     CmdSecurityUnlock = 0xF2,               // [8.34] Security Unlock
@@ -195,6 +196,7 @@ const CommandProtocol kCmdProtoDMA = { StDataRequest, StDataRequest, false, };  
 const std::unordered_map<Command, const CommandProtocol&, std::hash<uint8_t>> kCmdProtocols = {
     { CmdDeviceReset, kCmdProtoDeviceReset },
     { CmdIdentifyDevice, kCmdProtoPIODataIn },
+    { CmdIdentifyPACKETDevice, kCmdProtoPIODataIn },
     { CmdInitializeDeviceParameters, kCmdProtoNonData },
     { CmdReadDMA, kCmdProtoDMA },
     { CmdSecurityUnlock, kCmdProtoPIODataOut },
@@ -307,6 +309,7 @@ enum IdentifyDeviceCapabilities2 : uint16_t {
 };
 
 // [8.12.8 table 11 word 53] Bits for the validTranslationFields field in the IdentifyDeviceData struct
+// [8.13.8 table 15 word 53] Bits for the validTranslationFields field in the IdentifyPACKETDeviceData struct
 enum IdentifyDeviceValidTranslationFields : uint16_t {
     IDValidXlatUltraDMA = (1 << 2),           // The fields reported in word 88 are valid -> supported and enabled Ultra DMA modes
     IDValidXlatTransferCycles = (1 << 1),     // The fields reported in words 64-70 are valid -> transfer cycles and advanced PIO modes supported
@@ -320,6 +323,7 @@ enum IdentifyDeviceCurrentMultiSectorSettings : uint16_t {
 };
 
 // [8.12.8 table 11 word 63] Bits for the multiwordDMASettings field in the IdentifyDeviceData struct
+// [8.13.8 table 15 word 63] Bits for the multiwordDMASettings field in the IdentifyPACKETDeviceData struct
 enum IdentifyDeviceMultiwordDMASettings : uint16_t {
     IDMultiwordDMA2Selected = (1 << 10),    // Multiword DMA mode 2 selected
     IDMultiwordDMA1Selected = (1 << 9),     // Multiword DMA mode 1 selected
@@ -330,6 +334,7 @@ enum IdentifyDeviceMultiwordDMASettings : uint16_t {
 };
 
 // [8.12.8 table 11 word 80] Bits for the majorVersionNumber field in the IdentifyDeviceData struct
+// [8.13.8 table 15 word 80] Bits for the majorVersionNumber field in the IdentifyPACKETDeviceData struct
 enum IdentifyDeviceMajorVersionNumber : uint16_t {
     IDMajorVerNoReport = 0,          // Device does not report version
     IDMajorVerNoReportAlt = 0xFFFF,  // Device does not report version
@@ -351,6 +356,7 @@ enum IdentifyDeviceMajorVersionNumber : uint16_t {
 };
 
 // [8.12.8 table 11 word 81] Bits for the minorVersionNumber field in the IdentifyDeviceData struct
+// [8.13.8 table 15 word 81] Bits for the minorVersionNumber field in the IdentifyPACKETDeviceData struct
 // (specified in [8.12.44 table 12])
 enum IdentifyDeviceMinorVersionNumber : uint16_t {
     IDMinorVerNoReport = 0,                         // Device does not report version
@@ -376,6 +382,7 @@ enum IdentifyDeviceMinorVersionNumber : uint16_t {
 };
 
 // [8.12.8 table 11 words 82 and 85] Bits for the commandSetsSupported1 and commandSetsEnabled1 fields in the IdentifyDeviceData struct
+// [8.13.8 table 15 words 82 and 85] Bits for the commandSetsSupported1 and commandSetsEnabled1 fields in the IdentifyPACKETDeviceData struct
 enum IdentifyDeviceCommandSets1 : uint16_t {
     IDCmdSet1NoReport = 0x0000,                     // Command set notification not supported
     IDCmdSet1NoReportAlt = 0xFFFF,                  // Command set notification not supported
@@ -388,7 +395,7 @@ enum IdentifyDeviceCommandSets1 : uint16_t {
     IDCmdSet1ReleaseInterrupt = (1 << 7),           // Release interrupt supported
     IDCmdSet1LookAhead = (1 << 6),                  // Look-ahead supported
     IDCmdSet1WriteCache = (1 << 5),                 // Write cache supported
-    IDCmdSet1PacketCommandFeatureSet = (1 << 4),    // PACKET Command feature set supported
+    IDCmdSet1PACKETCommandFeatureSet = (1 << 4),    // PACKET Command feature set supported
     IDCmdSet1PowerMgmtFeatureSet = (1 << 3),        // Power Management feature set supported
     IDCmdSet1RemovableMediaFeatureSet = (1 << 2),   // Removable Media feature set supported
     IDCmdSet1SecurityModeFeatureSet = (1 << 1),     // Security Mode feature set supported
@@ -396,19 +403,21 @@ enum IdentifyDeviceCommandSets1 : uint16_t {
 };
 
 // [8.12.8 table 11 words 83 and 86] Bits for the commandSetsSupported2 and commandSetsEnabled2 fields in the IdentifyDeviceData struct
+// [8.13.8 table 15 words 83 and 86] Bits for the commandSetsSupported2 and commandSetsEnabled2 fields in the IdentifyPACKETDeviceData struct
 enum IdentifyDeviceCommandSets2 : uint16_t {
     IDCmdSet2NoReport = 0x0000,                                 // Command set notification not supported
     IDCmdSet2NoReportAlt = 0xFFFF,                              // Command set notification not supported
     IDCmdSet2Bit15AlwaysZero = (1 << 15),                       // This bit must always be zero
     IDCmdSet2Bit14AlwaysOne = (1 << 14),                        // This bit must always be one
-    IDCmdSet2RemMediaStatusNotificationFeatureSet = (1 << 4),   // Removable Media Status Notification feature set supported
-    IDCmdSet2AdvancedPowerMgmtFeatureSet = (1 << 3),            // Advanced Power Management feature set supported
-    IDCmdSet2CFAFeatureSet = (1 << 2),                          // CFA feature set supported
-    IDCmdSet2ReadWriteDMAQueued = (1 << 1),                     // READ/WRITE DMA QUEUED supported
-    IDCmdSet2DownloadMicrocode = (1 << 0),                      // DOWNLOAD MICROCODE command supported
+    IDCmdSet2RemMediaStatusNotificationFeatureSet = (1 << 4),   // [ID and IPD] Removable Media Status Notification feature set supported
+    IDCmdSet2AdvancedPowerMgmtFeatureSet = (1 << 3),            // [ID only]    Advanced Power Management feature set supported
+    IDCmdSet2CFAFeatureSet = (1 << 2),                          // [ID only]    CFA feature set supported
+    IDCmdSet2ReadWriteDMAQueued = (1 << 1),                     // [ID only]    READ/WRITE DMA QUEUED supported
+    IDCmdSet2DownloadMicrocode = (1 << 0),                      // [ID and IPD] DOWNLOAD MICROCODE command supported
 };
 
 // [8.12.8 table 11 words 84 and 87] Bits for the commandSetsSupported3 and commandSetsEnabled3 fields in the IdentifyDeviceData struct
+// [8.13.8 table 15 words 84 and 87] Bits for the commandSetsSupported3 and commandSetsEnabled3 fields in the IdentifyPACKETDeviceData struct
 enum IdentifyDeviceCommandSets3 : uint16_t {
     IDCmdSet3NoReport = 0x0000,             // Command set notification not supported
     IDCmdSet3NoReportAlt = 0xFFFF,          // Command set notification not supported
@@ -417,6 +426,7 @@ enum IdentifyDeviceCommandSets3 : uint16_t {
 };
 
 // [8.12.8 table 11 word 88] Bits for the ultraDMASettings field in the IdentifyDeviceData struct
+// [8.13.8 table 15 word 88] Bits for the ultraDMASettings field in the IdentifyPACKETDeviceData struct
 enum IdentifyDeviceUltraDMASettings : uint16_t {
     IDUltraDMA2Selected = (1 << 10),    // Ultra DMA mode 2 selected
     IDUltraDMA1Selected = (1 << 9),     // Ultra DMA mode 1 selected
@@ -427,12 +437,14 @@ enum IdentifyDeviceUltraDMASettings : uint16_t {
 };
 
 // [8.12.8 table 11 word 127] Bits for the remMediaStatusNotificationFeatureSets field in the IdentifyDeviceData struct
+// [8.13.8 table 15 word 127] Bits for the remMediaStatusNotificationFeatureSets field in the IdentifyPACKETDeviceData struct
 enum IdentifyDeviceRemovableMediaStatus : uint16_t {
     IDRemMediaStatusNotSupported = 0b00,   // Removable Media Status Notification feature set not supported
     IDRemMediaStatusSupported = 0b01,      // Removable Media Status Notification feature set supported
 };
 
 // [8.12.8 table 11 word 128] Bits for the securityStatus field in the IdentifyDeviceData struct
+// [8.13.8 table 15 word 128] Bits for the securityStatus field in the IdentifyPACKETDeviceData struct
 enum IdentifyDeviceSecurityStatus : uint16_t {
     IDSecStatusSecurityLevel = (1 << 8),   // Security level (0 = high, 1 = maximum)
     IDSecStatusEnhancedSecurityEraseSupported = (1 << 5),   // Enhanced security erase supported
@@ -441,6 +453,108 @@ enum IdentifyDeviceSecurityStatus : uint16_t {
     IDSecStatusLocked = (1 << 2),          // Security locked
     IDSecStatusEnabled = (1 << 1),         // Security enabled
     IDSecStatusSupported = (1 << 0),       // Security supported
+};
+
+// [8.13.8 table 13] Data returned by the Identify PACKET Device command
+#ifdef _MSC_VER
+#include <pshpack2.h>
+#endif
+struct IdentifyPACKETDeviceData {
+    uint16_t generalConfiguration;                   // word 0
+    uint16_t _reserved_1[9];                         // word 1-9
+    char     serialNumber[kSerialNumberLength];      // word 10-19
+    uint16_t _reserved_2[3];                         // word 20-22
+    char     firmwareRevision[kFirmwareRevLength];   // word 23-26
+    char     modelNumber[kModelNumberLength];        // word 27-46
+    uint16_t _reserved_3[2];                         // word 47-48
+    uint16_t capabilities;                           // word 49
+    uint16_t _reserved_4;                            // word 50
+    uint16_t pioDataTransferModeNumber : 8;          // word 51
+    uint16_t _vendor_1 : 8;         
+    uint16_t _reserved_5;                            // word 52
+    uint16_t validTranslationFields;                 // word 53
+    uint16_t _reserved_6[9];                         // word 54-62
+    uint16_t multiwordDMASettings;                   // word 63
+    uint16_t advancedPIOModesSupported : 8;          // word 64
+    uint16_t _reserved_7 : 8;
+    uint16_t minMDMATransferCyclePerWord;            // word 65
+    uint16_t recommendedMDMATransferCycleTime;       // word 66
+    uint16_t minPIOTransferCycleNoFlowCtl;           // word 67
+    uint16_t minPIOTransferCycleIORDYFlowCtl;        // word 68
+    uint16_t _reserved_8[2];                         // word 69-70
+    uint16_t timeToReleaseBusAfterPACKETRecv;        // word 71
+    uint16_t timeToClearBSYAfterSERVICERecv;         // word 72
+    uint16_t _reserved_9[2];                         // word 73-74
+    uint16_t queueDepth : 5;                         // word 75
+    uint16_t _reserved_10 : 11;
+    uint16_t _reserved_11[4];                        // word 76-79
+    uint16_t majorVersionNumber;                     // word 80
+    uint16_t minorVersionNumber;                     // word 81
+    uint16_t commandSetsSupported1;                  // word 82
+    uint16_t commandSetsSupported2;                  // word 83
+    uint16_t commandSetsSupported3;                  // word 84
+    uint16_t commandSetsEnabled1;                    // word 85
+    uint16_t commandSetsEnabled2;                    // word 86
+    uint16_t commandSetsEnabled3;                    // word 87
+    uint16_t ultraDMASettings;                       // word 88
+    uint16_t _reserved_12[38];                       // word 89-126
+    uint16_t remMediaStatusNotificationFeatureSets;  // word 127
+    uint16_t securityStatus;                         // word 128
+    uint16_t _vendor_2[31];                          // word 129-159
+    uint16_t _reserved_13[96];                       // word 160-255
+#ifdef _MSC_VER
+};
+#include <poppack.h>
+#else
+} __attribute__((aligned(2), packed));
+#endif
+
+// [8.13.8 table 15 word 0] Bits for the generalConfiguration field in the IdentifyPACKETDeviceData struct
+enum IdentifyPACKETDeviceGeneralConfiguration : uint16_t {
+    IDPGenConfDeviceTypeShift = 14,                   // Bit shift for the device type field
+    IDPGenConfDeviceTypeMask = 0b11,                  // Mask for the device type field, one of:
+    IDPGenConfDTATAPIDevice = 0b10,                   //   0b10 - ATAPI device
+
+    IDPGenConfCommandPacketSetShift = 8,              // Bit shift for the command packet set field
+    IDPGenConfCommandPacketSetMask = 0b11111,         // Mask for the command packet set used by device, one of:
+    IDPGenConfCPSDirectAccess = 0x00,                 //   00h - Direct-access device
+    IDPGenConfCPSSequentialAccess = 0x01,             //   01h - Sequential-access device
+    IDPGenConfCPSPrinter = 0x02,                      //   02h - Printer device
+    IDPGenConfCPSProcessor = 0x03,                    //   03h - Processor device
+    IDPGenConfCPSWriteOnce = 0x04,                    //   04h - Write-once device
+    IDPGenConfCPSCDROM = 0x05,                        //   05h - CD-ROM device
+    IDPGenConfCPSScanner = 0x06,                      //   06h - Scanner device
+    IDPGenConfCPSOpticalMemory = 0x07,                //   07h - Optical memory device
+    IDPGenConfCPSMediumChanger = 0x08,                //   08h - Medium changer device
+    IDPGenConfCPSCommunications = 0x09,               //   09h - Communications device
+    IDPGenConfCPSArrayController = 0x0C,              //   0Ch - Array controller device
+    IDPGenConfCPSUnknownOrNoDevice = 0x1F,            //   1Fh - Unknown or no device type
+
+    IDPGenConfRemovableMedia = (1 << 7),              // Removable media device
+
+    IDPGenConfPACKETResponseShift = 5,                // Bit shift for the PACKET response field
+    IDPGenConfPACKETResponseMask = 0b11,              // Mask for the PACKET response field, one of:
+    IDPGenConfPRSetDRQIn3ms = 0b00,                   //   0b00 - Device shall set DRQ to one within 3 ms of receiving PACKET command
+    IDPGenConfPRAssertINTRQOnDRQ = 0b01,              //   0b01 - Device shall assert INTRQ when DRQ is set to one after receiving PACKET
+    IDPGenConfPRSetDRQIn50ms = 0b10,                  //   0b10 - Device shall set DRQ to one within 50 ms of receiving PACKET command
+
+    IDPGenConfCommandSizeShift = 5,                   // Bit shift for the command size field
+    IDPGenConfCommandSizeMask = 0b11,                 // Mask for the command size field, one of:
+    IDPGenConfCS12Byte = 0b00,                        //   0b00 - 12 byte command packet
+    IDPGenConfCS16Byte = 0b01,                        //   0b01 - 16 byte command packet
+};
+
+// [8.13.8 table 15 word 49] Bits for the capabilities field in the IdentifyPACKETDeviceData struct
+enum IdentifyPACKETDeviceCapabilities : uint16_t {
+    IDPCapsInterleavedDMA = (1 << 15),         // Interleaved DMA supported
+    IDPCapsCommandQueuing = (1 << 14),         // Command queuing supported
+    IDPCapsOverlapOperation = (1 << 13),       // Overlap operation supported
+    IDPCapsATASoftResetRequired = (1 << 12),   // ATA Software Reset required (obsolete)
+    IDPCapsIORDYSupported = (1 << 11),         // IORDY supported
+    IDPCapsCanDisableIODRY = (1 << 10),        // IORDY may be disabled
+    IDPCapsLBA = (1 << 9),                     // LBA supported
+    IDPCapsDMA = (1 << 8),                     // DMA supported
+    IDPCapsVendorSpecificMask = 0xFF,          // Mask for vendor-specific capabilities
 };
 
 }

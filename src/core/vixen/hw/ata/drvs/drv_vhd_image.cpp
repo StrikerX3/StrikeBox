@@ -95,6 +95,8 @@ bool ImageHardDriveATADeviceDriver::LoadImageFile(const char *imagePath, bool co
     }
     
     m_numCylinders = imageSizeInSectors / m_numSectorsPerTrack / m_numHeadsPerCylinder;
+
+    return true;
 }
 
 ImageHardDriveATADeviceDriver::~ImageHardDriveATADeviceDriver() {
