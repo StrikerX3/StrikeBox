@@ -46,6 +46,7 @@ public:
     // ----- Feature sets -----------------------------------------------------
 
     virtual bool SupportsPACKETCommands() = 0;
+    virtual bool SupportsOverlap() = 0;
 
     // ----- Utility functions ------------------------------------------------
 
@@ -53,6 +54,7 @@ public:
     virtual bool IsLBAAddressUserAccessible(uint32_t lbaAddress) = 0;
     virtual uint32_t CHSToLBA(uint32_t cylinder, uint8_t head, uint8_t sector) = 0;
     virtual void LBAToCHS(uint32_t lbaAddress, uint16_t *cylinder, uint8_t *head, uint8_t *sector) = 0;
+    virtual uint8_t GetPacketTransferSize() = 0;
 protected:
     // ----- Common data ------------------------------------------------------
 

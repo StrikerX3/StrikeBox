@@ -41,6 +41,7 @@ public:
     // ----- Feature sets -----------------------------------------------------
 
     bool SupportsPACKETCommands() override { return false; }
+    bool SupportsOverlap() override { return false; }
 
     // ----- Utility functions ------------------------------------------------
  
@@ -48,6 +49,7 @@ public:
     bool IsLBAAddressUserAccessible(uint32_t lbaAddress) override { return false; }
     uint32_t CHSToLBA(uint32_t cylinder, uint8_t head, uint8_t sector) override { return 0; }
     void LBAToCHS(uint32_t lbaAddress, uint16_t *cylinder, uint8_t *head, uint8_t *sector) override {}
+    uint8_t GetPacketTransferSize() override { return 0; }
 };
 
 extern NullATADeviceDriver g_nullATADeviceDriver;

@@ -37,6 +37,7 @@ public:
     // ----- Feature sets -----------------------------------------------------
 
     bool SupportsPACKETCommands() override { return true; }
+    bool SupportsOverlap() override { return false; }
 
     // ----- Sector access ----------------------------------------------------
     
@@ -49,6 +50,7 @@ public:
     bool IsLBAAddressUserAccessible(uint32_t lbaAddress) override;
     uint32_t CHSToLBA(uint32_t cylinder, uint8_t head, uint8_t sector) override;
     void LBAToCHS(uint32_t lbaAddress, uint16_t *cylinder, uint8_t *head, uint8_t *sector) override;
+    uint8_t GetPacketTransferSize() override;
 
 protected:
 };

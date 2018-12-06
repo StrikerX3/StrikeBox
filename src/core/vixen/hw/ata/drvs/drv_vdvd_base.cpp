@@ -97,6 +97,10 @@ void BaseDVDDriveATADeviceDriver::LBAToCHS(uint32_t lbaAddress, uint16_t *cylind
     // TODO: implement
 }
 
+uint8_t BaseDVDDriveATADeviceDriver::GetPacketTransferSize() {
+    // Match the value specified in the IdentifyPACKETDeviceData struct
+    return 12;
+}
 }
 }
 }
