@@ -42,6 +42,7 @@ const uint32_t kMaxCylinders = 16383;
 const uint32_t kMaxHeads = 16;
 const uint32_t kMaxSectorsPerTrack = 63;
 const uint32_t kMaxCHSSectorCapacity = kMaxCylinders * kMaxHeads * kMaxSectorsPerTrack;
+const uint32_t kMaxLBASectorCapacity = (1 << 28);  // 28-bit LBA addressing
 
 // --- Registers ----------------------------------------------------------------------------------
 

@@ -13,7 +13,8 @@
 #include "vixen/hw/basic/win32/char_serial.h"
 #endif
 
-#include "vixen/hw/ata/drvs/drv_dummy_hd.h"
+#include "vixen/hw/ata/drvs/drv_vhd_dummy.h"
+#include "vixen/hw/ata/drvs/drv_vhd_image.h"
 
 #ifdef __linux__
 #include <sys/mman.h>
@@ -369,9 +370,15 @@ EmulatorStatus Xbox::InitHardware() {
         m_ataDrivers[0][0] = new hw::ata::DummyHardDriveATADeviceDriver();
         break;
     case VHD_Image:
-        // TODO: implement
-        m_ataDrivers[0][0] = new hw::ata::NullATADeviceDriver();
+    {
+        auto imageVHD = new hw::ata::ImageHardDriveATADeviceDriver();
+        if (!imageVHD->LoadImageFile(m_settings.vhd_parameters.image.path, m_settings.vhd_parameters.image.preserveImage)) {
+            log_fatal("Failed to load virtual hard disk image file\n");
+            return EMUS_INIT_HARD_DRIVE_INIT_FAILED;
+        }
+        m_ataDrivers[0][0] = imageVHD;
         break;
+    }
     default:
         log_fatal("Invalid virtual hard drive type specified: %d\n", m_settings.vhd_type);
         return EMUS_INIT_INVALID_HARD_DRIVE_TYPE;

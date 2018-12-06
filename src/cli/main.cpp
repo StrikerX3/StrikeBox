@@ -41,7 +41,7 @@ int main(int argc, const char *argv[]) {
     options.add_options()
         ("m, mcpx", "Path to MCPX ROM", cxxopts::value<std::string>(), "mcpx_path")
         ("b, bios", "Path to BIOS ROM", cxxopts::value<std::string>(), "bios_path")
-        ("d, hard-disk-image", "Path to virtual hard disk drive image", cxxopts::value<std::string>(), "vhd_image_path")
+        ("d, vhd-image", "Path to virtual hard disk drive image", cxxopts::value<std::string>(), "vhd_image_path")
         ("r, revision", "XBOX revision (retail | debug)", cxxopts::value<std::string>(), "xbox_rev")
         ("h, help", "Shows this message");
 
@@ -58,11 +58,11 @@ int main(int argc, const char *argv[]) {
     const char *bios_path = args["bios"].as<std::string>().c_str();
     const char *revision = args["revision"].as<std::string>().c_str();
     const char *vhd_path;
-    if (args.count("hard-disk-image") == 0) {
+    if (args.count("vhd-image") == 0) {
         vhd_path = "";
     }
     else {
-        vhd_path = args["hard-disk-image"].as<std::string>().c_str();
+        vhd_path = args["vhd-image"].as<std::string>().c_str();
     }
 
     // Locate and instantiate modules

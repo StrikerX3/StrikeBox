@@ -20,12 +20,12 @@ namespace hw {
 namespace ata {
 
 /*!
- * The dummy ATA device driver represents a basic hard drive that is filled with zeros.
+ * Base class for virtual hard drive ATA device drivers.
  */
-class DummyHardDriveATADeviceDriver : public IATADeviceDriver {
+class BaseHardDriveATADeviceDriver : public IATADeviceDriver {
 public:
-    DummyHardDriveATADeviceDriver();
-    ~DummyHardDriveATADeviceDriver() override;
+    BaseHardDriveATADeviceDriver();
+    virtual ~BaseHardDriveATADeviceDriver() override;
 
     // ----- ATA commands -----------------------------------------------------
 
@@ -35,8 +35,8 @@ public:
     
     // ----- Sector access ----------------------------------------------------
     
-    bool ReadSector(uint32_t lbaAddress, uint8_t destBuffer[kSectorSize]) override;
-    bool WriteSector(uint32_t lbaAddress, uint8_t destBuffer[kSectorSize]) override;
+    virtual bool ReadSector(uint32_t lbaAddress, uint8_t destBuffer[kSectorSize]) override = 0;
+    virtual bool WriteSector(uint32_t lbaAddress, uint8_t destBuffer[kSectorSize]) override = 0;
     
     // ----- Utility functions ------------------------------------------------
     
@@ -45,7 +45,7 @@ public:
     uint32_t CHSToLBA(uint32_t cylinder, uint8_t head, uint8_t sector) override;
     void LBAToCHS(uint32_t lbaAddress, uint16_t *cylinder, uint8_t *head, uint8_t *sector) override;
 
-private:
+protected:
     uint32_t m_sectorCapacity;
 
     uint16_t m_numCylinders;
@@ -58,8 +58,6 @@ private:
 
     bool m_locked;
 };
-
-extern DummyHardDriveATADeviceDriver g_dummyATADeviceDriver;
 
 }
 }

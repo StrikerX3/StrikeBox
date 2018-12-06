@@ -9,7 +9,7 @@
 //
 // References to particular items in the specification are denoted between brackets
 // optionally followed by a quote from the specification.
-#include "drv_dummy_hd.h"
+#include "drv_vhd_base.h"
 
 #include "vixen/log.h"
 #include "vixen/io.h"
@@ -17,8 +17,6 @@
 namespace vixen {
 namespace hw {
 namespace ata {
-
-DummyHardDriveATADeviceDriver g_dummyATADeviceDriver;
 
 static void padString(uint8_t *dest, const char *src, uint32_t length) {
     for (uint32_t i = 0; i < length; i++) {
@@ -31,24 +29,18 @@ static void padString(uint8_t *dest, const char *src, uint32_t length) {
     }
 }
 
-// Initialize with parameters for a 10 GB hard drive
-DummyHardDriveATADeviceDriver::DummyHardDriveATADeviceDriver()
-    : m_numCylinders(20480)
-    , m_numHeadsPerCylinder(16)
-    , m_numSectorsPerTrack(63)
-    , m_numLogicalCylinders(0)
+BaseHardDriveATADeviceDriver::BaseHardDriveATADeviceDriver() 
+    : m_numLogicalCylinders(0)
     , m_numLogicalHeads(0)
     , m_numLogicalSectorsPerTrack(0)
     , m_locked(true)
 {
-    m_sectorCapacity = m_numCylinders * m_numHeadsPerCylinder * m_numSectorsPerTrack;
 }
 
-DummyHardDriveATADeviceDriver::~DummyHardDriveATADeviceDriver() {
+BaseHardDriveATADeviceDriver::~BaseHardDriveATADeviceDriver() {
 }
 
-void DummyHardDriveATADeviceDriver::IdentifyDevice(IdentifyDeviceData *data) {
-    // Fill in with reasonable parameters for a 10 GB hard drive
+void BaseHardDriveATADeviceDriver::IdentifyDevice(IdentifyDeviceData *data) {
     memset(data, 0, sizeof(IdentifyDeviceData));
 
     // Adapted from https://github.com/mirror/vbox/blob/master/src/VBox/Devices/Storage/DevATA.cpp
@@ -101,13 +93,13 @@ void DummyHardDriveATADeviceDriver::IdentifyDevice(IdentifyDeviceData *data) {
     }
 }
 
-bool DummyHardDriveATADeviceDriver::SecurityUnlock(uint8_t unlockData[kSectorSize]) {
+bool BaseHardDriveATADeviceDriver::SecurityUnlock(uint8_t unlockData[kSectorSize]) {
     // We don't really care if the unlock data is correct or even valid; just unlock the drive
     m_locked = false;
     return true;
 }
 
-bool DummyHardDriveATADeviceDriver::SetDeviceParameters(uint8_t heads, uint8_t sectorsPerTrack) {
+bool BaseHardDriveATADeviceDriver::SetDeviceParameters(uint8_t heads, uint8_t sectorsPerTrack) {
     // Fail if the requested number of heads or sectors per track exceed the parameters of the drive
     if (heads > m_numHeadsPerCylinder || sectorsPerTrack > m_numSectorsPerTrack) {
         return false;
@@ -126,28 +118,15 @@ bool DummyHardDriveATADeviceDriver::SetDeviceParameters(uint8_t heads, uint8_t s
     return true;
 }
 
-bool DummyHardDriveATADeviceDriver::ReadSector(uint32_t lbaAddress, uint8_t destBuffer[kSectorSize]) {
-    // Fill with zeros, as if the disk was blank
-    memset(destBuffer, 0, kSectorSize);
-
-    // Always succeed
-    return true;
-}
-
-bool DummyHardDriveATADeviceDriver::WriteSector(uint32_t lbaAddress, uint8_t destBuffer[kSectorSize]) {
-    // Lie about writing, always succeed
-    return true;
-}
-
-bool DummyHardDriveATADeviceDriver::IsLBAAddressUserAccessible(uint32_t lbaAddress) {
+bool BaseHardDriveATADeviceDriver::IsLBAAddressUserAccessible(uint32_t lbaAddress) {
     return lbaAddress <= m_sectorCapacity;
 }
 
-uint32_t DummyHardDriveATADeviceDriver::CHSToLBA(uint32_t cylinder, uint8_t head, uint8_t sector) {
+uint32_t BaseHardDriveATADeviceDriver::CHSToLBA(uint32_t cylinder, uint8_t head, uint8_t sector) {
     return ((cylinder * m_numLogicalHeads) + head) * m_numLogicalSectorsPerTrack + sector;
 }
 
-void DummyHardDriveATADeviceDriver::LBAToCHS(uint32_t lbaAddress, uint16_t *cylinder, uint8_t *head, uint8_t *sector) {
+void BaseHardDriveATADeviceDriver::LBAToCHS(uint32_t lbaAddress, uint16_t *cylinder, uint8_t *head, uint8_t *sector) {
     *sector = lbaAddress % m_numLogicalSectorsPerTrack;
     lbaAddress /= m_numLogicalSectorsPerTrack;
 
