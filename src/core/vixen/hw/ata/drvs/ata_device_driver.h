@@ -34,6 +34,7 @@ public:
 
     virtual void IdentifyDevice(IdentifyDeviceData *data) = 0;
     virtual bool SecurityUnlock(uint8_t unlockData[kSectorSize]) = 0;
+    virtual bool SetDeviceParameters(uint8_t heads, uint8_t sectorsPerTrack) = 0;
 
     // ----- Sector access ----------------------------------------------------
 

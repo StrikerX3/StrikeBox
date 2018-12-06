@@ -59,11 +59,12 @@ public:
     // ----- Command handlers -------------------------------------------------
     // These functions must return false on error
 
-    bool IdentifyDevice();        // [8.12] 0xEC   Identify Device
-    bool BeginReadDMA();          // [8.23] 0xC8   Read DMA
-    bool BeginSecurityUnlock();   // [8.34] 0xF2   Security Unlock
-    bool SetFeatures();           // [8.37] 0xEF   Set Features
-    bool BeginWriteDMA();         // [8.45] 0xCA   Write DMA
+    bool IdentifyDevice();               // [8.12] 0xEC   Identify Device
+    bool InitializeDeviceParameters();   // [8.16] Initialize Device Parameters
+    bool BeginReadDMA();                 // [8.23] 0xC8   Read DMA
+    bool BeginSecurityUnlock();          // [8.34] 0xF2   Security Unlock
+    bool SetFeatures();                  // [8.37] 0xEF   Set Features
+    bool BeginWriteDMA();                // [8.45] 0xCA   Write DMA
 
     // ----- Set Features subcommand handlers ---------------------------------
 

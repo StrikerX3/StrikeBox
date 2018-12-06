@@ -30,6 +30,7 @@ public:
     
     void IdentifyDevice(IdentifyDeviceData *data) override;
     bool SecurityUnlock(uint8_t unlockData[kSectorSize]) override { return false; }
+    bool SetDeviceParameters(uint8_t heads, uint8_t sectorsPerTrack) override { return false; }
     
     // ----- Sector access ----------------------------------------------------
 

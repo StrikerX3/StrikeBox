@@ -291,6 +291,9 @@ void ATAChannel::WriteCommand(uint8_t value) {
         case CmdIdentifyDevice:
             succeeded = dev->IdentifyDevice();
             break;
+        case CmdInitializeDeviceParameters:
+            succeeded = dev->InitializeDeviceParameters();
+            break;
         case CmdReadDMA:
             succeeded = dev->BeginReadDMA();
             break;

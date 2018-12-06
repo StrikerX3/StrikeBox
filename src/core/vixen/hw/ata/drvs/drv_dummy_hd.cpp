@@ -36,8 +36,12 @@ DummyHardDriveATADeviceDriver::DummyHardDriveATADeviceDriver()
     : m_numCylinders(20480)
     , m_numHeadsPerCylinder(16)
     , m_numSectorsPerTrack(63)
+    , m_numLogicalCylinders(0)
+    , m_numLogicalHeads(0)
+    , m_numLogicalSectorsPerTrack(0)
     , m_locked(true)
 {
+    m_sectorCapacity = m_numCylinders * m_numHeadsPerCylinder * m_numSectorsPerTrack;
 }
 
 DummyHardDriveATADeviceDriver::~DummyHardDriveATADeviceDriver() {
@@ -57,13 +61,18 @@ void DummyHardDriveATADeviceDriver::IdentifyDevice(IdentifyDeviceData *data) {
     padString((uint8_t *)data->firmwareRevision, "1.00", kFirmwareRevLength);
     padString((uint8_t *)data->modelNumber, "DMY987654321", kModelNumberLength);
 
-    data->validTranslationFields = IDValidXlatUltraDMA | IDValidXlatTransferCycles | IDValidXlatCHS;
+    data->validTranslationFields = IDValidXlatUltraDMA | IDValidXlatTransferCycles;
+    
+    uint32_t currentSectorCapacity = m_numLogicalCylinders * m_numLogicalHeads * m_numLogicalSectorsPerTrack;
+    if (currentSectorCapacity != 0) {
+        data->validTranslationFields |= IDValidXlatCHS;
+    }
 
-    data->numCurrentLogicalCylinders = data->numLogicalCylinders;
-    data->numCurrentLogicalHeads = data->numLogicalHeads;
-    data->numCurrentLogicalSectorsPerTrack = data->numLogicalSectorsPerTrack;
-    data->currentSectorCapacity = data->numCurrentLogicalCylinders * data->numCurrentLogicalHeads * data->numCurrentLogicalSectorsPerTrack;
-    data->numAddressableSectors = data->currentSectorCapacity;
+    data->numCurrentLogicalCylinders = m_numLogicalCylinders;
+    data->numCurrentLogicalHeads = m_numLogicalHeads;
+    data->numCurrentLogicalSectorsPerTrack = m_numLogicalSectorsPerTrack;
+    data->currentSectorCapacity = currentSectorCapacity;
+    data->numAddressableSectors = m_sectorCapacity;
 
     data->multiwordDMASettings = IDMultiwordDMA0Supported | IDMultiwordDMA1Supported | IDMultiwordDMA2Supported | IDMultiwordDMA0Selected;
     data->advancedPIOModesSupported = 2; // Up to PIO mode 4
@@ -98,6 +107,25 @@ bool DummyHardDriveATADeviceDriver::SecurityUnlock(uint8_t unlockData[kSectorSiz
     return true;
 }
 
+bool DummyHardDriveATADeviceDriver::SetDeviceParameters(uint8_t heads, uint8_t sectorsPerTrack) {
+    // Fail if the requested number of heads or sectors per track exceed the parameters of the drive
+    if (heads > m_numHeadsPerCylinder || sectorsPerTrack > m_numSectorsPerTrack) {
+        return false;
+    }
+
+    // Compute number of cylinders
+    uint32_t chsSectorCapacity = (m_sectorCapacity < kMaxCHSSectorCapacity) ? m_sectorCapacity : kMaxCHSSectorCapacity;
+    uint32_t numCylinders = chsSectorCapacity / ((heads + 1) * sectorsPerTrack);
+    if (numCylinders > 65535) {
+        numCylinders = 65535;
+    }
+
+    m_numLogicalSectorsPerTrack = sectorsPerTrack;
+    m_numLogicalHeads = heads + 1;
+    m_numLogicalCylinders = numCylinders;
+    return true;
+}
+
 bool DummyHardDriveATADeviceDriver::ReadSector(uint32_t lbaAddress, uint8_t destBuffer[kSectorSize]) {
     // Fill with zeros, as if the disk was blank
     memset(destBuffer, 0, kSectorSize);
@@ -112,20 +140,19 @@ bool DummyHardDriveATADeviceDriver::WriteSector(uint32_t lbaAddress, uint8_t des
 }
 
 bool DummyHardDriveATADeviceDriver::IsLBAAddressUserAccessible(uint32_t lbaAddress) {
-    uint32_t maxLBAAddress = m_numCylinders * m_numHeadsPerCylinder * m_numSectorsPerTrack;
-    return lbaAddress <= maxLBAAddress;
+    return lbaAddress <= m_sectorCapacity;
 }
 
 uint32_t DummyHardDriveATADeviceDriver::CHSToLBA(uint32_t cylinder, uint8_t head, uint8_t sector) {
-    return ((cylinder * m_numHeadsPerCylinder) + head) * m_numSectorsPerTrack + sector;
+    return ((cylinder * m_numLogicalHeads) + head) * m_numLogicalSectorsPerTrack + sector;
 }
 
 void DummyHardDriveATADeviceDriver::LBAToCHS(uint32_t lbaAddress, uint16_t *cylinder, uint8_t *head, uint8_t *sector) {
-    *sector = lbaAddress % m_numSectorsPerTrack;
-    lbaAddress /= m_numSectorsPerTrack;
+    *sector = lbaAddress % m_numLogicalSectorsPerTrack;
+    lbaAddress /= m_numLogicalSectorsPerTrack;
 
-    *head = lbaAddress % m_numHeadsPerCylinder;
-    lbaAddress /= m_numHeadsPerCylinder;
+    *head = lbaAddress % m_numLogicalHeads;
+    lbaAddress /= m_numLogicalHeads;
 
     *cylinder = lbaAddress;
 }

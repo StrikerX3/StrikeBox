@@ -35,9 +35,13 @@ const uint16_t kSecondaryCommandPortCount = 8;
 const uint16_t kSecondaryCommandLastPort  = (kSecondaryCommandBasePort + kSecondaryCommandPortCount - 1);
 const uint16_t kSecondaryControlPort      = 0x376;
 
-// --- Sector size --------------------------------------------------------------------------------
+// --- Sizes and capacities -----------------------------------------------------------------------
 
 const uint32_t kSectorSize = 512;
+const uint32_t kMaxCylinders = 16383;
+const uint32_t kMaxHeads = 16;
+const uint32_t kMaxSectorsPerTrack = 63;
+const uint32_t kMaxCHSSectorCapacity = kMaxCylinders * kMaxHeads * kMaxSectorsPerTrack;
 
 // --- Registers ----------------------------------------------------------------------------------
 
@@ -151,12 +155,13 @@ const uint8_t kMaximumUltraDMATransferMode = 4;
 
 // [8] Commands
 enum Command : uint8_t {
-    CmdDeviceReset = 0x08,      // [8.7]  Device Reset
-    CmdIdentifyDevice = 0xEC,   // [8.12] Identify Device
-    CmdReadDMA = 0xC8,          // [8.23] Read DMA
-    CmdSecurityUnlock = 0xF2,   // [8.34] Security Unlock
-    CmdSetFeatures = 0xEF,      // [8.37] Set Features
-    CmdWriteDMA = 0xCA,         // [8.45] Write DMA
+    CmdDeviceReset = 0x08,                  // [8.7]  Device Reset
+    CmdIdentifyDevice = 0xEC,               // [8.12] Identify Device
+    CmdInitializeDeviceParameters = 0x91,   // [8.16] Initialize Device Parameters
+    CmdReadDMA = 0xC8,                      // [8.23] Read DMA
+    CmdSecurityUnlock = 0xF2,               // [8.34] Security Unlock
+    CmdSetFeatures = 0xEF,                  // [8.37] Set Features
+    CmdWriteDMA = 0xCA,                     // [8.45] Write DMA
 };
 
 // [8.37.8] Set Features subcommands (specified in the Features register)
@@ -189,6 +194,7 @@ const CommandProtocol kCmdProtoDMA = { StDataRequest, StDataRequest, false, };  
 const std::unordered_map<Command, const CommandProtocol&, std::hash<uint8_t>> kCmdProtocols = {
     { CmdDeviceReset, kCmdProtoDeviceReset },
     { CmdIdentifyDevice, kCmdProtoPIODataIn },
+    { CmdInitializeDeviceParameters, kCmdProtoNonData },
     { CmdReadDMA, kCmdProtoDMA },
     { CmdSecurityUnlock, kCmdProtoPIODataOut },
     { CmdSetFeatures, kCmdProtoNonData },

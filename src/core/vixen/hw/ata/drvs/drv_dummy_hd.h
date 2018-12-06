@@ -26,11 +26,12 @@ class DummyHardDriveATADeviceDriver : public IATADeviceDriver {
 public:
     DummyHardDriveATADeviceDriver();
     ~DummyHardDriveATADeviceDriver() override;
- 
+
     // ----- ATA commands -----------------------------------------------------
 
     void IdentifyDevice(IdentifyDeviceData *data) override;
     bool SecurityUnlock(uint8_t unlockData[kSectorSize]) override;
+    bool SetDeviceParameters(uint8_t heads, uint8_t sectorsPerTrack) override;
     
     // ----- Sector access ----------------------------------------------------
     
@@ -45,9 +46,15 @@ public:
     void LBAToCHS(uint32_t lbaAddress, uint16_t *cylinder, uint8_t *head, uint8_t *sector) override;
 
 private:
+    uint32_t m_sectorCapacity;
+
     uint16_t m_numCylinders;
     uint8_t m_numHeadsPerCylinder;
     uint8_t m_numSectorsPerTrack;
+
+    uint16_t m_numLogicalCylinders;
+    uint8_t m_numLogicalHeads;
+    uint8_t m_numLogicalSectorsPerTrack;
 
     bool m_locked;
 };
