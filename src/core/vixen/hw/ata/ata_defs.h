@@ -87,12 +87,15 @@ const uint8_t kRegSizes[] = {
 
 // Status bits (read from the Status register)
 enum StatusBits : uint8_t {
+    // Bits 5 and 4 are command dependent [7.15.6.3]
     StBusy = (1 << 7),          // [7.15.6.1] (BSY) The device is busy
     StReady = (1 << 6),         // [7.15.6.2] (DRDY) The device is ready to accept commands
-    StDeviceFault = (1 << 5),   // [--------] (DF) Device fault  ([7.15.6.3] says that this is a command dependent bit)
-    StBit4 = (1 << 4),          // [7.15.6.3] Command dependent bit
+    StDeviceFault = (1 << 5),   // [various]  (DF) Device fault
+    StDMAReady = (1 << 5),      // [various]  (DMRD) DMA ready (PACKET commands)
+    StService = (1 << 4),       // [various]  (SERV) Ready to service command (PACKET commands)
     StDataRequest = (1 << 3),   // [7.15.6.4] (DRQ) The device is ready to transfer a word of data
     StError = (1 << 0),         // [7.15.6.6] (ERR) An error occurred during execution of the previous command
+    StCheck = (1 << 0),         // [various]  (CHK) An error occurred during execution of the Packet command
 };
 
 // Error bits (read from the Error register)
@@ -120,6 +123,24 @@ enum DeviceHeadBits : uint8_t {
 };
 
 const uint8_t kDevSelectorBit = 4;  // [7.10.6] (DEV) Selects Device 0 when cleared or Device 1 when set
+
+// Features bits for the PACKET protocol
+enum PACKETFeaturesBits : uint8_t {
+    PkFeatOverlapped = (1 << 1),   // (OVL) Indicates that the PACKET command is to be overlapped
+    PkFeatDMA = (1 << 0),          // (DMA) Data transfer under the PACKET command is DMA or Ultra DMA
+};
+
+// Interrupt reason bits for the PACKET protocol
+// (uses the Sector Count register)
+enum InterruptReasonBits : uint8_t {
+    PkIntrBusRelease = (1 << 2),    // (REL) Bus release triggered (overlap feature set only)
+    PkIntrIODirection = (1 << 1),   // (I/O) 0 = transfer to device, 1 = transfer to host
+    PkIntrCmdOrData = (1 << 0),     // (C/D) 0 = command, 1 = data
+};
+
+// Shift and mask for the Tag field used by the Packet and Service commands
+const uint8_t kPkTagShift = 3;
+const uint8_t kPkTagMask = 0b11111;
 
 // --- Transfer modes -----------------------------------------------------------------------------
 
@@ -160,6 +181,7 @@ enum Command : uint8_t {
     CmdIdentifyDevice = 0xEC,               // [8.12] Identify Device
     CmdIdentifyPACKETDevice = 0xA1,         // [8.12] Identify PACKET Device
     CmdInitializeDeviceParameters = 0x91,   // [8.16] Initialize Device Parameters
+    CmdPacket = 0xA0,                       // [8.23] Packet
     CmdReadDMA = 0xC8,                      // [8.23] Read DMA
     CmdSecurityUnlock = 0xF2,               // [8.34] Security Unlock
     CmdSetFeatures = 0xEF,                  // [8.37] Set Features
@@ -190,7 +212,7 @@ const CommandProtocol kCmdProtoPIODataIn = { StDataRequest, 0, true };          
 const CommandProtocol kCmdProtoPIODataOut = { StDataRequest, 0, false };         // [9.8]  PIO data out  (data transfer from host to device via Data register)
 const CommandProtocol kCmdProtoNonData = { 0, 0, true, };                        // [9.9]  Non-data      (no data transfer)
 const CommandProtocol kCmdProtoDMA = { StDataRequest, StDataRequest, false, };   // [9.10] DMA           (data transfer between host and device via DMA)
-// TODO: CmdProtoPACKET  // [9.11] PACKET        (non-data, PIO and DMA transfers)
+const CommandProtocol kCmdProtoPACKET = { StDataRequest, 0, false };             // [9.11] PACKET        (non-data, PIO and DMA transfers)
 
 // Map commands to their protocols
 const std::unordered_map<Command, const CommandProtocol&, std::hash<uint8_t>> kCmdProtocols = {
@@ -198,6 +220,7 @@ const std::unordered_map<Command, const CommandProtocol&, std::hash<uint8_t>> kC
     { CmdIdentifyDevice, kCmdProtoPIODataIn },
     { CmdIdentifyPACKETDevice, kCmdProtoPIODataIn },
     { CmdInitializeDeviceParameters, kCmdProtoNonData },
+    { CmdPacket, kCmdProtoPACKET },
     { CmdReadDMA, kCmdProtoDMA },
     { CmdSecurityUnlock, kCmdProtoPIODataOut },
     { CmdSetFeatures, kCmdProtoNonData },
