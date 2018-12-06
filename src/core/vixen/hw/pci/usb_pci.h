@@ -66,7 +66,7 @@ class OHCI;
 class USBPCIDevice : public PCIDevice {
 public:
     // constructor
-    USBPCIDevice(uint8_t irqn, Cpu *cpu);
+    USBPCIDevice(uint8_t irqn, Cpu& cpu);
     virtual ~USBPCIDevice();
 
     // PCI Device functions
@@ -207,7 +207,7 @@ public:
     const char* USBDesc_GetString(XboxDeviceState* dev, int index);
 private:
     uint8_t m_irqn;
-    Cpu* m_cpu;
+    Cpu& m_cpu;
 };
 
 }

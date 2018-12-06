@@ -14,13 +14,14 @@
 #include "pci.h"
 #include "bmide/defs.h"
 #include "bmide_channel.h"
+#include "vixen/hw/ata/ata.h"
 
 namespace vixen {
 
 class BMIDEDevice : public PCIDevice {
 public:
     // constructor
-    BMIDEDevice(uint8_t *ram, uint32_t ramSize);
+    BMIDEDevice(uint8_t *ram, uint32_t ramSize, hw::ata::ATA& ata);
     virtual ~BMIDEDevice();
 
     // PCI Device functions
@@ -30,13 +31,6 @@ public:
     void PCIIORead(int barIndex, uint32_t port, uint32_t *value, uint8_t size) override;
     void PCIIOWrite(int barIndex, uint32_t port, uint32_t value, uint8_t size) override;
 private:
-    // ----- System memory ----------------------------------------------------
-
-    uint8_t *m_ram = nullptr;
-    uint32_t m_ramSize = 0;
-
-    // ----- Channels ---------------------------------------------------------
-
     BMIDEChannel *m_channels[2];
 };
 

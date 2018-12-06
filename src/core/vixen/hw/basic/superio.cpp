@@ -32,7 +32,7 @@ const static uint32_t kSerialPortIOBases[] = {
     PORT_SERIAL_BASE_2
 };
 
-SuperIO::SuperIO(IRQHandler *irqHandler, CharDriver *chrs[SUPERIO_SERIAL_PORT_COUNT]) {
+SuperIO::SuperIO(IRQHandler& irqHandler, CharDriver *chrs[SUPERIO_SERIAL_PORT_COUNT]) {
     memset(m_configRegs, 0, sizeof(m_configRegs));
     memset(m_deviceRegs, 0, sizeof(m_deviceRegs));
 

@@ -11,23 +11,31 @@
 #include <mutex>
 
 #include "bmide/defs.h"
+#include "vixen/hw/ata/ata_common.h"
+#include "vixen/hw/ata/ata.h"
 
 namespace vixen {
 
 class BMIDEChannel {
 public:
-    BMIDEChannel(hw::bmide::Channel channel);
+    BMIDEChannel(hw::ata::Channel channel, hw::ata::ATAChannel& ataChannel, uint8_t *ram, uint32_t m_ramSize);
     ~BMIDEChannel();
 private:
     friend class BMIDEDevice;
     
-    hw::bmide::Channel m_channel;
+    hw::ata::Channel m_channel;
+    hw::ata::ATAChannel& m_ataChannel;
+
+    // ----- System memory ----------------------------------------------------
+
+    uint8_t *m_ram = nullptr;
+    uint32_t m_ramSize = 0;
 
     // ----- Registers --------------------------------------------------------
 
     uint8_t m_command = 0;
     uint8_t m_status = 0;
-    uint32_t m_prdTableAddrs = 0;
+    uint32_t m_prdTableAddr = 0;
 
     // ----- Operations -------------------------------------------------------
 
@@ -49,6 +57,7 @@ private:
     std::condition_variable m_jobCond;
     bool m_worker_running;
     bool m_job_running;
+    bool m_job_cancel;
 
     void BeginWork();
     void StopWork();

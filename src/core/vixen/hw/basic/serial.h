@@ -22,7 +22,7 @@ namespace vixen {
 
 class Serial : public IODevice {
 public:
-    Serial(IRQHandler *irqHandler, uint32_t ioBase);
+    Serial(IRQHandler& irqHandler, uint32_t ioBase);
     virtual ~Serial();
 
     bool Init(CharDriver *chr);
@@ -61,7 +61,7 @@ private:
     static void UpdateMSLCB(void *userData);
     static void FifoTimeoutInterruptCB(void *userData);
 
-    IRQHandler *m_irqHandler;
+    IRQHandler& m_irqHandler;
     uint32_t m_ioBase;
 
     uint16_t m_divider = 0;

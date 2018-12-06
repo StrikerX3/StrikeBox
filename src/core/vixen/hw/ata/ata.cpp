@@ -18,7 +18,7 @@ namespace vixen {
 namespace hw {
 namespace ata {
 
-ATA::ATA(IRQHandler *irqHandler) {
+ATA::ATA(IRQHandler& irqHandler) {
     m_channels[0] = new ATAChannel(ChanPrimary, irqHandler, kPrimaryIRQ);
     m_channels[1] = new ATAChannel(ChanSecondary, irqHandler, kSecondaryIRQ);
 }

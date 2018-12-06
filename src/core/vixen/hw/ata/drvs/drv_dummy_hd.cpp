@@ -37,7 +37,6 @@ DummyHardDriveATADeviceDriver::DummyHardDriveATADeviceDriver()
     , m_numHeadsPerCylinder(16)
     , m_numSectorsPerTrack(63)
 {
-
 }
 
 DummyHardDriveATADeviceDriver::~DummyHardDriveATADeviceDriver() {
@@ -89,19 +88,36 @@ void DummyHardDriveATADeviceDriver::IdentifyDevice(IdentifyDeviceData *data) {
     data->securityStatus |= IDSecStatusSupported | IDSecStatusEnabled/* | IDSecStatusLocked*/;
 }
 
+bool DummyHardDriveATADeviceDriver::ReadSector(uint32_t lbaAddress, uint8_t destBuffer[kSectorSize]) {
+    // Fill with zeros, as if the disk was blank
+    memset(destBuffer, 0, kSectorSize);
+
+    // Always succeed
+    return true;
+}
+
+bool DummyHardDriveATADeviceDriver::WriteSector(uint32_t lbaAddress, uint8_t destBuffer[kSectorSize]) {
+    // Lie about writing, always succeed
+    return true;
+}
+
 bool DummyHardDriveATADeviceDriver::IsLBAAddressUserAccessible(uint32_t lbaAddress) {
     uint32_t maxLBAAddress = m_numCylinders * m_numHeadsPerCylinder * m_numSectorsPerTrack;
     return lbaAddress <= maxLBAAddress;
 }
 
-bool DummyHardDriveATADeviceDriver::IsCHSAddressUserAccessible(uint16_t cylinder, uint8_t head, uint8_t sector) {
-    if (cylinder > m_numCylinders) {
-        return false;
-    }
-    if (head > m_numHeadsPerCylinder) {
-        return false;
-    }
-    return sector > m_numSectorsPerTrack;
+uint32_t DummyHardDriveATADeviceDriver::CHSToLBA(uint32_t cylinder, uint8_t head, uint8_t sector) {
+    return ((cylinder * m_numHeadsPerCylinder) + head) * m_numSectorsPerTrack + sector;
+}
+
+void DummyHardDriveATADeviceDriver::LBAToCHS(uint32_t lbaAddress, uint16_t *cylinder, uint8_t *head, uint8_t *sector) {
+    *sector = lbaAddress % m_numSectorsPerTrack;
+    lbaAddress /= m_numSectorsPerTrack;
+
+    *head = lbaAddress % m_numHeadsPerCylinder;
+    lbaAddress /= m_numHeadsPerCylinder;
+
+    *cylinder = lbaAddress;
 }
 
 }

@@ -26,10 +26,22 @@ class DummyHardDriveATADeviceDriver : public IATADeviceDriver {
 public:
     DummyHardDriveATADeviceDriver();
     ~DummyHardDriveATADeviceDriver() override;
-    bool IsAttached() override { return true; }
+ 
+    // ----- ATA commands -----------------------------------------------------
+
     void IdentifyDevice(IdentifyDeviceData *data) override;
+    
+    // ----- Sector access ----------------------------------------------------
+    
+    bool ReadSector(uint32_t lbaAddress, uint8_t destBuffer[kSectorSize]) override;
+    bool WriteSector(uint32_t lbaAddress, uint8_t destBuffer[kSectorSize]) override;
+    
+    // ----- Utility functions ------------------------------------------------
+    
+    bool IsAttached() override { return true; }
     bool IsLBAAddressUserAccessible(uint32_t lbaAddress) override;
-    bool IsCHSAddressUserAccessible(uint16_t cylinder, uint8_t head, uint8_t sector) override;
+    uint32_t CHSToLBA(uint32_t cylinder, uint8_t head, uint8_t sector) override;
+    void LBAToCHS(uint32_t lbaAddress, uint16_t *cylinder, uint8_t *head, uint8_t *sector) override;
 
 private:
     uint16_t m_numCylinders;

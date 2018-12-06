@@ -34,13 +34,20 @@ public:
 
     // ----- Device driver management -----------------------------------------
 
-    bool IsAttached() const { return m_driver->IsAttached(); }
     void SetDeviceDriver(IATADeviceDriver *driver) { m_driver = driver; }
+    bool IsAttached() const { return m_driver->IsAttached(); }
 
     // ----- PIO data buffer --------------------------------------------------
 
     uint32_t ReadBuffer(uint8_t *dest, uint32_t length);
     uint32_t GetRemainingBufferLength();
+
+    // ----- DMA transfer -----------------------------------------------------
+
+    bool ReadDMA(uint8_t dstBuffer[kSectorSize]);
+    bool WriteDMA(uint8_t srcBuffer[kSectorSize]);
+    bool IsDMAFinished() { return m_dma_currentLBA >= m_dma_endingLBA; }
+    void EndDMA();
 
     // ----- Command handlers -------------------------------------------------
     // These functions must return false on error
@@ -48,6 +55,7 @@ public:
     bool IdentifyDevice();     // [8.12] 0xEC   Identify Device
     bool BeginReadDMA();       // [8.23] 0xC8   Read DMA
     bool SetFeatures();        // [8.37] 0xEF   Set Features
+    bool BeginWriteDMA();      // [8.45] 0xCA   Write DMA
 
     // ----- Set Features subcommand handlers ---------------------------------
 
@@ -76,23 +84,28 @@ private:
     DMATransferType m_dmaTransferType = XferTypeMultiWordDMA;
     uint8_t m_dmaTransferMode = 0;
 
-    // ----- Data buffer ------------------------------------------------------
+    // ----- Data buffer (for PIO transfers) ----------------------------------
 
     uint8_t m_dataBuffer[kSectorSize];
     uint32_t m_dataBufferPos;
 
     // ----- State ------------------------------------------------------------
 
+    // true if any transfer is in progress (PIO or DMA)
     bool m_transferActive;
 
-    // ----- DMA transfer parameters ------------------------------------------
+    // ----- DMA transfer -----------------------------------------------------
     
-    uint8_t m_dma_sectorCount;  // Total number of sectors to transfer (0x00 = 1 sector and 0xFF = 256 sectors)
-    bool m_dma_useLBA;          // If true, use LBA parameter; if false, use CHS parameters
-    uint32_t m_dma_lbaAddress;  // Starting LBA address
-    uint16_t m_dma_cylinder;    // Starting cylinder number
-    uint8_t m_dma_sector;       // Starting sector number
-    uint8_t m_dma_head;         // Starting head number
+    // Parameters
+    uint32_t m_dma_startingLBA;
+    uint32_t m_dma_endingLBA;    // Exclusive
+    bool m_dma_isWrite;   // Current DMA operation type (true = write, false = read), used for sanity check
+  
+    // State
+    uint8_t m_dma_currentLBA;
+
+    bool HandleReadDMA(uint8_t dstBuffer[kSectorSize]);
+    bool HandleWriteDMA(uint8_t srcBuffer[kSectorSize]);
 };
 
 }

@@ -341,8 +341,8 @@ EmulatorStatus Xbox::InitHardware() {
     m_IRQs = AllocateIRQs(m_GSI, GSI_NUM_PINS);
 
     // Create basic system devices
-    m_i8259 = new i8259(m_cpu);
-    m_i8254 = new i8254(m_i8259, m_settings.hw_sysclock_tickRate);
+    m_i8259 = new i8259(*m_cpu);
+    m_i8254 = new i8254(*m_i8259, m_settings.hw_sysclock_tickRate);
     m_CMOS = new CMOS();
 
     // TODO: make this configurable, similar to Super I/O port char drivers
@@ -351,7 +351,7 @@ EmulatorStatus Xbox::InitHardware() {
     m_ataDrivers[1][0] = new hw::ata::NullATADeviceDriver();
     m_ataDrivers[1][1] = new hw::ata::NullATADeviceDriver();
 
-    m_ATA = new hw::ata::ATA(m_i8259);
+    m_ATA = new hw::ata::ATA(*m_i8259);
     m_ATA->GetChannel(hw::ata::ChanPrimary).GetDevice(0).SetDeviceDriver(m_ataDrivers[0][0]);
     m_ATA->GetChannel(hw::ata::ChanPrimary).GetDevice(1).SetDeviceDriver(m_ataDrivers[0][1]);
     m_ATA->GetChannel(hw::ata::ChanSecondary).GetDevice(0).SetDeviceDriver(m_ataDrivers[1][0]);
@@ -373,7 +373,7 @@ EmulatorStatus Xbox::InitHardware() {
             }
             m_CharDrivers[i]->Init();
         }
-        m_SuperIO = new SuperIO(m_i8259, m_CharDrivers);
+        m_SuperIO = new SuperIO(*m_i8259, m_CharDrivers);
         m_SuperIO->Init();
     }
     else {
@@ -396,15 +396,15 @@ EmulatorStatus Xbox::InitHardware() {
     m_HostBridge = new HostBridgeDevice();
     m_MCPXRAM = new MCPXRAMDevice(mcpxRevision);
     m_LPC = new LPCDevice(m_IRQs, m_rom, m_bios, m_biosSize, m_mcpxROM, m_settings.hw_model != DebugKit);
-    m_USB1 = new USBPCIDevice(1, m_cpu);
-    m_USB2 = new USBPCIDevice(9, m_cpu);
+    m_USB1 = new USBPCIDevice(1, *m_cpu);
+    m_USB2 = new USBPCIDevice(9, *m_cpu);
     m_NVNet = new NVNetDevice();
     m_NVAPU = new NVAPUDevice();
     m_AC97 = new AC97Device();
     m_PCIBridge = new PCIBridgeDevice();
-    m_BMIDE = new BMIDEDevice(m_ram, m_ramSize);
+    m_BMIDE = new BMIDEDevice(m_ram, m_ramSize, *m_ATA);
     m_AGPBridge = new AGPBridgeDevice();
-    m_NV2A = new NV2ADevice(m_ram, m_ramSize, m_i8259);
+    m_NV2A = new NV2ADevice(m_ram, m_ramSize, *m_i8259);
 
     // Configure IRQs
     m_acpiIRQs = AllocateIRQs(m_LPC, 2);

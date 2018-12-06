@@ -25,7 +25,7 @@
 
 namespace vixen {
 
-ISABus::ISABus(IRQ* irqs)
+ISABus::ISABus(IRQ *irqs)
     : m_irqs(irqs)
 {
 }
@@ -35,7 +35,7 @@ ISABus::~ISABus() {
 
 IRQ *ISABus::GetIRQ(uint8_t isaIRQ) {
     if (isaIRQ > 15) {
-        log_warning("ISABus::GetIRQ: invalid ISA IRQ %u\n", isaIRQ);
+        log_warning("ISABus::GetIRQ: Invalid ISA IRQ %u\n", isaIRQ);
         return nullptr;
     }
     return &m_irqs[isaIRQ];

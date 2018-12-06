@@ -34,6 +34,15 @@ struct ATARegisters {
     uint16_t cylinder = 0;
     uint8_t deviceHead = 0;
     uint8_t control = 0;
+
+    // ----- Utility functions ------------------------------------------------
+
+    // Retrieves the index of the currently selected device from bit 4
+    // (DEV - Device select) of the Device/Head register [7.10.6]
+    inline uint8_t GetSelectedDeviceIndex() const { return (deviceHead >> kDevSelectorBit) & 1; }
+
+    inline bool AreInterruptsEnabled() const { return (control & DevCtlNegateInterruptEnable) == 0; }
+
 };
 
 }

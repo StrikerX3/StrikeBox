@@ -45,6 +45,317 @@ uint32_t ATADevice::GetRemainingBufferLength() {
     return kSectorSize - m_dataBufferPos;
 }
 
+bool ATADevice::BeginReadDMA() {
+    // [8.23.7] As a prerequisite, DRDY must be set equal to one
+    if ((m_regs.status & StReady) == 0) {
+        return false;
+    }
+
+    // Sanity check: don't start a DMA transfer while another transfer is running
+    if (m_transferActive) {
+        return false;
+    }
+
+    // Determine if we're using LBA address or CHS numbers
+    bool useLBA = (m_regs.deviceHead & DevHeadDMALBA) != 0;
+
+    // Read address accordingly and validate parameters
+    if (useLBA) {
+        m_dma_startingLBA = ((m_regs.deviceHead & 0b1111) << 24) | (m_regs.cylinder << 8) | (m_regs.sectorNumber);
+    }
+    else {
+        // Convert from CHS to LBA
+        uint16_t cylinder = m_regs.cylinder;
+        uint8_t head = m_regs.deviceHead & 0b1111;
+        uint8_t sector = m_regs.sectorNumber;
+        m_dma_startingLBA = m_driver->CHSToLBA(cylinder, head, sector);
+    }
+
+    // Calculate ending LBA
+    if (m_regs.sectorCount == 0) {
+        m_dma_endingLBA = m_dma_startingLBA + 256;
+    }
+    else {
+        m_dma_endingLBA = m_dma_startingLBA + m_regs.sectorCount;
+    }
+
+    if (m_driver->IsLBAAddressUserAccessible(m_dma_startingLBA)) {
+        m_transferActive = true;
+        m_dma_isWrite = false;
+        m_dma_currentLBA = m_dma_startingLBA;
+        return true;
+    }
+    return false;
+}
+
+bool ATADevice::ReadDMA(uint8_t dstBuffer[kSectorSize]) {
+    // [8.23.7] As a prerequisite, DRDY must be set equal to one
+    if ((m_regs.status & StReady) == 0) {
+        return false;
+    }
+
+    bool succeeded = HandleReadDMA(dstBuffer);
+
+    if (succeeded) {
+        // Handle normal output as specified in [8.23.5]
+
+        // Device/Head register:
+        //  "DEV shall indicate the selected device."
+        //     Not necessary, but the spec says so
+        m_regs.deviceHead = (m_regs.deviceHead & ~(1 << kDevSelectorBit)) | (m_devIndex << kDevSelectorBit);
+
+        // Status register:
+        //  "BSY shall be cleared to zero indicating command completion."
+        //     Already handled by the caller
+       
+        //  "DRDY shall be set to one."
+        m_regs.status |= StReady;
+
+        //  "DF(Device Fault) shall be cleared to zero."
+        //  "DRQ shall be cleared to zero."
+        //  "ERR shall be cleared to zero."
+        m_regs.status &= ~(StDeviceFault | StDataRequest | StError);
+    }
+    else {
+        // Handle error output as specified in [8.23.6]
+
+        // Error register is handled by the HandleReadDMA function
+
+        // Sector Number, Cylinder Low, Cylinder High, Device/Head:
+        //  "shall be written with the address of first unrecoverable error."
+        m_driver->LBAToCHS(m_dma_currentLBA, &m_regs.cylinder, &m_regs.sectorNumber, &m_regs.deviceHead);
+
+        // Device/Head register:
+        //  "DEV shall indicate the selected device."
+        //     Not necessary, but the spec says so
+        m_regs.deviceHead = (m_regs.deviceHead & ~(1 << kDevSelectorBit)) | (m_devIndex << kDevSelectorBit);
+
+        // Status register:
+        //  "BSY shall be cleared to zero indicating command completion."
+        //     Already handled by the caller
+
+        //  "DRDY shall be set to one."
+        m_regs.status |= StReady;
+
+        //  "DF (Device Fault) shall be set to one if a device fault has occurred."
+        //    Handled by HandleReadDMA
+
+        //  "DRQ shall be cleared to zero."
+        m_regs.status &= ~StDataRequest;
+
+        //  "ERR shall be set to one if an Error register bit is set to one."
+        if (m_regs.error) {
+            m_regs.status |= StError;
+        }
+    }
+
+    return succeeded;
+}
+
+bool ATADevice::HandleReadDMA(uint8_t dstBuffer[kSectorSize]) {
+    // Sanity check: don't read while a DMA write is in progress
+    if (m_dma_isWrite) {
+        m_regs.status |= StDeviceFault;
+        return false;
+    }
+
+    // Done reading
+    if (IsDMAFinished()) {
+        return false;
+    }
+
+    // If the device uses removable media, check if it has media
+    // TODO: implement removable media functions in the driver
+    /*if (m_driver->IsRemovableMedia() && !m_driver->HasMedia()) {
+        // [8.23.6]: "NM shall be set to one if no media is present in a removable media device."
+        m_regs.error |= ErrDMANoMedia;
+        return false;
+    }*/
+
+    // Check that the removable media was not changed while the operation is in progress
+    // TODO: implement removable media functions in the driver
+    /*if (m_driver->MediaChangeRequested()) {
+        // [8.23.6]: "MCR shall be set to one if a media change request has been detected by a removable media device."
+        m_regs.error |= ErrDMAMediaChangeRequest;
+        return false;
+    }*/
+
+    // Check that the next sector is accessible
+    if (!m_driver->IsLBAAddressUserAccessible(m_dma_currentLBA)) {
+        // [8.23.6]: "IDNF shall be set to one if a user-accessible address could not be found"
+        m_regs.error |= ErrDMADataNotFound;
+        return false;
+    }
+
+    // Try to read next sector
+    if (!m_driver->ReadSector(m_dma_currentLBA, dstBuffer)) {
+        m_regs.status |= StDeviceFault;
+        return false;
+    }
+
+    m_dma_currentLBA++;
+
+    return true;
+}
+
+bool ATADevice::BeginWriteDMA() {
+    // [8.45.7] As a prerequisite, DRDY must be set equal to one
+    if ((m_regs.status & StReady) == 0) {
+        return false;
+    }
+
+    // Sanity check: don't start a DMA transfer while another transfer is running
+    if (m_transferActive) {
+        return false;
+    }
+
+    // Determine if we're using LBA address or CHS numbers
+    bool useLBA = (m_regs.deviceHead & DevHeadDMALBA) != 0;
+
+    // Read address accordingly and validate parameters
+    if (useLBA) {
+        m_dma_startingLBA = ((m_regs.deviceHead & 0b1111) << 24) | (m_regs.cylinder << 8) | (m_regs.sectorNumber);
+    }
+    else {
+        // Convert from CHS to LBA
+        uint16_t cylinder = m_regs.cylinder;
+        uint8_t head = m_regs.deviceHead & 0b1111;
+        uint8_t sector = m_regs.sectorNumber;
+        m_dma_startingLBA = m_driver->CHSToLBA(cylinder, head, sector);
+    }
+
+    // Calculate ending LBA
+    if (m_regs.sectorCount == 0) {
+        m_dma_endingLBA = m_dma_startingLBA + 256;
+    }
+    else {
+        m_dma_endingLBA = m_dma_startingLBA + m_regs.sectorCount;
+    }
+
+    if (m_driver->IsLBAAddressUserAccessible(m_dma_startingLBA)) {
+        m_transferActive = true;
+        m_dma_isWrite = true;
+        m_dma_currentLBA = m_dma_startingLBA;
+        return true;
+    }
+    return false;
+}
+
+bool ATADevice::WriteDMA(uint8_t srcBuffer[kSectorSize]) {
+    // [8.45.7] As a prerequisite, DRDY must be set equal to one
+    if ((m_regs.status & StReady) == 0) {
+        return false;
+    }
+
+    bool succeeded = HandleWriteDMA(srcBuffer);
+
+    if (succeeded) {
+        // Handle normal output as specified in [8.45.5]
+
+        // Device/Head register:
+        //  "DEV shall indicate the selected device."
+        //     Not necessary, but the spec says so
+        m_regs.deviceHead = (m_regs.deviceHead & ~(1 << kDevSelectorBit)) | (m_devIndex << kDevSelectorBit);
+
+        // Status register:
+        //  "BSY shall be cleared to zero indicating command completion."
+        //     Already handled by the caller
+
+        //  "DRDY shall be set to one."
+        m_regs.status |= StReady;
+
+        //  "DF(Device Fault) shall be cleared to zero."
+        //  "DRQ shall be cleared to zero."
+        //  "ERR shall be cleared to zero."
+        m_regs.status &= ~(StDeviceFault | StDataRequest | StError);
+    }
+    else {
+        // Handle error output as specified in [8.45.6]
+
+        // Error register is handled by the HandleWriteDMA function
+
+        // Sector Number, Cylinder Low, Cylinder High, Device/Head:
+        //  "shall be written with the address of first unrecoverable error."
+        m_driver->LBAToCHS(m_dma_currentLBA, &m_regs.cylinder, &m_regs.sectorNumber, &m_regs.deviceHead);
+
+        // Device/Head register:
+        //  "DEV shall indicate the selected device."
+        //     Not necessary, but the spec says so
+        m_regs.deviceHead = (m_regs.deviceHead & ~(1 << kDevSelectorBit)) | (m_devIndex << kDevSelectorBit);
+
+        // Status register:
+        //  "BSY shall be cleared to zero indicating command completion."
+        //     Already handled by the caller
+
+        //  "DRDY shall be set to one."
+        m_regs.status |= StReady;
+
+        //  "DF (Device Fault) shall be set to one if a device fault has occurred."
+        //    Handled by HandleReadDMA
+
+        //  "DRQ shall be cleared to zero."
+        m_regs.status &= ~StDataRequest;
+
+        //  "ERR shall be set to one if an Error register bit is set to one."
+        if (m_regs.error) {
+            m_regs.status |= StError;
+        }
+    }
+
+    return succeeded;
+
+}
+
+bool ATADevice::HandleWriteDMA(uint8_t srcBuffer[kSectorSize]) {
+    // Sanity check: don't write while a DMA read is in progress
+    if (!m_dma_isWrite) {
+        m_regs.status |= StDeviceFault;
+        return false;
+    }
+
+    // Done writing
+    if (IsDMAFinished()) {
+        return false;
+    }
+
+    // If the device uses removable media, check if it has media
+    // TODO: implement removable media functions in the driver
+    /*if (m_driver->IsRemovableMedia() && !m_driver->HasMedia()) {
+        // [8.23.6]: "NM shall be set to one if no media is present in a removable media device."
+        m_regs.error |= ErrDMANoMedia;
+        return false;
+    }*/
+
+    // Check that the removable media was not changed while the operation is in progress
+    // TODO: implement removable media functions in the driver
+    /*if (m_driver->MediaChangeRequested()) {
+        // [8.23.6]: "MCR shall be set to one if a media change request has been detected by a removable media device."
+        m_regs.error |= ErrDMAMediaChangeRequest;
+        return false;
+    }*/
+
+    // Check that the next sector is accessible
+    if (!m_driver->IsLBAAddressUserAccessible(m_dma_currentLBA)) {
+        // [8.23.6]: "IDNF shall be set to one if a user-accessible address could not be found"
+        m_regs.error |= ErrDMADataNotFound;
+        return false;
+    }
+
+    // Try to write next sector
+    if (!m_driver->WriteSector(m_dma_currentLBA, srcBuffer)) {
+        m_regs.status |= StDeviceFault;
+        return false;
+    }
+
+    m_dma_currentLBA++;
+
+    return true;
+}
+
+void ATADevice::EndDMA() {
+    m_transferActive = false;
+}
+
 bool ATADevice::IdentifyDevice() {
     // [8.12.7] As a prerequisite, DRDY must be set equal to one
     if ((m_regs.status & StReady) == 0) {
@@ -76,42 +387,9 @@ bool ATADevice::IdentifyDevice() {
     //  "DF (Device Fault) shall be cleared to zero."
     //  "DRQ shall be cleared to zero."
     //  "ERR shall be cleared to zero."
-    m_regs.status &= ~(StBit5 | StDataRequest | StError);
+    m_regs.status &= ~(StDeviceFault | StDataRequest | StError);
 
     return true;
-}
-
-bool ATADevice::BeginReadDMA() {
-    // Sanity check: don't start a DMA transfer while another transfer is running
-    if (m_transferActive) {
-        return false;
-    }
-
-    // Get sector count
-    m_dma_sectorCount = m_regs.sectorCount;
-
-    // Determine if we're using LBA address or CHS numbers
-    m_dma_useLBA = (m_regs.deviceHead & DevHeadDMALBA) != 0;
-
-    // Read address accordingly and validate parameters
-    if (m_dma_useLBA) {
-        m_dma_lbaAddress = ((m_regs.deviceHead & 0b1111) << 24) | (m_regs.cylinder << 8) | (m_regs.sectorNumber);
-        if (m_driver->IsLBAAddressUserAccessible(m_dma_lbaAddress)) {
-            m_transferActive = true;
-            return true;
-        }
-        return false;
-    }
-    else {
-        m_dma_cylinder = m_regs.cylinder;
-        m_dma_head = m_regs.deviceHead & 0b1111;
-        m_dma_sector = m_regs.sectorNumber;
-        if (m_driver->IsCHSAddressUserAccessible(m_dma_cylinder, m_dma_head, m_dma_sector)) {
-            m_transferActive = true;
-            return true;
-        }
-        return false;
-    }
 }
 
 bool ATADevice::SetFeatures() {

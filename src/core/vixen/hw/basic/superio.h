@@ -43,7 +43,7 @@ namespace vixen {
 
 class SuperIO : public IODevice {
 public:
-    SuperIO(IRQHandler *irqHandler, CharDriver *chrs[SUPERIO_SERIAL_PORT_COUNT]);
+    SuperIO(IRQHandler& irqHandler, CharDriver *chrs[SUPERIO_SERIAL_PORT_COUNT]);
     virtual ~SuperIO();
 
     void Init();

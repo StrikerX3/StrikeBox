@@ -24,7 +24,7 @@ namespace ata {
 
 class ATA : public IODevice {
 public:
-    ATA(IRQHandler *irqHandler);
+    ATA(IRQHandler& irqHandler);
     virtual ~ATA();
     void Reset();
 

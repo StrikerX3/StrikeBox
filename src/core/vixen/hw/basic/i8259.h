@@ -28,7 +28,7 @@ using namespace vixen::cpu;
 
 class i8259 : public IODevice, public IRQHandler {
 public:
-    i8259(Cpu *cpu);
+    i8259(Cpu& cpu);
     virtual ~i8259();
     void Reset();
 
@@ -41,7 +41,7 @@ public:
 
     int GetCurrentIRQ();
 private:
-    Cpu    *m_cpu;
+    Cpu&    m_cpu;
 
     uint8_t m_PreviousIRR[2];    // used for edge-detection
     uint8_t m_IRR[2];

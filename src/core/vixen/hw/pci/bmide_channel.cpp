@@ -12,9 +12,13 @@
 namespace vixen {
 
 using namespace hw::bmide;
+using namespace hw::ata;
 
-BMIDEChannel::BMIDEChannel(Channel channel)
+BMIDEChannel::BMIDEChannel(Channel channel, ATAChannel& ataChannel, uint8_t *ram, uint32_t ramSize)
     : m_channel(channel)
+    , m_ataChannel(ataChannel)
+    , m_ram(ram)
+    , m_ramSize(ramSize) 
 {
     m_worker_running = true;
     m_job_running = false;
@@ -43,13 +47,13 @@ void BMIDEChannel::ReadStatus(uint32_t *value, uint8_t size) {
 
 void BMIDEChannel::ReadPRDTableAddress(uint32_t *value, uint8_t size) {
     if (size == 1) {
-        *(uint8_t*)value = m_prdTableAddrs;
+        *(uint8_t*)value = m_prdTableAddr;
     }
     else if (size == 2) {
-        *(uint16_t*)value = m_prdTableAddrs;
+        *(uint16_t*)value = m_prdTableAddr;
     }
     else {
-        *value = m_prdTableAddrs;
+        *value = m_prdTableAddr;
     }
 }
 
@@ -83,39 +87,33 @@ void BMIDEChannel::WritePRDTableAddress(uint32_t value, uint8_t size) {
 
     // Update register value
     if (size == 1) {
-        m_prdTableAddrs = (uint8_t)value;
+        m_prdTableAddr = (uint8_t)value;
     }
     else if (size == 2) {
-        m_prdTableAddrs = (uint16_t)value;
+        m_prdTableAddr = (uint16_t)value;
     }
     else {
-        m_prdTableAddrs = value;
+        m_prdTableAddr = value;
     }
-    log_spew("BMIDEChannel::WritePRDTableAddress:  channel = %d,  address = 0x%x\n", m_channel, m_prdTableAddrs);
+    log_spew("BMIDEChannel::WritePRDTableAddress:  channel = %d,  address = 0x%x\n", m_channel, m_prdTableAddr);
 }
 
 void BMIDEChannel::BeginWork() {
-    if (m_job_running) {
-        log_warning("BMIDEChannel::BeginWork:  Attempted to start operation on channel = %d while an operation is already in progress!\n", m_channel);
-        return;
-    }
-
     log_spew("BMIDEChannel::BeginWork:  Starting operation on channel %d\n", m_channel);
+
+    m_status |= StActive;
 
     // Prepare job and notify worker
     m_job_running = true;
+    m_job_cancel = false;
     m_jobCond.notify_one();
 }
 
 void BMIDEChannel::StopWork() {
-    if (!m_job_running) {
-        log_warning("BMIDEChannel::StopWork:  Attempted to stop operation on channel %d while no operation is in progress!\n", m_channel);
-    }
-
     log_spew("BMIDEChannel::StopWork:  Stopping operation on channel = %d\n", m_channel);
 
-    // Tell worker to stop working on the job
-    m_job_running = false;
+    // Interrupt worker
+    m_job_cancel = true;
 }
 
 // Worker thread function
@@ -130,6 +128,55 @@ uint32_t BMIDEChannel::WorkerThreadFunc(void *data) {
     return 0;
 }
 
+static struct PRDHelper {
+    uint8_t *m_ram;
+    uint32_t m_ramSize;
+    PhysicalRegionDescriptor *m_currPRD;
+    uint32_t m_currByte;
+    uint32_t physAddr;
+    uint8_t *bufPtr;
+
+    PRDHelper(uint8_t *ram, uint32_t ramSize, uint32_t prdTableAddress)
+        : m_ram(ram)
+        , m_ramSize(ramSize)
+    {
+        // TODO: validate against ramSize to prevent buffer overflows
+        m_currPRD = reinterpret_cast<PhysicalRegionDescriptor*>(m_ram + prdTableAddress);
+        m_currByte = 0;
+        physAddr = 0;
+        bufPtr = nullptr;
+    }
+
+    bool NextSector() {
+        for (;;) {
+            // Get byte count from the PRD
+            uint16_t byteCount = m_currPRD->byteCount;
+            if (byteCount == 0) {
+                byteCount = KiB(64);
+            }
+
+            // Go to the next PRD if we reached the end of the current PRD
+            // and there are more entries
+            if (m_currByte >= m_currPRD->byteCount) {
+                // No more entries
+                if (m_currPRD->endOfTable) {
+                    bufPtr = nullptr;
+                    return false;
+                }
+
+                m_currPRD++;
+                continue;
+            }
+
+            // Prepare the pointer to the next block
+            physAddr = m_currPRD->basePhysicalAddress + m_currByte;
+            bufPtr = m_ram + physAddr;
+            m_currByte += kSectorSize;
+            return true;
+        }
+    }
+};
+
 void BMIDEChannel::RunWorker() {
     while (m_worker_running) {
         // Wait for work
@@ -139,11 +186,71 @@ void BMIDEChannel::RunWorker() {
         }
 
         // Do work
+        PRDHelper helper(m_ram, m_ramSize, m_prdTableAddr);
+
         while (m_job_running) {
-            bool isWrite = (m_command & CmdReadWriteControl) != 0;
-            log_spew("BMIDEChannel %d: %s\n", m_channel, (isWrite ? "write" : "read"));
-            // TODO: implement
-            m_job_running = false;
+            // The manual says that 1 means Bus Master write and 0 means Bus Master read,
+            // which is true from the perspective of the bus itself, but confusing to a programmer.
+            // From the programmer's perspective, 0 means write to device and 1 means read from device.
+            // See https://wiki.osdev.org/ATA/ATAPI_using_DMA#The_Command_Byte
+            bool isWrite = (m_command & CmdReadWriteControl) == 0;
+
+            if (m_ataChannel.IsDMAFinished()) {
+                // Operation finished; notify ATA channel
+                m_job_running = false;
+
+                // Set Interrupt flag if the ATA device triggered an interrupt
+                if (m_ataChannel.EndDMA()) {
+                    m_status |= StInterrupt;
+                    m_job_running = false;
+                    break;
+                }
+            }
+
+            uint8_t buf[kSectorSize];
+            bool succeeded;
+            if (isWrite) {
+                succeeded = m_ataChannel.WriteDMA(buf);
+            }
+            else {
+                succeeded = m_ataChannel.ReadDMA(buf);
+            }
+
+            if (succeeded) {
+                // Copy to/from physical memory
+                if (helper.NextSector()) {
+                    log_spew("BM IDE channel %d: %s physical address 0x%x\n", m_channel, (isWrite ? "read from" : "write to"), helper.physAddr);
+                    memcpy(helper.bufPtr, buf, kSectorSize);
+                }
+                else {
+                    log_spew("BM IDE channel %d: Ran out of PRDs\n", m_channel);
+
+                    // Clear Active flag
+                    m_status &= ~StActive;
+                    
+                    // Set Interrupt flag if the ATA device triggered an interrupt
+                    if (m_ataChannel.EndDMA()) {
+                        m_status |= StInterrupt;
+                    }
+
+                    m_job_running = false;
+                }
+            }
+            else {
+
+                // Operation finished; notify ATA channel
+                if (m_ataChannel.EndDMA()) {
+                    // Set Interrupt flag if the ATA device triggered an interrupt
+                    m_status |= StInterrupt;
+                }
+             
+                m_job_running = false;
+            }
+        }
+
+        if (m_job_cancel) {
+            // Clear Active flag if the job was cancelled
+            m_status &= ~StActive;
         }
     }
 }

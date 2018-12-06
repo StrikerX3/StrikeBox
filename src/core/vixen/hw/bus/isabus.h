@@ -8,7 +8,7 @@ namespace vixen {
 
 class ISABus {
 public:
-    ISABus(IRQ* irqs);
+    ISABus(IRQ *irqs);
     ~ISABus();
 
     IRQ *GetIRQ(uint8_t isaIRQ);

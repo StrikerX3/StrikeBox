@@ -12,15 +12,14 @@
 namespace vixen {
 
 using namespace hw::bmide;
+using namespace hw::ata;
 
-BMIDEDevice::BMIDEDevice(uint8_t *ram, uint32_t ramSize)
+BMIDEDevice::BMIDEDevice(uint8_t *ram, uint32_t ramSize, ATA& ata)
     : PCIDevice(PCI_HEADER_TYPE_NORMAL, PCI_VENDOR_ID_NVIDIA, 0x01BC, 0xD2,
         0x01, 0x01, 0x8A) // IDE controller
-    , m_ram(ram)
-    , m_ramSize(ramSize)
 {
-    m_channels[ChanPrimary] = new BMIDEChannel(ChanPrimary);
-    m_channels[ChanSecondary] = new BMIDEChannel(ChanSecondary);
+    m_channels[ChanPrimary] = new BMIDEChannel(ChanPrimary, ata.GetChannel(ChanPrimary), ram, ramSize);
+    m_channels[ChanSecondary] = new BMIDEChannel(ChanSecondary, ata.GetChannel(ChanSecondary), ram, ramSize);
 }
 
 BMIDEDevice::~BMIDEDevice() {

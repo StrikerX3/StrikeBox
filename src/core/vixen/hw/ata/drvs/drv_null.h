@@ -25,10 +25,22 @@ namespace ata {
 class NullATADeviceDriver : public IATADeviceDriver {
 public:
     ~NullATADeviceDriver() override;
-    bool IsAttached() override { return true; }
+    
+    // ----- ATA commands -----------------------------------------------------
+    
     void IdentifyDevice(IdentifyDeviceData *data) override;
-    bool IsLBAAddressUserAccessible(uint32_t lbaAddress) { return false; }
-    bool IsCHSAddressUserAccessible(uint16_t cylinder, uint8_t head, uint8_t sector) { return false; }
+    
+    // ----- Sector access ----------------------------------------------------
+
+    bool ReadSector(uint32_t lbaAddress, uint8_t destBuffer[kSectorSize]) override { return false; }
+    bool WriteSector(uint32_t lbaAddress, uint8_t destBuffer[kSectorSize]) override { return false; }
+    
+    // ----- Utility functions ------------------------------------------------
+ 
+    bool IsAttached() override { return true; }
+    bool IsLBAAddressUserAccessible(uint32_t lbaAddress) override { return false; }
+    uint32_t CHSToLBA(uint32_t cylinder, uint8_t head, uint8_t sector) override { return 0; }
+    void LBAToCHS(uint32_t lbaAddress, uint16_t *cylinder, uint8_t *head, uint8_t *sector) override {}
 };
 
 extern NullATADeviceDriver g_nullATADeviceDriver;

@@ -18,7 +18,7 @@ namespace vixen {
 namespace hw {
 namespace ata {
 
-ATAChannel::ATAChannel(Channel channel, IRQHandler *irqHandler, uint8_t irqNum)
+ATAChannel::ATAChannel(Channel channel, IRQHandler& irqHandler, uint8_t irqNum)
     : m_channel(channel)
     , m_irqHandler(irqHandler)
     , m_irqNum(irqNum)
@@ -49,7 +49,7 @@ bool ATAChannel::ReadCommandPort(Register reg, uint32_t *value, uint8_t size) {
     }
 
     // Check that there is an attached device
-    bool attached = m_devs[GetSelectedDeviceIndex()]->IsAttached();
+    bool attached = m_devs[m_regs.GetSelectedDeviceIndex()]->IsAttached();
 
     // If there is no attached device and the guest is attempting to read from
     // a register other than Status, return 0
@@ -141,9 +141,58 @@ bool ATAChannel::WriteControlPort(uint32_t value, uint8_t size) {
     return false;
 }
 
+bool ATAChannel::ReadDMA(uint8_t dstBuffer[kSectorSize]) {
+    // Delegate to selected device
+    auto devIndex = m_regs.GetSelectedDeviceIndex();
+    auto dev = m_devs[devIndex];
+    return dev->ReadDMA(dstBuffer);
+}
+
+bool ATAChannel::WriteDMA(uint8_t srcBuffer[kSectorSize]) {
+    // Delegate to selected device
+    auto devIndex = m_regs.GetSelectedDeviceIndex();
+    auto dev = m_devs[devIndex];
+    return dev->WriteDMA(srcBuffer);
+}
+
+bool ATAChannel::IsDMAFinished() {
+    // Delegate to selected device
+    auto devIndex = m_regs.GetSelectedDeviceIndex();
+    auto dev = m_devs[devIndex];
+    return dev->IsDMAFinished();
+}
+
+bool ATAChannel::EndDMA() {
+    // Check if the DMA operation finished successfully
+    auto devIndex = m_regs.GetSelectedDeviceIndex();
+    auto dev = m_devs[devIndex];
+
+    // Handle result according to DMA command protocol [9.10]
+    if (dev->IsDMAFinished()) {
+        log_spew("ATAChannel::EndDMA: Operation finished successfully on channel %d\n", m_channel);
+    }
+    else {
+        log_spew("ATAChannel::EndDMA: Operation failed on channel %d\n", m_channel);
+
+        // Set error status
+        m_regs.status |= StError;
+    }
+
+    // Tell device that the DMA operation has finished
+    dev->EndDMA();
+
+    // Clear BSY=0 and DRQ=0
+    m_regs.status &= ~(StBusy | StDataRequest);
+
+    // Assert INTRQ if nIEN=0
+    // INTRQ will be negated when the host reads the Status register
+    SetInterrupt(true);
+    return m_regs.AreInterruptsEnabled();
+}
+
 void ATAChannel::ReadData(uint32_t *value, uint8_t size) {
     // Read from device buffer
-    auto devIndex = GetSelectedDeviceIndex();
+    auto devIndex = m_regs.GetSelectedDeviceIndex();
     auto dev = m_devs[devIndex];
 
     // Clear the destination value before reading from the buffer, in case
@@ -171,7 +220,7 @@ void ATAChannel::ReadStatus(uint8_t *value) {
 }
 
 void ATAChannel::WriteData(uint32_t value, uint8_t size) {
-    log_warning("ATAChannel::WriteData:  Unimplemented!  (channel = %d  device = %d  size = %d, value = 0x%x)\n", m_channel, GetSelectedDeviceIndex(), size, value);
+    log_warning("ATAChannel::WriteData:  Unimplemented!  (channel = %d  device = %d  size = %d, value = 0x%x)\n", m_channel, m_regs.GetSelectedDeviceIndex(), size, value);
 }
 
 void ATAChannel::WriteCommand(uint8_t value) {
@@ -185,7 +234,7 @@ void ATAChannel::WriteCommand(uint8_t value) {
 
     // Determine which protocol is used by the command and collect all data needed for execution
     auto protocol = kCmdProtocols.at(cmd);
-    auto devIndex = GetSelectedDeviceIndex();
+    auto devIndex = m_regs.GetSelectedDeviceIndex();
     auto dev = m_devs[devIndex];
     bool succeeded;
 
@@ -203,6 +252,9 @@ void ATAChannel::WriteCommand(uint8_t value) {
             break;
         case CmdReadDMA:
             succeeded = dev->BeginReadDMA();
+            break;
+        case CmdWriteDMA:
+            succeeded = dev->BeginWriteDMA();
             break;
         default:
             log_warning("ATAChannel::WriteCommand:  Unhandled command 0x%x for channel %d, device %d\n", cmd, m_channel, devIndex);
@@ -226,18 +278,16 @@ void ATAChannel::WriteCommand(uint8_t value) {
         if (!succeeded || protocol.assertINTRQOnSuccess) {
             // INTRQ is not asserted if nIEN=1
             // INTRQ will be negated when the host reads the Status register
-            if (AreInterruptsEnabled()) {
-                SetInterrupt(true);
-            }
+            SetInterrupt(true);
         }
 
     }
 }
 
 void ATAChannel::SetInterrupt(bool asserted) {
-    if (asserted != m_interrupt && AreInterruptsEnabled()) {
+    if (asserted != m_interrupt && m_regs.AreInterruptsEnabled()) {
         m_interrupt = asserted;
-        m_irqHandler->HandleIRQ(m_irqNum, m_interrupt);
+        m_irqHandler.HandleIRQ(m_irqNum, m_interrupt);
     }
 }
 

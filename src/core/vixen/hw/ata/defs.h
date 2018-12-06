@@ -84,7 +84,7 @@ const uint8_t kRegSizes[] = {
 enum StatusBits : uint8_t {
     StBusy = (1 << 7),          // [7.15.6.1] (BSY) The device is busy
     StReady = (1 << 6),         // [7.15.6.2] (DRDY) The device is ready to accept commands
-    StBit5 = (1 << 5),          // [7.15.6.3] Command dependent bit
+    StDeviceFault = (1 << 5),   // [--------] (DF) Device fault  ([7.15.6.3] says that this is a command dependent bit)
     StBit4 = (1 << 4),          // [7.15.6.3] Command dependent bit
     StDataRequest = (1 << 3),   // [7.15.6.4] (DRQ) The device is ready to transfer a word of data
     StError = (1 << 0),         // [7.15.6.6] (ERR) An error occurred during execution of the previous command
@@ -156,6 +156,7 @@ enum Command : uint8_t {
     CmdReadDMA = 0xC8,          // [8.23] Read DMA
     CmdSecurityUnlock = 0xF2,   // [8.34] Security Unlock
     CmdSetFeatures = 0xEF,      // [8.37] Set Features
+    CmdWriteDMA = 0xCA,         // [8.45] Write DMA
 };
 
 // [8.37.8] Set Features subcommands (specified in the Features register)
@@ -191,6 +192,7 @@ const std::unordered_map<Command, const CommandProtocol&, std::hash<uint8_t>> kC
     { CmdReadDMA, kCmdProtoDMA },
     { CmdSecurityUnlock, kCmdProtoPIODataOut },
     { CmdSetFeatures, kCmdProtoNonData },
+    { CmdWriteDMA, kCmdProtoDMA },
 };
 
 // --- Command data -------------------------------------------------------------------------------

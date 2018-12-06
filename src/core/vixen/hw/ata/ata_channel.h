@@ -29,7 +29,7 @@ namespace ata {
  */
 class ATAChannel {
 public:
-    ATAChannel(Channel channel, IRQHandler *irqHandler, uint8_t irqNum);
+    ATAChannel(Channel channel, IRQHandler& irqHandler, uint8_t irqNum);
     ~ATAChannel();
 
     ATADevice& GetDevice(uint8_t deviceIndex) { return *m_devs[deviceIndex]; }
@@ -41,6 +41,13 @@ public:
 
     bool ReadControlPort(uint32_t *value, uint8_t size);
     bool WriteControlPort(uint32_t value, uint8_t size);
+
+    // ----- DMA transfers ----------------------------------------------------
+
+    bool ReadDMA(uint8_t dstBuffer[kSectorSize]);
+    bool WriteDMA(uint8_t srcBuffer[kSectorSize]);
+    bool IsDMAFinished();
+    bool EndDMA();
 
 private:
     friend class ATA;
@@ -63,7 +70,7 @@ private:
 
     void SetInterrupt(bool asserted);
 
-    IRQHandler *m_irqHandler;
+    IRQHandler& m_irqHandler;
     uint8_t m_irqNum;
 
     // ----- Command port operations ------------------------------------------
@@ -73,14 +80,6 @@ private:
 
     void WriteData(uint32_t value, uint8_t size);
     void WriteCommand(uint8_t value);
-
-    // ----- Utility functions ------------------------------------------------
-    
-    // Retrieves the index of the currently selected device from bit 4
-    // (DEV - Device select) of the Device/Head register [7.10.6]
-    inline uint8_t GetSelectedDeviceIndex() const { return (m_regs.deviceHead >> kDevSelectorBit) & 1; }
-
-    inline bool AreInterruptsEnabled() const { return (m_regs.control & DevCtlNegateInterruptEnable) == 0; }
 };
 
 }

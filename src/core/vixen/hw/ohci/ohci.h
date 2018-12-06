@@ -148,7 +148,7 @@ public:
     std::atomic_bool m_bFrameTime;
 
     // constructor
-    OHCI(Cpu* cpu, int Irqn, USBPCIDevice* UsbObj);
+    OHCI(Cpu& cpu, int Irqn, USBPCIDevice* UsbObj);
     // destructor
     ~OHCI() {}
     // read a register
@@ -157,7 +157,7 @@ public:
     void OHCI_WriteRegister(uint32_t Addr, uint32_t Value);
 
 private:
-    Cpu* m_cpu;
+    Cpu& m_cpu;
     // pointer to g_USB0 or g_USB1
     USBPCIDevice* m_UsbDevice = nullptr;
     // all the registers available in the OHCI standard

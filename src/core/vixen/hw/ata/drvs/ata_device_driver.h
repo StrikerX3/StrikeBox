@@ -29,10 +29,22 @@ namespace ata {
 class IATADeviceDriver {
 public:
     virtual ~IATADeviceDriver();
-    virtual bool IsAttached() = 0;
+
+    // ----- ATA commands -----------------------------------------------------
+
     virtual void IdentifyDevice(IdentifyDeviceData *data) = 0;
+
+    // ----- Sector access ----------------------------------------------------
+
+    virtual bool ReadSector(uint32_t lbaAddress, uint8_t buffer[kSectorSize]) = 0;
+    virtual bool WriteSector(uint32_t lbaAddress, uint8_t buffer[kSectorSize]) = 0;
+ 
+    // ----- Utility functions ------------------------------------------------
+
+    virtual bool IsAttached() = 0;
     virtual bool IsLBAAddressUserAccessible(uint32_t lbaAddress) = 0;
-    virtual bool IsCHSAddressUserAccessible(uint16_t cylinder, uint8_t sector, uint8_t head) = 0;
+    virtual uint32_t CHSToLBA(uint32_t cylinder, uint8_t head, uint8_t sector) = 0;
+    virtual void LBAToCHS(uint32_t lbaAddress, uint16_t *cylinder, uint8_t *head, uint8_t *sector) = 0;
 };
 
 }

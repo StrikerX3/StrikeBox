@@ -214,7 +214,7 @@ static inline uint64_t Muldiv64(uint64_t a, uint32_t b, uint32_t c) {
 #define OHCI_PAGE_MASK    0xFFFFF000
 #define OHCI_OFFSET_MASK  0xFFF
 
-OHCI::OHCI(Cpu* cpu, int Irq, USBPCIDevice* UsbObj)
+OHCI::OHCI(Cpu& cpu, int Irq, USBPCIDevice* UsbObj)
     : m_cpu(cpu)
 {
     int offset = 0;
@@ -387,7 +387,7 @@ bool OHCI::OHCI_WriteHCCA(uint32_t Paddr, OHCI_HCCA* Hcca)
 bool OHCI::OHCI_ReadED(uint32_t Paddr, OHCI_ED* Ed)
 {
 	if (Paddr != 0) {
-        m_cpu->VMemRead(Paddr, sizeof(*Ed), Ed);
+        m_cpu.VMemRead(Paddr, sizeof(*Ed), Ed);
 		return false;
 	}
 	return true; // error
@@ -398,7 +398,7 @@ bool OHCI::OHCI_WriteED(uint32_t Paddr, OHCI_ED* Ed)
 	if (Paddr != 0) {
 		// According to the standard, only the HeadP field is writable by the HC, so we'll write just that
 		size_t OffsetOfHeadP = offsetof(OHCI_ED, HeadP);
-        m_cpu->VMemWrite(Paddr, 4, Ed + OffsetOfHeadP);
+        m_cpu.VMemWrite(Paddr, 4, Ed + OffsetOfHeadP);
 		return false;
 	}
 	return true; // error
@@ -407,7 +407,7 @@ bool OHCI::OHCI_WriteED(uint32_t Paddr, OHCI_ED* Ed)
 bool OHCI::OHCI_ReadTD(uint32_t Paddr, OHCI_TD* Td)
 {
 	if (Paddr != 0) {
-        m_cpu->VMemRead(Paddr, sizeof(*Td), Td);
+        m_cpu.VMemRead(Paddr, sizeof(*Td), Td);
 		return false;
 	}
 	return true; // error
@@ -416,7 +416,7 @@ bool OHCI::OHCI_ReadTD(uint32_t Paddr, OHCI_TD* Td)
 bool OHCI::OHCI_WriteTD(uint32_t Paddr, OHCI_TD* Td)
 {
 	if (Paddr != 0) {
-        m_cpu->VMemWrite(Paddr, sizeof(*Td), Td);
+        m_cpu.VMemWrite(Paddr, sizeof(*Td), Td);
 		return false;
 	}
 	return true; // error
@@ -424,7 +424,7 @@ bool OHCI::OHCI_WriteTD(uint32_t Paddr, OHCI_TD* Td)
 
 bool OHCI::OHCI_ReadIsoTD(uint32_t Paddr, OHCI_ISO_TD* td) {
     if (Paddr != 0) {
-        m_cpu->VMemRead(Paddr, sizeof(*td), td);
+        m_cpu.VMemRead(Paddr, sizeof(*td), td);
         return false;
     }
     return true; // error
@@ -432,7 +432,7 @@ bool OHCI::OHCI_ReadIsoTD(uint32_t Paddr, OHCI_ISO_TD* td) {
 
 bool OHCI::OHCI_WriteIsoTD(uint32_t Paddr, OHCI_ISO_TD* td) {
     if (Paddr != 0) {
-        m_cpu->VMemWrite(Paddr, sizeof(*td), td);
+        m_cpu.VMemWrite(Paddr, sizeof(*td), td);
         return false;
     }
     return true; // error

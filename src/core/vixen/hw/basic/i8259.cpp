@@ -66,8 +66,9 @@ using namespace vixen::cpu;
 
 // TODO: Implement ELCR support
 
-i8259::i8259(Cpu *cpu) {
-    m_cpu = cpu;
+i8259::i8259(Cpu& cpu)
+    : m_cpu(cpu)
+{
 }
 
 i8259::~i8259() {
@@ -436,7 +437,7 @@ void i8259::UpdateIRQ(int pic) {
 
     // If this was the master PIC, trigger the IRQ
     if (pic == PIC_MASTER && m_InterruptOutput[PIC_MASTER]) {
-        m_cpu->Interrupt(GetCurrentIRQ());
+        m_cpu.Interrupt(GetCurrentIRQ());
     }
 }
 

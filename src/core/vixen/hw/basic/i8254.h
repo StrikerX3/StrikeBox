@@ -18,7 +18,7 @@ namespace vixen {
 
 class i8254 : public IODevice {
 public:
-    i8254(IRQHandler *irqHandler, float tickRate = 1000.0f);
+    i8254(IRQHandler& irqHandler, float tickRate = 1000.0f);
     virtual ~i8254();
     void Reset();
     
@@ -29,7 +29,7 @@ public:
     
     void Run();
 private:
-    IRQHandler *m_irqHandler;
+    IRQHandler& m_irqHandler;
     float m_tickRate;
     bool m_running;
 
