@@ -37,19 +37,18 @@ int main(int argc, const char *argv[]) {
     printf("------------------\n");
 
     cxxopts::Options options(basename((char*)argv[0]), "viXen - 6th generation (Original) XBOX Emulator\n");
-    options.custom_help("-c mcpx_path -b bios_path -m model");
+    options.custom_help("-m mcpx_path -b bios_path -r xbox_rev [-hd vhd_image_path]");
     options.add_options()
-        ("c, mcpx", "MCPX path", cxxopts::value<std::string>(), "mcpx_path")
-        ("b, bios", "BIOS path", cxxopts::value<std::string>(), "bios_path")
-        ("m, model", "XBOX Model (retail | debug)", cxxopts::value<std::string>(), "xbox_model")
+        ("m, mcpx", "Path to MCPX ROM", cxxopts::value<std::string>(), "mcpx_path")
+        ("b, bios", "Path to BIOS ROM", cxxopts::value<std::string>(), "bios_path")
+        ("d, hard-disk-image", "Path to virtual hard disk drive image", cxxopts::value<std::string>(), "vhd_image_path")
+        ("r, revision", "XBOX revision (retail | debug)", cxxopts::value<std::string>(), "xbox_rev")
         ("h, help", "Shows this message");
 
     auto args = options.parse(argc, argv);
 
-    /*
-        Argument Check
-    */
-    if (!(args.count("mcpx") && args.count("bios") && args.count("model"))) {
+    // Argument Check
+    if (!(args.count("mcpx") && args.count("bios") && args.count("revision"))) {
         std::cout << options.help();
         return 1;
     }
@@ -57,21 +56,13 @@ int main(int argc, const char *argv[]) {
     // Parse arguments
     const char *mcpx_path = args["mcpx"].as<std::string>().c_str();
     const char *bios_path = args["bios"].as<std::string>().c_str();
-    const char *model = args["model"].as<std::string>().c_str();
-    bool is_debug;
-
-    if (strcmp(model, "debug") == 0) {
-        is_debug = true;
-        printf("Emulating debug console.\n");
-    }
-    else if (strcmp(model, "retail") == 0) {
-        is_debug = false;
-        printf("Emulating retail console.\n");
+    const char *revision = args["revision"].as<std::string>().c_str();
+    const char *vhd_path;
+    if (args.count("hard-disk-image") == 0) {
+        vhd_path = "";
     }
     else {
-        printf("Invalid model specified.\n");
-        std::cout << options.help();
-        return 1;
+        vhd_path = args["hard-disk-image"].as<std::string>().c_str();
     }
 
     // Locate and instantiate modules
@@ -112,7 +103,6 @@ int main(int argc, const char *argv[]) {
     settings->debug_dumpStack_upperBound = 0x10;
     settings->debug_dumpStack_lowerBound = 0x20;
     settings->gdb_enable = false;
-    settings->hw_model = is_debug ? DebugKit : Revision1_0;
     settings->hw_sysclock_tickRate = 1000.0f;
     settings->hw_enableSuperIO = true;
     settings->hw_charDrivers[0].type = CHD_HostSerialPort;
@@ -122,6 +112,27 @@ int main(int argc, const char *argv[]) {
     settings->rom_mcpx = mcpx_path;
     settings->rom_bios = bios_path;
 
+    if (strcmp(revision, "debug") == 0) {
+        settings->hw_revision = DebugKit;
+    }
+    else if (strcmp(revision, "retail") == 0) {
+        settings->hw_revision = Revision1_0;
+    }
+    else {
+        printf("Invalid revision specified.\n");
+        std::cout << options.help();
+        return 1;
+    }
+
+    if (strlen(vhd_path) == 0) {
+        settings->vhd_type = VHD_Dummy;
+    }
+    else {
+        settings->vhd_type = VHD_Image;
+        settings->vhd_parameters.image.path = vhd_path;
+        settings->vhd_parameters.image.preserveImage = true;
+    }
+
     EmulatorStatus status = xbox->Run();
     if (status == EMUS_OK) {
         log_info("Emulator exited successfully\n");
@@ -129,6 +140,7 @@ int main(int argc, const char *argv[]) {
     else {
         log_fatal("Emulator exited with error: ");
         switch (status) {
+        case EMUS_INIT_INVALID_REVISION: log_fatal("Invalid revision specified\n"); break;
         case EMUS_INIT_ALLOC_MEM_RGN_FAILED: log_fatal("Could not allocate memory for the global memory region\n"); break;
         case EMUS_INIT_ALLOC_RAM_FAILED: log_fatal("Could not allocate memory for the guest RAM\n"); break;
         case EMUS_INIT_ALLOC_RAM_RGN_FAILED: log_fatal("Could not allocate memory for the RAM region"); break;
@@ -142,6 +154,10 @@ int main(int argc, const char *argv[]) {
         case EMUS_INIT_CPU_CREATE_FAILED: log_fatal("CPU instantiation failed"); break;
         case EMUS_INIT_CPU_INIT_FAILED: log_fatal("CPU initialization failed"); break;
         case EMUS_INIT_CPU_MEM_MAP_FAILED: log_fatal("Memory mapping failed"); break;
+        case EMUS_INIT_INVALID_HARD_DRIVE_TYPE: log_fatal("Invalid virtual hard drive type specified"); break;
+        case EMUS_INIT_HARD_DRIVE_INIT_FAILED: log_fatal("Failed to initialize virtual hard drive"); break;
+        case EMUS_INIT_INVALID_DVD_DRIVE_TYPE: log_fatal("Invalid virtual DVD drive type specified"); break;
+        case EMUS_INIT_DVD_DRIVE_INIT_FAILED: log_fatal("Failed to initialize virtual DVD drive"); break;
         case EMUS_INIT_DEBUGGER_FAILED: log_fatal("Debugger initialization failed"); break;
         default: log_fatal("Unspecified error\n"); break;
         }

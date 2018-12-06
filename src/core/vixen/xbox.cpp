@@ -166,8 +166,21 @@ void Xbox::Stop() {
 /*!
  * Perform basic system initialization
  */
-EmulatorStatus Xbox::Initialize()
-{
+EmulatorStatus Xbox::Initialize() {
+    log_info("Initializing Xbox...\n");
+    log_info("Revision: ");
+    switch (m_settings.hw_revision) {
+    case DebugKit: log_info("Debug Kit\n"); break;
+    case Revision1_0: log_info("Retail 1.0\n"); break;
+    case Revision1_1: log_info("Retail 1.1\n"); break;
+    case Revision1_2: log_info("Retail 1.2\n"); break;
+    case Revision1_3: log_info("Retail 1.3\n"); break;
+    case Revision1_4: log_info("Retail 1.4\n"); break;
+    case Revision1_5: log_info("Retail 1.5\n"); break;
+    case Revision1_6: log_info("Retail 1.6\n"); break;
+    default: log_info("<invalid: %d>\n", m_settings.hw_revision); return EMUS_INIT_INVALID_REVISION;
+    }
+
     EmulatorStatus result;
     result = InitFixupSettings(); if (result != EMUS_OK) return result;
     result = InitMemory(); if (result != EMUS_OK) return result;
@@ -175,11 +188,13 @@ EmulatorStatus Xbox::Initialize()
     result = InitHardware(); if (result != EMUS_OK) return result;
     result = InitDebugger(); if (result != EMUS_OK) return result;
 
+    log_info("Initialization completed\n");
+
     return EMUS_OK;
 }
 
 EmulatorStatus Xbox::InitFixupSettings() {
-    if (m_settings.hw_model == DebugKit) {
+    if (m_settings.hw_revision == DebugKit) {
         m_settings.hw_enableSuperIO = true;
         m_settings.ram_expanded = true;
     }
@@ -330,9 +345,9 @@ EmulatorStatus Xbox::InitCPU() {
 EmulatorStatus Xbox::InitHardware() {
     // Determine which revisions of which components should be used for the
     // specified hardware model
-    MCPXRevision mcpxRevision = MCPXRevisionFromHardwareModel(m_settings.hw_model);
-    SMCRevision smcRevision = SMCRevisionFromHardwareModel(m_settings.hw_model);
-    TVEncoder tvEncoder = TVEncoderFromHardwareModel(m_settings.hw_model);
+    MCPXRevision mcpxRevision = MCPXRevisionFromHardwareModel(m_settings.hw_revision);
+    SMCRevision smcRevision = SMCRevisionFromHardwareModel(m_settings.hw_revision);
+    TVEncoder tvEncoder = TVEncoderFromHardwareModel(m_settings.hw_revision);
 
     log_debug("Initializing devices\n");
 
@@ -345,9 +360,39 @@ EmulatorStatus Xbox::InitHardware() {
     m_i8254 = new i8254(*m_i8259, m_settings.hw_sysclock_tickRate);
     m_CMOS = new CMOS();
 
-    // TODO: make this configurable, similar to Super I/O port char drivers
-    m_ataDrivers[0][0] = new hw::ata::DummyHardDriveATADeviceDriver();
-    m_ataDrivers[0][1] = new hw::ata::NullATADeviceDriver();
+    // Create ATA devices
+    switch (m_settings.vhd_type) {
+    case VHD_Null:
+        m_ataDrivers[0][0] = new hw::ata::NullATADeviceDriver();
+        break;
+    case VHD_Dummy:
+        m_ataDrivers[0][0] = new hw::ata::DummyHardDriveATADeviceDriver();
+        break;
+    case VHD_Image:
+        // TODO: implement
+        m_ataDrivers[0][0] = new hw::ata::NullATADeviceDriver();
+        break;
+    default:
+        log_fatal("Invalid virtual hard drive type specified: %d\n", m_settings.vhd_type);
+        return EMUS_INIT_INVALID_HARD_DRIVE_TYPE;
+    }
+
+    switch (m_settings.vdvd_type) {
+    case VDVD_Null:
+        m_ataDrivers[0][1] = new hw::ata::NullATADeviceDriver();
+        break;
+    case VDVD_Dummy:
+        // TODO: implement
+        m_ataDrivers[0][1] = new hw::ata::NullATADeviceDriver();
+        break;
+    case VDVD_Image:
+        // TODO: implement
+        m_ataDrivers[0][1] = new hw::ata::NullATADeviceDriver();
+        break;
+    default:
+        log_fatal("Invalid virtual DVD drive type specified: %d\n", m_settings.vdvd_type);
+        return EMUS_INIT_INVALID_DVD_DRIVE_TYPE;
+    }
     m_ataDrivers[1][0] = new hw::ata::NullATADeviceDriver();
     m_ataDrivers[1][1] = new hw::ata::NullATADeviceDriver();
 
@@ -395,7 +440,7 @@ EmulatorStatus Xbox::InitHardware() {
     m_EEPROM = new EEPROMDevice();
     m_HostBridge = new HostBridgeDevice();
     m_MCPXRAM = new MCPXRAMDevice(mcpxRevision);
-    m_LPC = new LPCDevice(m_IRQs, m_rom, m_bios, m_biosSize, m_mcpxROM, m_settings.hw_model != DebugKit);
+    m_LPC = new LPCDevice(m_IRQs, m_rom, m_bios, m_biosSize, m_mcpxROM, m_settings.hw_revision != DebugKit);
     m_USB1 = new USBPCIDevice(1, *m_cpu);
     m_USB2 = new USBPCIDevice(9, *m_cpu);
     m_NVNet = new NVNetDevice();

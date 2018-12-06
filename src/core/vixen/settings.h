@@ -9,6 +9,21 @@ enum CharDriverType {
     CHD_HostSerialPort,
 };
 
+enum VirtualHardDiskDriveType {
+    VHD_Null,    // No hard disk
+    VHD_Dummy,   // Dummy 10 GiB blank hard disk
+    VHD_Image,   // Use an image file for the hard disk
+    // TODO: VHD_HostDirectory   // Virtual disk mapped to a directory on the host
+};
+
+enum VirtualDVDDriveType {
+    VDVD_Null,    // No DVD drive
+    VDVD_Dummy,   // Dummy DVD drive with no media
+    VDVD_Image,   // Virtual DVD with the specified DVD image
+    // TODO: VDVD_HostDevice      // Direct access to a removable media drive on the host
+    // TODO: VDVD_HostDirectory   // Virtual DVD drive mapped to a directory on the host
+};
+
 struct viXenSettings {
     // false: the CPU emulator will execute until interrupted
     // true: the CPU emulator will execute one instruction at a time
@@ -46,8 +61,8 @@ struct viXenSettings {
     // The number of instructions to disassemble
     uint32_t debug_dumpDisassembly_length = 15;
 
-    // The Xbox hardware model to use
-    HardwareModel hw_model = DebugKit;
+    // The Xbox hardware revision to use
+    HardwareModel hw_revision = DebugKit;
 
     // The system clock tick rate
     float hw_sysclock_tickRate = 1000.0f;
@@ -72,7 +87,25 @@ struct viXenSettings {
     // Path to BIOS ROM file
     const char *rom_bios;
 
-    // TODO: path to game XISO or XBE from extracted folder
+    // Virtual hard disk drive parameters
+    VirtualHardDiskDriveType vhd_type = VHD_Null;
+    union {
+        // VHD_Image
+        struct {
+            const char *path;     // Path to virtual hard disk image
+            bool preserveImage;   // If true, writes will be done in a temporary file; if false, writes are done directly to the image file
+        } image;
+    } vhd_parameters;
+
+    // Virtual DVD drive parameters
+    VirtualDVDDriveType vdvd_type = VDVD_Null;
+    union {
+        // VDVD_Image: Path to DVD disk image
+        struct {
+            const char *path;     // Path to DVD image
+            bool preserveImage;   // If true, writes will be done in a temporary file; if false, writes are done directly to the image file
+        } image;
+    } vdvd_parameters;
 };
 
 }
