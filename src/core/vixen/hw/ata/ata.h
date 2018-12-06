@@ -15,7 +15,7 @@
 
 #include "vixen/cpu.h"
 #include "../basic/irq.h"
-#include "../ata/defs.h"
+#include "../ata/ata_defs.h"
 #include "ata_channel.h"
 
 namespace vixen {

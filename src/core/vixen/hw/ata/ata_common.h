@@ -14,7 +14,7 @@
 #include <cstdint>
 
 #include "vixen/cpu.h"
-#include "../ata/defs.h"
+#include "../ata/ata_defs.h"
 
 namespace vixen {
 namespace hw {

@@ -169,10 +169,10 @@ bool ATAChannel::EndDMA() {
 
     // Handle result according to DMA command protocol [9.10]
     if (dev->IsDMAFinished()) {
-        log_spew("ATAChannel::EndDMA: Operation finished successfully on channel %d\n", m_channel);
+        log_spew("ATAChannel::EndDMA: DMA operation finished successfully on channel %d\n", m_channel);
     }
     else {
-        log_spew("ATAChannel::EndDMA: Operation failed on channel %d\n", m_channel);
+        log_spew("ATAChannel::EndDMA: DMA operation failed on channel %d\n", m_channel);
 
         // Set error status
         m_regs.status |= StError;
@@ -203,13 +203,28 @@ void ATAChannel::ReadData(uint32_t *value, uint8_t size) {
         log_warning("ATAChannel::ReadData:  Buffer underflow!  channel = %d  device = %d  size = %d  read = %d\n", m_channel, devIndex, size, lenRead);
     }
 
-    // TODO: multiblock transfer
-    // - device should provide a method to request the next block of data
-    // - returns true if there is a next block, false if not
-    // - when true, set BSY=1 in addition to clearing DRQ=0
-        
-    // Clear DRQ=0
-    m_regs.status &= ~StDataRequest;
+    // Update Status register
+    if (dev->IsBlockTransferComplete()) {
+        if (dev->RequestNextBlock()) {
+            // If the device indicates an error, set ERR=1
+            // Otherwise, set DRQ=1
+            if (dev->HasTransferError()) {
+                m_regs.status |= StError;
+            }
+            else {
+                m_regs.status |= StDataRequest;
+            }
+
+            // Assert interrupt
+            SetInterrupt(true);
+        }
+        else {
+            // Clear DRQ=0
+            m_regs.status &= ~StDataRequest;
+
+            dev->FinishCommand();
+        }
+    }
 }
 
 void ATAChannel::ReadStatus(uint8_t *value) {
@@ -220,7 +235,36 @@ void ATAChannel::ReadStatus(uint8_t *value) {
 }
 
 void ATAChannel::WriteData(uint32_t value, uint8_t size) {
-    log_warning("ATAChannel::WriteData:  Unimplemented!  (channel = %d  device = %d  size = %d, value = 0x%x)\n", m_channel, m_regs.GetSelectedDeviceIndex(), size, value);
+    // Write to device buffer
+    auto devIndex = m_regs.GetSelectedDeviceIndex();
+    auto dev = m_devs[devIndex];
+
+    uint32_t lenWritten = dev->WriteBuffer(reinterpret_cast<uint8_t *>(&value), size);
+    if (lenWritten != size) {
+        log_warning("ATAChannel::WriteData: Buffer overflow!   channel = %d  device = %d  size = %d  read = %d\n", m_channel, devIndex, size, lenWritten);
+    }
+
+    // Update Status register
+    if (dev->IsBlockTransferComplete()) {
+        // Clear DRQ=0
+        m_regs.status &= ~StDataRequest;
+
+        // If the device indicates an error, set ERR=1 clear BSY=0
+        // then assert an interrupt
+        if (dev->HasTransferError()) {
+            m_regs.status |= StError;
+        }
+        else if (dev->RequestNextBlock()) {
+            // Set DRQ=1
+            m_regs.status |= StDataRequest;
+        }
+        else {
+            dev->FinishCommand();
+        }
+
+        // Assert interrupt
+        SetInterrupt(true);
+    }
 }
 
 void ATAChannel::WriteCommand(uint8_t value) {
@@ -244,14 +288,17 @@ void ATAChannel::WriteCommand(uint8_t value) {
     // TODO: submit this entire block as a job to the command processor thread
     {
         switch (cmd) {
-        case CmdSetFeatures:
-            succeeded = dev->SetFeatures();
-            break;
         case CmdIdentifyDevice:
             succeeded = dev->IdentifyDevice();
             break;
         case CmdReadDMA:
             succeeded = dev->BeginReadDMA();
+            break;
+        case CmdSecurityUnlock:
+            succeeded = dev->BeginSecurityUnlock();
+            break;
+        case CmdSetFeatures:
+            succeeded = dev->SetFeatures();
             break;
         case CmdWriteDMA:
             succeeded = dev->BeginWriteDMA();

@@ -30,6 +30,7 @@ public:
     // ----- ATA commands -----------------------------------------------------
 
     void IdentifyDevice(IdentifyDeviceData *data) override;
+    bool SecurityUnlock(uint8_t unlockData[kSectorSize]) override;
     
     // ----- Sector access ----------------------------------------------------
     
@@ -47,6 +48,8 @@ private:
     uint16_t m_numCylinders;
     uint8_t m_numHeadsPerCylinder;
     uint8_t m_numSectorsPerTrack;
+
+    bool m_locked;
 };
 
 extern DummyHardDriveATADeviceDriver g_dummyATADeviceDriver;

@@ -30,19 +30,44 @@ ATADevice::ATADevice(Channel channel, uint8_t devIndex, ATARegisters& regs)
 ATADevice::~ATADevice() {
 }
 
-uint32_t ATADevice::ReadBuffer(uint8_t *dest, uint32_t length) {
+uint32_t ATADevice::ReadBuffer(uint8_t *dst, uint32_t length) {
     uint32_t lenToRead = length;
     if (m_dataBufferPos + length > kSectorSize) {
         lenToRead = GetRemainingBufferLength();
     }
 
-    memcpy(dest, m_dataBuffer + m_dataBufferPos, lenToRead);
+    memcpy(dst, m_dataBuffer + m_dataBufferPos, lenToRead);
     m_dataBufferPos += lenToRead;
     return lenToRead;
 }
 
+uint32_t ATADevice::WriteBuffer(uint8_t *src, uint32_t length) {
+    uint32_t lenToWrite = length;
+    if (m_dataBufferPos + length > kSectorSize) {
+        lenToWrite = GetRemainingBufferLength();
+    }
+
+    memcpy(m_dataBuffer + m_dataBufferPos, src, lenToWrite);
+    m_dataBufferPos += lenToWrite;
+    return lenToWrite;
+}
+
 uint32_t ATADevice::GetRemainingBufferLength() {
     return kSectorSize - m_dataBufferPos;
+}
+
+bool ATADevice::IsBlockTransferComplete() {
+    return GetRemainingBufferLength() == 0;
+}
+
+bool ATADevice::RequestNextBlock() {
+    if (m_sectorsRemaining > 0) {
+        ExecuteCommand();
+        m_sectorsRemaining--;
+        m_dataBufferPos = 0;
+        return true;
+    }
+    return false;
 }
 
 bool ATADevice::BeginReadDMA() {
@@ -356,6 +381,14 @@ void ATADevice::EndDMA() {
     m_transferActive = false;
 }
 
+bool ATADevice::HasTransferError() {
+    return m_transferError;
+}
+
+void ATADevice::FinishCommand() {
+    m_transferActive = false;
+}
+
 bool ATADevice::IdentifyDevice() {
     // [8.12.7] As a prerequisite, DRDY must be set equal to one
     if ((m_regs.status & StReady) == 0) {
@@ -367,6 +400,7 @@ bool ATADevice::IdentifyDevice() {
 
     // Ask the device driver to identify itself
     m_dataBufferPos = 0;
+    m_transferHasCommand = false;
     m_driver->IdentifyDevice(reinterpret_cast<IdentifyDeviceData *>(m_dataBuffer));
 
     // Handle normal output as specified in [8.12.5.1]
@@ -388,6 +422,28 @@ bool ATADevice::IdentifyDevice() {
     //  "DRQ shall be cleared to zero."
     //  "ERR shall be cleared to zero."
     m_regs.status &= ~(StDeviceFault | StDataRequest | StError);
+
+    return true;
+}
+
+bool ATADevice::BeginSecurityUnlock() {
+    // [8.34.7] As a prerequisite, DRDY must be set equal to one
+    if ((m_regs.status & StReady) == 0) {
+        return false;
+    }
+
+    // Sanity check: don't start a PIO transfer while another transfer is running
+    if (m_transferActive) {
+        return false;
+    }
+
+    // Make device ready to accept transfer
+    m_transferActive = true;
+    m_transferError = false;
+    m_dataBufferPos = 0;
+    m_sectorsRemaining = 1;
+    m_transferHasCommand = true;
+    m_command = CmdSecurityUnlock;
 
     return true;
 }
@@ -520,6 +576,24 @@ bool ATADevice::SetDMATransferMode(DMATransferType type, uint8_t mode) {
     m_dmaTransferType = type;
     m_dmaTransferMode = mode;
     return true;
+}
+
+void ATADevice::ExecuteCommand() {
+    if (!m_transferHasCommand) {
+        return;
+    }
+
+    switch (m_command) {
+    case CmdSecurityUnlock:
+        if (!m_driver->SecurityUnlock(m_dataBuffer)) {
+            m_transferError = true;
+        }
+        break;
+    default:
+        log_warning("ATADevice::ExecuteCommand: Unknown command 0x%x\n", m_command);
+        m_transferError = true;
+        break;
+    }
 }
 
 }

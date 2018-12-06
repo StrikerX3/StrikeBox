@@ -36,6 +36,7 @@ DummyHardDriveATADeviceDriver::DummyHardDriveATADeviceDriver()
     : m_numCylinders(20480)
     , m_numHeadsPerCylinder(16)
     , m_numSectorsPerTrack(63)
+    , m_locked(true)
 {
 }
 
@@ -51,13 +52,13 @@ void DummyHardDriveATADeviceDriver::IdentifyDevice(IdentifyDeviceData *data) {
     data->numLogicalCylinders = m_numCylinders;
     data->numLogicalHeads = m_numHeadsPerCylinder;
     data->numLogicalSectorsPerTrack = m_numSectorsPerTrack;
-    
+
     padString((uint8_t *)data->serialNumber, "1234567890", kSerialNumberLength);
     padString((uint8_t *)data->firmwareRevision, "1.00", kFirmwareRevLength);
     padString((uint8_t *)data->modelNumber, "DMY987654321", kModelNumberLength);
-    
+
     data->validTranslationFields = IDValidXlatUltraDMA | IDValidXlatTransferCycles | IDValidXlatCHS;
-    
+
     data->numCurrentLogicalCylinders = data->numLogicalCylinders;
     data->numCurrentLogicalHeads = data->numLogicalHeads;
     data->numCurrentLogicalSectorsPerTrack = data->numLogicalSectorsPerTrack;
@@ -70,10 +71,10 @@ void DummyHardDriveATADeviceDriver::IdentifyDevice(IdentifyDeviceData *data) {
     data->recommendedMDMATransferCycleTime = 120;
     data->minPIOTransferCycleNoFlowCtl = 120;
     data->minPIOTransferCycleIORDYFlowCtl = 120;
-    
+
     data->majorVersionNumber = IDMajorVerATAPI4 | IDMajorVerATA3 | IDMajorVerATA2 | IDMajorVerATA1;
     data->minorVersionNumber = IDMinorVerATAPI4_T13_1153D_rev17;
-    
+
     data->commandSetsSupported1 = IDCmdSet1PowerMgmtFeatureSet | IDCmdSet1WriteCache | IDCmdSet1LookAhead;
     data->commandSetsSupported2 = IDCmdSet2Bit14AlwaysOne;
     data->commandSetsSupported3 = IDCmdSet3Bit14AlwaysOne;
@@ -81,11 +82,20 @@ void DummyHardDriveATADeviceDriver::IdentifyDevice(IdentifyDeviceData *data) {
     data->commandSetsEnabled1 = IDCmdSet1PowerMgmtFeatureSet | IDCmdSet1WriteCache | IDCmdSet1LookAhead;
     data->commandSetsEnabled2 = IDCmdSet2Bit14AlwaysOne;
     data->commandSetsEnabled3 = IDCmdSet3Bit14AlwaysOne;
-    
+
     data->ultraDMASettings = IDUltraDMA0Supported | IDUltraDMA1Supported | IDUltraDMA2Supported;
 
     // Xbox hard drive must be locked
-    data->securityStatus |= IDSecStatusSupported | IDSecStatusEnabled/* | IDSecStatusLocked*/;
+    data->securityStatus |= IDSecStatusSupported | IDSecStatusEnabled;
+    if (m_locked) {
+        data->securityStatus |= IDSecStatusLocked;
+    }
+}
+
+bool DummyHardDriveATADeviceDriver::SecurityUnlock(uint8_t unlockData[kSectorSize]) {
+    // We don't really care if the unlock data is correct or even valid; just unlock the drive
+    m_locked = false;
+    return true;
 }
 
 bool DummyHardDriveATADeviceDriver::ReadSector(uint32_t lbaAddress, uint8_t destBuffer[kSectorSize]) {

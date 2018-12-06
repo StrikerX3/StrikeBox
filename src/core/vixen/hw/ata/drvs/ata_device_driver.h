@@ -13,7 +13,7 @@
 
 #include <cstdint>
 
-#include "../../ata/defs.h"
+#include "../../ata/ata_defs.h"
 #include "../ata_common.h"
 
 namespace vixen {
@@ -33,6 +33,7 @@ public:
     // ----- ATA commands -----------------------------------------------------
 
     virtual void IdentifyDevice(IdentifyDeviceData *data) = 0;
+    virtual bool SecurityUnlock(uint8_t unlockData[kSectorSize]) = 0;
 
     // ----- Sector access ----------------------------------------------------
 

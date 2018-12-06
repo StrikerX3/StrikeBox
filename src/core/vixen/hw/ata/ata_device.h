@@ -14,7 +14,7 @@
 #include <cstdint>
 
 #include "vixen/cpu.h"
-#include "../ata/defs.h"
+#include "../ata/ata_defs.h"
 #include "ata_common.h"
 #include "drvs/ata_device_driver.h"
 #include "drvs/drv_null.h"
@@ -39,8 +39,10 @@ public:
 
     // ----- PIO data buffer --------------------------------------------------
 
-    uint32_t ReadBuffer(uint8_t *dest, uint32_t length);
-    uint32_t GetRemainingBufferLength();
+    uint32_t ReadBuffer(uint8_t *dst, uint32_t length);
+    uint32_t WriteBuffer(uint8_t *src, uint32_t length);
+    bool IsBlockTransferComplete();
+    bool RequestNextBlock();
 
     // ----- DMA transfer -----------------------------------------------------
 
@@ -48,14 +50,20 @@ public:
     bool WriteDMA(uint8_t srcBuffer[kSectorSize]);
     bool IsDMAFinished() { return m_dma_currentLBA >= m_dma_endingLBA; }
     void EndDMA();
+    
+    // ----- Transfer control -------------------------------------------------
+    
+    bool HasTransferError();
+    void FinishCommand();
 
     // ----- Command handlers -------------------------------------------------
     // These functions must return false on error
 
-    bool IdentifyDevice();     // [8.12] 0xEC   Identify Device
-    bool BeginReadDMA();       // [8.23] 0xC8   Read DMA
-    bool SetFeatures();        // [8.37] 0xEF   Set Features
-    bool BeginWriteDMA();      // [8.45] 0xCA   Write DMA
+    bool IdentifyDevice();        // [8.12] 0xEC   Identify Device
+    bool BeginReadDMA();          // [8.23] 0xC8   Read DMA
+    bool BeginSecurityUnlock();   // [8.34] 0xF2   Security Unlock
+    bool SetFeatures();           // [8.37] 0xEF   Set Features
+    bool BeginWriteDMA();         // [8.45] 0xCA   Write DMA
 
     // ----- Set Features subcommand handlers ---------------------------------
 
@@ -89,10 +97,25 @@ private:
     uint8_t m_dataBuffer[kSectorSize];
     uint32_t m_dataBufferPos;
 
-    // ----- State ------------------------------------------------------------
+    uint32_t GetRemainingBufferLength();
+
+    // ----- Data transfer ----------------------------------------------------
 
     // true if any transfer is in progress (PIO or DMA)
     bool m_transferActive;
+    
+    // How many sectors to read/write
+    uint32_t m_sectorsRemaining;
+
+    // Whether the command reported an error
+    bool m_transferError;
+    
+    // The command currently executing
+    bool m_transferHasCommand;
+    Command m_command;
+
+    // Execute the command after receiving a full sector of data
+    void ExecuteCommand();
 
     // ----- DMA transfer -----------------------------------------------------
     

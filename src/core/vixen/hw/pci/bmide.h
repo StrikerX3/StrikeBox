@@ -12,7 +12,7 @@
 
 #include "../defs.h"
 #include "pci.h"
-#include "bmide/defs.h"
+#include "bmide/bmide_defs.h"
 #include "bmide_channel.h"
 #include "vixen/hw/ata/ata.h"
 

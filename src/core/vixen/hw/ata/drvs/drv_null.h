@@ -29,6 +29,7 @@ public:
     // ----- ATA commands -----------------------------------------------------
     
     void IdentifyDevice(IdentifyDeviceData *data) override;
+    bool SecurityUnlock(uint8_t unlockData[kSectorSize]) override { return false; }
     
     // ----- Sector access ----------------------------------------------------
 

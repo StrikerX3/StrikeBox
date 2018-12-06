@@ -10,7 +10,7 @@
 #include <cstdint>
 #include <mutex>
 
-#include "bmide/defs.h"
+#include "bmide/bmide_defs.h"
 #include "vixen/hw/ata/ata_common.h"
 #include "vixen/hw/ata/ata.h"
 
