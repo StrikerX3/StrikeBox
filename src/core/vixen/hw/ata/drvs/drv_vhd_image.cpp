@@ -109,7 +109,7 @@ bool ImageHardDriveATADeviceDriver::ReadSector(uint32_t lbaAddress, uint8_t dest
         return false;
     }
 
-    // Failed to seek address
+    // Seek address
     if (fseek(m_fpImage, lbaAddress * kSectorSize, SEEK_SET)) {
         return false;
     }
@@ -130,12 +130,19 @@ bool ImageHardDriveATADeviceDriver::WriteSector(uint32_t lbaAddress, uint8_t des
         return false;
     }
 
-    // TODO: we're gonna lie about writing for now
+    // Seek address
+    if (fseek(m_fpImage, lbaAddress * kSectorSize, SEEK_SET)) {
+        return false;
+    }
 
+    // Write data to image
     // TODO: handle copy-on-write
     // If copy-on-write and block is copied, overwrite copy, otherwise create copy
     // If not copy-on-write, write to image file directly
-    return true;
+    int lenWrite = fwrite(destBuffer, 1, kSectorSize, m_fpImage);
+    fflush(m_fpImage);
+
+    return lenWrite == kSectorSize;
 }
 
 }
