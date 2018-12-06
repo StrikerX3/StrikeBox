@@ -18,17 +18,6 @@ namespace vixen {
 namespace hw {
 namespace ata {
 
-static void padString(uint8_t *dest, const char *src, uint32_t length) {
-    for (uint32_t i = 0; i < length; i++) {
-        if (*src) {
-            dest[i ^ 1] = *src++;
-        }
-        else {
-            dest[i ^ 1] = ' ';
-        }
-    }
-}
-
 BaseHardDriveATADeviceDriver::BaseHardDriveATADeviceDriver() 
     : m_numLogicalCylinders(0)
     , m_numLogicalHeads(0)
@@ -49,9 +38,9 @@ void BaseHardDriveATADeviceDriver::IdentifyDevice(IdentifyDeviceData *data) {
     data->numLogicalHeads = m_numHeadsPerCylinder;
     data->numLogicalSectorsPerTrack = m_numSectorsPerTrack;
 
-    padString((uint8_t *)data->serialNumber, "1234567890", kSerialNumberLength);
-    padString((uint8_t *)data->firmwareRevision, "1.00", kFirmwareRevLength);
-    padString((uint8_t *)data->modelNumber, "DMY987654321", kModelNumberLength);
+    padString((uint8_t *)data->serialNumber, m_serialNumber, kSerialNumberLength);
+    padString((uint8_t *)data->firmwareRevision, m_firmwareRevision, kFirmwareRevLength);
+    padString((uint8_t *)data->modelNumber, m_modelNumber, kModelNumberLength);
 
     data->validTranslationFields = IDValidXlatUltraDMA | IDValidXlatTransferCycles;
     

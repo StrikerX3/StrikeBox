@@ -16,6 +16,9 @@
 #include "vixen/hw/ata/drvs/drv_vhd_dummy.h"
 #include "vixen/hw/ata/drvs/drv_vhd_image.h"
 
+#include "vixen/hw/ata/drvs/drv_vdvd_dummy.h"
+//#include "vixen/hw/ata/drvs/drv_vdvd_image.h"
+
 #ifdef __linux__
 #include <sys/mman.h>
 #endif
@@ -389,8 +392,7 @@ EmulatorStatus Xbox::InitHardware() {
         m_ataDrivers[0][1] = new hw::ata::NullATADeviceDriver();
         break;
     case VDVD_Dummy:
-        // TODO: implement
-        m_ataDrivers[0][1] = new hw::ata::NullATADeviceDriver();
+        m_ataDrivers[0][1] = new hw::ata::DummyDVDDriveATADeviceDriver();
         break;
     case VDVD_Image:
         // TODO: implement

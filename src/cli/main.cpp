@@ -37,11 +37,12 @@ int main(int argc, const char *argv[]) {
     printf("------------------\n");
 
     cxxopts::Options options(basename((char*)argv[0]), "viXen - 6th generation (Original) XBOX Emulator\n");
-    options.custom_help("-m mcpx_path -b bios_path -r xbox_rev [-hd vhd_image_path]");
+    options.custom_help("-m mcpx_path -b bios_path -r xbox_rev [-d image_path] [-g image_path]");
     options.add_options()
         ("m, mcpx", "Path to MCPX ROM", cxxopts::value<std::string>(), "mcpx_path")
         ("b, bios", "Path to BIOS ROM", cxxopts::value<std::string>(), "bios_path")
-        ("d, vhd-image", "Path to virtual hard disk drive image", cxxopts::value<std::string>(), "vhd_image_path")
+        ("d, hd-image", "Path to hard disk drive image", cxxopts::value<std::string>(), "image_path")
+        ("g, xgd-image", "Path to Xbox Game Disc image", cxxopts::value<std::string>(), "image_path")
         ("r, revision", "XBOX revision (retail | debug)", cxxopts::value<std::string>(), "xbox_rev")
         ("h, help", "Shows this message");
 
@@ -63,6 +64,13 @@ int main(int argc, const char *argv[]) {
     }
     else {
         vhd_path = args["vhd-image"].as<std::string>().c_str();
+    }
+    const char *vdvd_path;
+    if (args.count("xgd-image") == 0) {
+        vdvd_path = "";
+    }
+    else {
+        vdvd_path = args["xgd-image"].as<std::string>().c_str();
     }
 
     // Locate and instantiate modules
@@ -133,7 +141,14 @@ int main(int argc, const char *argv[]) {
         settings->vhd_parameters.image.preserveImage = true;
     }
 
-    settings->vdvd_type = VDVD_Dummy;
+    if (strlen(vdvd_path) == 0) {
+        settings->vdvd_type = VDVD_Dummy;
+    }
+    else {
+        settings->vdvd_type = VDVD_Image;
+        settings->vdvd_parameters.image.path = vdvd_path;
+        settings->vdvd_parameters.image.preserveImage = true;
+    }
 
     EmulatorStatus status = xbox->Run();
     if (status == EMUS_OK) {

@@ -538,7 +538,7 @@ enum IdentifyPACKETDeviceGeneralConfiguration : uint16_t {
     IDPGenConfPRAssertINTRQOnDRQ = 0b01,              //   0b01 - Device shall assert INTRQ when DRQ is set to one after receiving PACKET
     IDPGenConfPRSetDRQIn50ms = 0b10,                  //   0b10 - Device shall set DRQ to one within 50 ms of receiving PACKET command
 
-    IDPGenConfCommandSizeShift = 5,                   // Bit shift for the command size field
+    IDPGenConfCommandSizeShift = 0,                   // Bit shift for the command size field
     IDPGenConfCommandSizeMask = 0b11,                 // Mask for the command size field, one of:
     IDPGenConfCS12Byte = 0b00,                        //   0b00 - 12 byte command packet
     IDPGenConfCS16Byte = 0b01,                        //   0b01 - 16 byte command packet

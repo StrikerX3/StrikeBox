@@ -15,6 +15,7 @@
 
 #include "../../ata/ata_defs.h"
 #include "../ata_common.h"
+#include "util.h"
 
 namespace vixen {
 namespace hw {
@@ -52,6 +53,13 @@ public:
     virtual bool IsLBAAddressUserAccessible(uint32_t lbaAddress) = 0;
     virtual uint32_t CHSToLBA(uint32_t cylinder, uint8_t head, uint8_t sector) = 0;
     virtual void LBAToCHS(uint32_t lbaAddress, uint16_t *cylinder, uint8_t *head, uint8_t *sector) = 0;
+protected:
+    // ----- Common data ------------------------------------------------------
+
+    char m_serialNumber[kSerialNumberLength + 1];
+    char m_firmwareRevision[kFirmwareRevLength + 1];
+    char m_modelNumber[kModelNumberLength + 1];
+
 };
 
 }

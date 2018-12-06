@@ -30,6 +30,11 @@ static void padString(uint8_t *dest, const char *src, uint32_t length) {
 }
 
 ImageHardDriveATADeviceDriver::ImageHardDriveATADeviceDriver() {
+    // TODO: fill in with appropriate data
+    strcpy(m_serialNumber, "1234567890");
+    strcpy(m_firmwareRevision, "1.00");
+    strcpy(m_modelNumber, "IMAGE HD 12345");
+
     // Initialize an empty (invalid) disk
     m_numCylinders = 0;
     m_numHeadsPerCylinder = 0;
