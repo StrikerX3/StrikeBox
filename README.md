@@ -13,7 +13,7 @@ is in ROM, which is provided by the user.
 
 If provided with a particular BIOS ROM and a raw hard disk image containing the
 Microsoft Xbox Dashboard, it will load the Dashboard software succesfully.
-There's no networking, no audio, no graphics, no games... yet ;).
+There's no networking, no audio, no graphics, no games... yet ;)
 
 The initial goal is to emulate the original Xbox at a low level. The user will
 have to provide their own dump of the MCPX and BIOS ROMs from an Xbox machine,
@@ -64,7 +64,7 @@ $ sudo apt-get install cmake
 $ mkdir build; cd build
 $ cmake .. -DCPU_MODULE=kvm && make
 $ cd src/cli
-$ ./vixen-cli -c <path-to-MCPX-ROM> -b <path-to-BIOS-ROM> -x <path-to-XBE> -m [debug|retail]
+$ ./vixen-cli -m <path-to-MCPX-ROM> -b <path-to-BIOS-ROM> -d <path-to-XBE> -r [debug|retail]
 ```
 
 ### macOS
