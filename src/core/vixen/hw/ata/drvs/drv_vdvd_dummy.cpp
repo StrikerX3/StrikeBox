@@ -13,6 +13,7 @@
 
 #include "vixen/log.h"
 #include "vixen/io.h"
+#include "vixen/hw/ata/atapi_defs.h"
 
 namespace vixen {
 namespace hw {
@@ -36,8 +37,38 @@ bool DummyDVDDriveATADeviceDriver::Read(uint64_t byteAddress, uint8_t *buffer, u
 }
 
 bool DummyDVDDriveATADeviceDriver::Write(uint64_t byteAddress, uint8_t *buffer, uint32_t size) {
-    // Lie about writing, always succeed
-    return true;
+    // Lie about writing, always fail
+    return false;
+}
+
+bool DummyDVDDriveATADeviceDriver::IdentifyATAPIPacket(uint8_t *packet, atapi::PacketInformation& packetInfo) {
+    // Parse packet header
+    atapi::OperationCode *opCode = reinterpret_cast<atapi::OperationCode *>(packet);
+    log_debug("DummyDVDDriveATADeviceDriver::IdentifyATAPIPacket:  Operation Code 0x%x  ->  Command Code 0x%x  Group Code 0x%x\n", opCode->u8, opCode->fields.commandCode, opCode->fields.groupCode);
+
+    // TODO: implement
+    return false;
+}
+
+bool DummyDVDDriveATADeviceDriver::ProcessATAPIPacketNonData(atapi::PacketInformation& packetInfo) {
+    log_debug("DummyDVDDriveATADeviceDriver::ProcessATAPIPacketNonData:  Operation Code 0x%x  ->  Command Code 0x%x  Group Code 0x%x\n", packetInfo.opCode.u8, packetInfo.opCode.fields.commandCode, packetInfo.opCode.fields.groupCode);
+  
+    // TODO: implement
+    return false;
+}
+
+bool DummyDVDDriveATADeviceDriver::ProcessATAPIPacketDataRead(atapi::PacketInformation& packetInfo, uint8_t *packetDataBuffer, uint16_t byteCountLimit, uint32_t *packetDataSize) {
+    log_debug("DummyDVDDriveATADeviceDriver::ProcessATAPIPacketDataRead:  Operation Code 0x%x  ->  Command Code 0x%x  Group Code 0x%x   byte count limit = 0x%x\n", packetInfo.opCode.u8, packetInfo.opCode.fields.commandCode, packetInfo.opCode.fields.groupCode, byteCountLimit);
+ 
+    // TODO: implement
+    return false;
+}
+
+bool DummyDVDDriveATADeviceDriver::ProcessATAPIPacketDataWrite(atapi::PacketInformation& packetInfo, uint8_t *packetDataBuffer, uint16_t byteCountLimit) {
+    log_debug("DummyDVDDriveATADeviceDriver::ProcessATAPIPacketDataWrite:  Operation Code 0x%x  ->  Command Code 0x%x  Group Code 0x%x   byte count limit = 0x%x\n", packetInfo.opCode.u8, packetInfo.opCode.fields.commandCode, packetInfo.opCode.fields.groupCode, byteCountLimit);
+
+    // TODO: implement
+    return false;
 }
 
 }

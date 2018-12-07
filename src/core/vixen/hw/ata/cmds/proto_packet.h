@@ -37,9 +37,8 @@ public:
 private:
     // ----- Protocol operations ----------------------------------------------
 
-    // Invoked at the beginning of command execution to determine if the device
-    // is ready to accept command packet.
-    bool PrepareToAcceptPacket();
+    // Parses the input registers and stores the values in the parameters.
+    bool ReadInput();
 
     // Corresponds to the end of the protocol fluxogram starting from (C) when
     // hasError is true, or (D) if false.
@@ -47,6 +46,10 @@ private:
 
     // Processes the packet received from the host.
     void ProcessPacket();
+
+    // Prepares registers for data transfer.
+    // Corresponds to the protocol fluxogram starting from (B).
+    void PrepareDataTransfer();
 
     void ProcessPacketImmediate();
     void ProcessPacketOverlapped();
@@ -56,11 +59,22 @@ private:
     bool m_overlapped;
     bool m_dmaTransfer;
     uint8_t m_tag;
-    uint16_t m_byteCount;
+    uint16_t m_byteCountLimit;
     uint8_t m_selectedDevice;
+    
+    // ----- State ------------------------------------------------------------
 
-    uint8_t *m_packetBuffer;
-    uint8_t m_packetPos;
+    uint8_t *m_packetCmdBuffer;
+    uint8_t m_packetCmdPos;
+
+    uint8_t *m_packetDataBuffer;
+    uint16_t m_packetDataPos;
+    uint32_t m_packetDataTotal;
+    uint32_t m_packetDataSize;
+
+    bool m_transferError;
+
+    atapi::PacketInformation m_packetInfo;
 };
 
 }

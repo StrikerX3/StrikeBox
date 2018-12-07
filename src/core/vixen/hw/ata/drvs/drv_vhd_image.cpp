@@ -64,7 +64,7 @@ bool ImageHardDriveATADeviceDriver::LoadImageFile(const char *imagePath, bool co
 
     // Determine image file size
     fseek(m_fpImage, 0, SEEK_END);
-    uint64_t imageSize = ftell(m_fpImage);
+    uint64_t imageSize = _ftelli64(m_fpImage);
     uint64_t imageSizeInSectors = imageSize / kSectorSize;
     log_info("ImageHardDriveATADeviceDriver::LoadImage:  Loaded image \"%s\": %llu bytes -> %llu sectors\n", imagePath, imageSize, imageSizeInSectors);
     if (imageSizeInSectors > kMaxLBASectorCapacity) {

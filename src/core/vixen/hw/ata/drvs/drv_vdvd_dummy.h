@@ -31,6 +31,13 @@ public:
     
     bool Read(uint64_t byteAddress, uint8_t *buffer, uint32_t size) override;
     bool Write(uint64_t byteAddress, uint8_t *buffer, uint32_t size) override;
+
+    // ----- ATAPI ------------------------------------------------------------
+
+    bool IdentifyATAPIPacket(uint8_t *packet, atapi::PacketInformation& packetInfo) override;
+    bool ProcessATAPIPacketNonData(atapi::PacketInformation& packetInfo) override;
+    bool ProcessATAPIPacketDataRead(atapi::PacketInformation& packetInfo, uint8_t* packetDataBuffer, uint16_t byteCountLimit, uint32_t *packetDataSize) override;
+    bool ProcessATAPIPacketDataWrite(atapi::PacketInformation& packetInfo, uint8_t* packetDataBuffer, uint16_t byteCountLimit) override;
 };
 
 }

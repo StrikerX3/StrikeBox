@@ -138,9 +138,19 @@ enum InterruptReasonBits : uint8_t {
     PkIntrCmdOrData = (1 << 0),     // (C/D) 0 = command, 1 = data
 };
 
-// Shift and mask for the Tag field used by the Packet and Service commands
+// Error bits for the PACKET protocol
+enum PacketErrorBits : uint8_t {
+    PkErrEndOfMedium = (1 << 1),                // (EOM) End of Medium
+    PkErrIncorrectLengthIndicator = (1 << 0),   // (ILI) Incorrect length indicator
+};
+
+// Shift and mask for the Tag field used in the Interrupt Reason register by the Packet and Service commands
 const uint8_t kPkTagShift = 3;
 const uint8_t kPkTagMask = 0b11111;
+
+// Shift and mask for the Sense field used in the Error register by the Packet and Service commands
+const uint8_t kPkSenseShift = 4;
+const uint8_t kPkSenseMask = 0b1111;
 
 // --- Transfer modes -----------------------------------------------------------------------------
 

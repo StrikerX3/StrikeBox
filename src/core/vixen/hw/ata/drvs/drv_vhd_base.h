@@ -44,7 +44,14 @@ public:
     
     virtual bool Read(uint64_t byteAddress, uint8_t *buffer, uint32_t size) override = 0;
     virtual bool Write(uint64_t byteAddress, uint8_t *buffer, uint32_t size) override = 0;
-    
+
+    // ----- ATAPI ------------------------------------------------------------
+
+    bool IdentifyATAPIPacket(uint8_t *packet, atapi::PacketInformation& packetInfo) override { return false; }
+    bool ProcessATAPIPacketNonData(atapi::PacketInformation& packetInfo) override { return false; }
+    bool ProcessATAPIPacketDataRead(atapi::PacketInformation& packetInfo, uint8_t* packetDataBuffer, uint16_t byteCountLimit, uint32_t *packetDataSize) override { return false; }
+    bool ProcessATAPIPacketDataWrite(atapi::PacketInformation& packetInfo, uint8_t* packetDataBuffer, uint16_t byteCountLimit) override { return false; }
+
     // ----- Utility functions ------------------------------------------------
     
     bool IsAttached() override { return true; }

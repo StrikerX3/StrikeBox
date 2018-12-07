@@ -14,6 +14,7 @@
 #include <cstdint>
 
 #include "../../ata/ata_defs.h"
+#include "../../ata/atapi_common.h"
 #include "../ata_common.h"
 #include "util.h"
 
@@ -45,6 +46,13 @@ public:
 
     virtual bool Read(uint64_t byteAddress, uint8_t *buffer, uint32_t size) = 0;
     virtual bool Write(uint64_t byteAddress, uint8_t *buffer, uint32_t size) = 0;
+
+    // ----- ATAPI ------------------------------------------------------------
+
+    virtual bool IdentifyATAPIPacket(uint8_t *packet, atapi::PacketInformation& packetInfo) = 0;
+    virtual bool ProcessATAPIPacketNonData(atapi::PacketInformation& packetInfo) = 0;
+    virtual bool ProcessATAPIPacketDataRead(atapi::PacketInformation& packetInfo, uint8_t* packetDataBuffer, uint16_t byteCountLimit, uint32_t *packetDataSize) = 0;
+    virtual bool ProcessATAPIPacketDataWrite(atapi::PacketInformation& packetInfo, uint8_t* packetDataBuffer, uint16_t byteCountLimit) = 0;
     
     // ----- Feature sets -----------------------------------------------------
 
