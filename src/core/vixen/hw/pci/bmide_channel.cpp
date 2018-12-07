@@ -97,11 +97,11 @@ void BMIDEChannel::WritePRDTableAddress(uint32_t value, uint8_t size) {
     else {
         m_prdTableAddr = value;
     }
-    log_spew("BMIDEChannel::WritePRDTableAddress:  channel = %d,  address = 0x%x\n", m_channel, m_prdTableAddr);
+    //log_spew("BMIDEChannel::WritePRDTableAddress:  channel = %d,  address = 0x%x\n", m_channel, m_prdTableAddr);
 }
 
 void BMIDEChannel::BeginWork() {
-    log_spew("BMIDEChannel::BeginWork:  Starting operation on channel %d\n", m_channel);
+    //log_spew("BMIDEChannel::BeginWork:  Starting operation on channel %d\n", m_channel);
 
     m_status |= StActive;
 
@@ -112,7 +112,7 @@ void BMIDEChannel::BeginWork() {
 }
 
 void BMIDEChannel::StopWork() {
-    log_spew("BMIDEChannel::StopWork:  Stopping operation on channel = %d\n", m_channel);
+    //log_spew("BMIDEChannel::StopWork:  Stopping operation on channel = %d\n", m_channel);
 
     // Interrupt worker
     m_job_cancel = true;
@@ -162,10 +162,10 @@ struct PRDHelper {
             // Go to the next PRD if we reached the end of the current PRD
             // and there are more entries
             if (m_currByte >= byteCount) {
-                log_debug("BM IDE:  block finished\n", m_currByte, byteCount);
+                //log_spew("BM IDE:  block finished\n", m_currByte, byteCount);
                 // No more entries
                 if (m_currPRD->endOfTable) {
-                    log_debug("BM IDE:  last entry\n");
+                    //log_spew("BM IDE:  last entry\n");
                     bufPtr = nullptr;
                     bufLen = 0;
                     return false;
@@ -173,7 +173,7 @@ struct PRDHelper {
 
                 m_currPRD++;
                 m_currByte = 0;
-                log_debug("BM IDE:  next block: 0x%x bytes\n", (m_currPRD->byteCount == 0 ? 65536 : m_currPRD->byteCount));
+                //log_spew("BM IDE:  next block: 0x%x bytes\n", (m_currPRD->byteCount == 0 ? 65536 : m_currPRD->byteCount));
                 continue;
             }
 
@@ -197,7 +197,7 @@ struct PRDHelper {
         }
         
         // This is the last sector if we reached the end of the last PRD
-        log_debug("BM IDE:  PRD: 0x%x / 0x%x bytes  at  0x%x%s\n", m_currByte, byteCount, m_currPRD->basePhysicalAddress, (m_currPRD->endOfTable ? " (EOT)" : ""));
+        //log_spew("BM IDE:  PRD: 0x%x / 0x%x bytes  at  0x%x%s\n", m_currByte, byteCount, m_currPRD->basePhysicalAddress, (m_currPRD->endOfTable ? " (EOT)" : ""));
         return m_currPRD->endOfTable && m_currByte >= byteCount;
     }
 };
@@ -229,7 +229,7 @@ void BMIDEChannel::RunWorker() {
                 if (helper.IsLastSector()) {
                     m_status &= ~StActive;
                     m_job_running = false;
-                    log_debug("BM IDE:  last sector in PRD table\n");
+                    //log_spew("BM IDE:  last sector in PRD table\n");
                 }
 
                 // Do DMA read or write
@@ -245,14 +245,14 @@ void BMIDEChannel::RunWorker() {
                     if (m_ataChannel.AreInterruptsEnabled()) {
                         m_status |= StInterrupt;
                         m_ataChannel.GetInterruptTrigger().Assert();
-                        log_debug("BM IDE channel %d:  interrupt asserted\n", m_channel);
+                        //log_spew("BM IDE channel %d:  interrupt asserted\n", m_channel);
                     }
-                    log_debug("BM IDE:  transfer ended\n");
+                    //log_spew("BM IDE:  transfer ended\n");
                     m_job_running = false;
                 }
             }
             else {
-                log_spew("BM IDE channel %d: Ran out of PRDs\n", m_channel);
+                //log_spew("BM IDE channel %d: Ran out of PRDs\n", m_channel);
                 m_status &= ~StActive;
                 m_job_running = false;
             }
