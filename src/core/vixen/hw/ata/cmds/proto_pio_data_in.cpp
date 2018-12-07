@@ -49,6 +49,7 @@ void PIODataInProtocolCommand::ReadData(uint8_t *value, uint32_t size) {
         }
         else {
             m_regs.status &= ~StDataRequest;
+            Finish();
         }
     }
 }

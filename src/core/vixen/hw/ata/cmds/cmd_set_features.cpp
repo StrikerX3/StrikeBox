@@ -54,7 +54,7 @@ bool SetFeatures::ExecuteImpl() {
 
         // Status register:
         //  "BSY shall be cleared to zero indicating command completion."
-        //     Already handled by the caller
+        m_regs.status &= ~StBusy;
 
         //  "DRDY shall be set to one."
         m_regs.status |= StReady;
@@ -66,7 +66,6 @@ bool SetFeatures::ExecuteImpl() {
         if (m_regs.error) {
             m_regs.status |= StError;
         }
-
     }
 
     return succeeded;

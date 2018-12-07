@@ -58,7 +58,7 @@ protected:
 
 private:
     uint8_t m_buffer[kSectorSize];
-    uint16_t m_bufferPos;
+    uint16_t m_bufferPos = 0;
 
     uint32_t WriteBuffer(uint8_t *src, uint8_t length);
     void DrainBuffer();

@@ -36,12 +36,10 @@ bool InitializeDeviceParameters::ExecuteImpl() {
 
         // Status register:
         //  "BSY shall be cleared to zero indicating command completion."
-        //     Already handled by the caller
-
         //  "DF (Device Fault) shall be cleared to zero."
         //  "DRQ shall be cleared to zero."
         //  "ERR shall be cleared to zero."
-        m_regs.status &= ~(StDeviceFault | StDataRequest | StError);
+        m_regs.status &= ~(StBusy | StDeviceFault | StDataRequest | StError);
     }
     else {
         // Handle normal output as specified in [8.16.6]
@@ -57,14 +55,12 @@ bool InitializeDeviceParameters::ExecuteImpl() {
         m_regs.deviceHead = (m_regs.deviceHead & ~(1 << kDevSelectorBit)) | (m_devIndex << kDevSelectorBit);
 
         // Status register:
-        //  "BSY shall be cleared to zero indicating command completion."
-        //     Already handled by the caller
-
         //  "DF (Device Fault) shall be set to one if a device fault has occurred."
         //    TODO: what constitutes a device fault in this case?
 
+        //  "BSY shall be cleared to zero indicating command completion."
         //  "DRQ shall be cleared to zero."
-        m_regs.status &= ~StDataRequest;
+        m_regs.status &= ~(StBusy | StDataRequest);
 
         //  "ERR shall be set to one if an Error register bit is set to one."
         if (m_regs.error) {

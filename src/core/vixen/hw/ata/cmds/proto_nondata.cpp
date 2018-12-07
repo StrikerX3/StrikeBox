@@ -33,6 +33,9 @@ void NonDataProtocolCommand::Execute() {
         regs.status |= StError;
     }
 
+    regs.status &= ~StBusy;
+    m_interrupt.Assert();
+
     Finish();
 }
 

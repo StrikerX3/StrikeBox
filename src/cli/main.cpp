@@ -59,11 +59,11 @@ int main(int argc, const char *argv[]) {
     const char *bios_path = args["bios"].as<std::string>().c_str();
     const char *revision = args["revision"].as<std::string>().c_str();
     const char *vhd_path;
-    if (args.count("vhd-image") == 0) {
+    if (args.count("hd-image") == 0) {
         vhd_path = "";
     }
     else {
-        vhd_path = args["vhd-image"].as<std::string>().c_str();
+        vhd_path = args["hd-image"].as<std::string>().c_str();
     }
     const char *vdvd_path;
     if (args.count("xgd-image") == 0) {

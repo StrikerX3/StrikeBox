@@ -205,13 +205,19 @@ void BMIDEChannel::RunWorker() {
                 else {
                     log_spew("BM IDE channel %d: Ran out of PRDs while writing\n", m_channel);
                     m_status &= ~StActive;
+                    finished = true;
                 }
             }
             else {
-                if (m_ataChannel.ReadDMA(helper.bufPtr)) {
-                    if (!helper.NextSector()) {
+                uint8_t buf[kSectorSize];
+                if (m_ataChannel.ReadDMA(buf)) {
+                    if (helper.NextSector()) {
+                        memcpy(helper.bufPtr, buf, kSectorSize);
+                    }
+                    else {
                         log_spew("BM IDE channel %d: Ran out of PRDs while reading\n", m_channel);
                         m_status &= ~StActive;
+                        finished = true;
                     }
                 }
                 else {

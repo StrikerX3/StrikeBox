@@ -127,16 +127,15 @@ void DMAProtocolCommand::ReadData(uint8_t *value, uint32_t size) {
         return;
     }
 
+    // Update position
+    m_currentLBA++;
+
     // Check if the DMA transfer has finished
     if (m_currentLBA >= m_endingLBA) {
         FinishTransfer();
         m_regs.status &= ~(StBusy | StDataRequest);
         m_interrupt.Assert();
-        return;
     }
-
-    // Update position
-    m_currentLBA++;
 }
 
 void DMAProtocolCommand::WriteData(uint8_t *value, uint32_t size) {
@@ -179,16 +178,15 @@ void DMAProtocolCommand::WriteData(uint8_t *value, uint32_t size) {
         return;
     }
 
+    // Update position
+    m_currentLBA++;
+
     // Check if the DMA transfer has finished
     if (m_currentLBA >= m_endingLBA) {
         FinishTransfer();
         m_regs.status &= ~(StBusy | StDataRequest);
         m_interrupt.Assert();
-        return;
     }
-
-    // Update position
-    m_currentLBA++;
 }
 
 void DMAProtocolCommand::FinishTransfer() {

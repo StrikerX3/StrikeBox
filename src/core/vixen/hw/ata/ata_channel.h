@@ -72,15 +72,6 @@ public:
 
     bool AreInterruptsEnabled() { return m_regs.AreInterruptsEnabled(); }
 
-    class IntrTrigger : public InterruptTrigger {
-    public:
-        IntrTrigger(ATAChannel& channel) : m_channel(channel) {}
-        void Assert() override { m_channel.SetInterrupt(true); }
-        void Negate() override { m_channel.SetInterrupt(false); }
-    private:
-        ATAChannel& m_channel;
-    };
-
 private:
     friend class ATA;
 
@@ -101,13 +92,22 @@ private:
     // ----- State ------------------------------------------------------------
 
     bool m_interrupt = false;  // [5.2.9] INTRQ (Device Interrupt)
-    InterruptTrigger& m_intrTrigger;
     cmd::IATACommand *m_currentCommand;
 
     // ----- Interrupt handling -----------------------------------------------
 
+    class IntrTrigger : public InterruptTrigger {
+    public:
+        IntrTrigger(ATAChannel& channel) : m_channel(channel) {}
+        void Assert() override { m_channel.SetInterrupt(true); }
+        void Negate() override { m_channel.SetInterrupt(false); }
+    private:
+        ATAChannel& m_channel;
+    };
+
     void SetInterrupt(bool asserted);
 
+    IntrTrigger m_intrTrigger;
     IRQHandler& m_irqHandler;
     uint8_t m_irqNum;
 
