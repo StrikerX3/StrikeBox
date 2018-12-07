@@ -35,7 +35,7 @@ bool SecurityUnlock::Initialize() {
 }
 
 BlockWriteResult SecurityUnlock::ProcessBlock(uint8_t block[kSectorSize]) {
-    m_done = true;
+    Finish();
 
     if (!m_driver->SecurityUnlock(block)) {
         return BlockWriteError;

@@ -157,7 +157,7 @@ struct PRDHelper {
 
             // Go to the next PRD if we reached the end of the current PRD
             // and there are more entries
-            if (m_currByte >= m_currPRD->byteCount) {
+            if (m_currByte >= byteCount) {
                 // No more entries
                 if (m_currPRD->endOfTable) {
                     bufPtr = nullptr;
@@ -195,79 +195,33 @@ void BMIDEChannel::RunWorker() {
             // See https://wiki.osdev.org/ATA/ATAPI_using_DMA#The_Command_Byte
             bool isWrite = (m_command & CmdReadWriteControl) == 0;
 
-            if (m_ataChannel.IsDMAFinished()) {
-                // Operation finished; notify ATA channel
-                m_job_running = false;
-
-                // Clear Active flag
-                m_status &= ~StActive;
-
-                // Set Interrupt flag if the ATA device triggered an interrupt
-                if (m_ataChannel.EndDMA()) {
-                    m_status |= StInterrupt;
-                    m_job_running = false;
-                    break;
-                }
-            }
-
-            bool endDMA = false;
-            bool ranOutOfPRDs = false;
-            uint8_t buf[kSectorSize];
+            bool finished = false;
             if (isWrite) {
                 if (helper.NextSector()) {
-                    // Copy from physical memory
-                    memcpy(buf, helper.bufPtr, kSectorSize);
-
-                    // Do DMA write
-                    if (m_ataChannel.WriteDMA(buf)) {
-                        // DMA block transfer completed successfully
-                        log_spew("BM IDE channel %d: write to physical address 0x%x\n", m_channel, helper.physAddr);
-                    }
-                    else {
-                        // Operation finished; notify ATA channel
-                        endDMA = true;
+                    if (!m_ataChannel.WriteDMA(helper.bufPtr)) {
+                        finished = true;
                     }
                 }
                 else {
                     log_spew("BM IDE channel %d: Ran out of PRDs while writing\n", m_channel);
-                    ranOutOfPRDs = true;
+                    m_status &= ~StActive;
                 }
             }
             else {
-                if (m_ataChannel.ReadDMA(buf)) {
-                    // DMA block transfer completed successfully
-                    if (helper.NextSector()) {
-                        log_spew("BM IDE channel %d: read from physical address 0x%x\n", m_channel, helper.physAddr);
-
-                        // Copy to physical memory
-                        memcpy(helper.bufPtr, buf, kSectorSize);
-                    }
-                    else {
+                if (m_ataChannel.ReadDMA(helper.bufPtr)) {
+                    if (!helper.NextSector()) {
                         log_spew("BM IDE channel %d: Ran out of PRDs while reading\n", m_channel);
-                        ranOutOfPRDs = true;
+                        m_status &= ~StActive;
                     }
                 }
                 else {
-                    // Operation finished; notify ATA channel
-                    endDMA = true;
+                    finished = true;
                 }
             }
 
-            // Handle error conditions
-            if (ranOutOfPRDs) {
-                // Clear Active flag
-                m_status &= ~StActive;
-
+            if (finished) {
                 // Set Interrupt flag if the ATA device triggered an interrupt
-                if (m_ataChannel.EndDMA()) {
-                    m_status |= StInterrupt;
-                }
-
-                m_job_running = false;
-            }
-            else if (endDMA) {
-                if (m_ataChannel.EndDMA()) {
-                    // Set Interrupt flag if the ATA device triggered an interrupt
+                if (m_ataChannel.AreInterruptsEnabled()) {
                     m_status |= StInterrupt;
                 }
 

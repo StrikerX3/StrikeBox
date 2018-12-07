@@ -9,7 +9,7 @@
 //
 // References to particular items in the specification are denoted between brackets
 // optionally followed by a quote from the specification.
-#include "ata_command.h"
+#include "cmd_read_dma.h"
 
 #include "vixen/log.h"
 
@@ -18,18 +18,11 @@ namespace hw {
 namespace ata {
 namespace cmd {
 
-IATACommand::IATACommand(ATADevice& device)
-    : m_device(device)
-    , m_regs(device.GetRegisters())
-    , m_driver(device.GetDriver())
-    , m_channel(device.GetChannel())
-    , m_devIndex(device.GetIndex())
-    , m_interrupt(device.GetInterrupt())
-    , m_finished(false)
-{
+ReadDMA::ReadDMA(ATADevice& device)
+    : DMAProtocolCommand(device, false) {
 }
 
-IATACommand::~IATACommand() {
+ReadDMA::~ReadDMA() {
 }
 
 }

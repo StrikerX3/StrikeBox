@@ -48,7 +48,12 @@ bool BaseDVDDriveATADeviceDriver::IdentifyPacketDevice(IdentifyPacketDeviceData 
 
     data->capabilities = IDPCapsDMA | IDPCapsLBA | IDPCapsIORDYSupported;
     data->validTranslationFields = IDValidXlatTransferCycles | IDValidXlatUltraDMA;
-    data->multiwordDMASettings = IDMultiwordDMA2Supported | IDMultiwordDMA1Supported | IDMultiwordDMA0Supported | IDMultiwordDMA0Selected;
+
+    data->multiwordDMASettings = IDMultiwordDMA2Supported | IDMultiwordDMA1Supported | IDMultiwordDMA0Supported;
+    if (m_dmaTransferType == XferTypeMultiWordDMA) {
+        data->multiwordDMASettings |= IDMultiwordDMA0Selected << m_dmaTransferMode;
+    }
+
     data->advancedPIOModesSupported = 2; // Up to PIO mode 4
     data->minMDMATransferCyclePerWord = 120;
     data->recommendedMDMATransferCycleTime = 120;
@@ -69,7 +74,10 @@ bool BaseDVDDriveATADeviceDriver::IdentifyPacketDevice(IdentifyPacketDeviceData 
     data->commandSetsEnabled3 = IDCmdSet3Bit14AlwaysOne;
 
     data->ultraDMASettings = IDUltraDMA0Supported | IDUltraDMA1Supported | IDUltraDMA2Supported;
-    
+    if (m_dmaTransferType == XferTypeUltraDMA) {
+        data->ultraDMASettings |= IDUltraDMA0Selected << m_dmaTransferMode;
+    }
+
     return true;
 }
 

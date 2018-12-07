@@ -31,11 +31,11 @@ void PIODataInProtocolCommand::Execute() {
     FillBuffer();
 }
 
-void PIODataInProtocolCommand::ReadData(uint32_t *value, uint32_t size) {
+void PIODataInProtocolCommand::ReadData(uint8_t *value, uint32_t size) {
     // Clear the destination value before reading from the buffer, in case
     // there are not enough bytes to fulfill the request
     *value = 0;
-    uint32_t lenRead = ReadBuffer(reinterpret_cast<uint8_t *>(value), size);
+    uint32_t lenRead = ReadBuffer(value, size);
     if (lenRead != size) {
         log_warning("PIODataInProtocolCommand::ReadData:  Buffer underflow!  channel = %d  device = %d  size = %d  read = %d\n", m_channel, m_devIndex, size, lenRead);
     }
@@ -60,11 +60,11 @@ void PIODataInProtocolCommand::FillBuffer() {
         m_regs.status |= StError;
         m_regs.status &= ~StBusy;
         m_interrupt.Assert();
-        m_done = true;
+        Finish();
     }
     else if (result == BlockReadEnd) {
         m_regs.status &= ~(StBusy | StDataRequest);
-        m_done = true;
+        Finish();
     }
     else {
         m_bufferPos = 0;
@@ -85,7 +85,7 @@ uint32_t PIODataInProtocolCommand::ReadBuffer(uint8_t *dst, uint8_t length) {
     return lenToRead;
 }
 
-void PIODataInProtocolCommand::WriteData(uint32_t value, uint32_t size) {
+void PIODataInProtocolCommand::WriteData(uint8_t *value, uint32_t size) {
     // Should never happen
     log_warning("PIODataInProtocolCommand::WriteData:  Unexpected write!\n");
 }

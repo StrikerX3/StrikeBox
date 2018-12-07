@@ -35,18 +35,18 @@ void PIODataOutProtocolCommand::Execute() {
     else {
         m_regs.status &= ~StBusy;
         m_interrupt.Assert();
-        m_done = true;
+        Finish();
     }
 }
 
-void PIODataOutProtocolCommand::ReadData(uint32_t *value, uint32_t size) {
+void PIODataOutProtocolCommand::ReadData(uint8_t *value, uint32_t size) {
     // Should never happen
     log_warning("PIODataOutProtocolCommand::ReadData:  Unexpected read!\n");
 }
 
-void PIODataOutProtocolCommand::WriteData(uint32_t value, uint32_t size) {
+void PIODataOutProtocolCommand::WriteData(uint8_t *value, uint32_t size) {
     // Write to device buffer
-    uint32_t lenWritten = WriteBuffer(reinterpret_cast<uint8_t *>(&value), size);
+    uint32_t lenWritten = WriteBuffer(value, size);
     if (lenWritten != size) {
         log_warning("PIODataOutProtocolCommand::WriteData: Buffer overflow!   channel = %d  device = %d  size = %d  read = %d\n", m_channel, m_devIndex, size, lenWritten);
     }
@@ -78,12 +78,12 @@ void PIODataOutProtocolCommand::DrainBuffer() {
         m_regs.status |= StError;
         m_regs.status &= ~StBusy;
         m_interrupt.Assert();
-        m_done = true;
+        Finish();
     }
     else if (result == BlockWriteEnd) {
         m_regs.status &= ~StBusy;
         m_interrupt.Assert();
-        m_done = true;
+        Finish();
     }
     else {
         m_bufferPos = 0;

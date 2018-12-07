@@ -23,8 +23,10 @@
 #include "cmds/cmd_identify_device.h"
 #include "cmds/cmd_identify_packet_device.h"
 #include "cmds/cmd_init_dev_params.h"
+#include "cmds/cmd_read_dma.h"
 #include "cmds/cmd_security_unlock.h"
 #include "cmds/cmd_set_features.h"
+#include "cmds/cmd_write_dma.h"
 
 namespace vixen {
 namespace hw {
@@ -35,8 +37,10 @@ const std::unordered_map<Command, cmd::IATACommand::Factory, std::hash<uint8_t>>
     { CmdIdentifyDevice, cmd::IdentifyDevice::Factory },
     { CmdIdentifyPacketDevice, cmd::IdentifyPacketDevice::Factory },
     { CmdInitializeDeviceParameters, cmd::InitializeDeviceParameters::Factory },
+    { CmdReadDMA, cmd::ReadDMA::Factory },
     { CmdSecurityUnlock, cmd::SecurityUnlock::Factory },
     { CmdSetFeatures, cmd::SetFeatures::Factory },
+    { CmdWriteDMA, cmd::WriteDMA::Factory },
 };
 
 /*!
@@ -63,8 +67,10 @@ public:
 
     bool ReadDMA(uint8_t dstBuffer[kSectorSize]);
     bool WriteDMA(uint8_t srcBuffer[kSectorSize]);
-    bool IsDMAFinished();
-    bool EndDMA();
+
+    // ----- Interrupts -------------------------------------------------------
+
+    bool AreInterruptsEnabled() { return m_regs.AreInterruptsEnabled(); }
 
     class IntrTrigger : public InterruptTrigger {
     public:

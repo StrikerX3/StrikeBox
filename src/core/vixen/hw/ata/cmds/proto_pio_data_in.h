@@ -40,8 +40,8 @@ public:
     // ----- Low-level operations ---------------------------------------------
 
     void Execute() override;
-    void ReadData(uint32_t *value, uint32_t size) override;
-    void WriteData(uint32_t value, uint32_t size) override;
+    void ReadData(uint8_t *value, uint32_t size) override;
+    void WriteData(uint8_t *value, uint32_t size) override;
 
 protected:
     // ----- Protocol operations ----------------------------------------------

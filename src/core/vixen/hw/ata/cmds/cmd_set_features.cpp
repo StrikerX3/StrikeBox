@@ -118,7 +118,7 @@ bool SetFeatures::SetPIOTransferMode(PIOTransferType type, uint8_t mode) {
         log_debug("SetFeatures::SetPIOTransferMode:  Setting PIO flow control transfer mode %d for channel %d, device %d\n", mode, m_channel, m_devIndex);
     }
 
-    m_device.SetPIOTransferMode(type, mode);
+    m_driver->SetPIOTransferMode(type, mode);
     return true;
 }
 
@@ -149,7 +149,7 @@ bool SetFeatures::SetDMATransferMode(DMATransferType type, uint8_t mode) {
         log_debug("SetFeatures::SetDMATransferMode:  Setting Ultra DMA transfer mode %d for channel %d, device %d\n", mode, m_channel, m_devIndex);
     }
 
-    m_device.SetDMATransferMode(type, mode);
+    m_driver->SetDMATransferMode(type, mode);
     return true;
 }
 

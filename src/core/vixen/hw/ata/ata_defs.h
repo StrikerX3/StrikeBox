@@ -208,15 +208,12 @@ struct CommandProtocol {
 // NOTE: Not all command protocols are included here.
 
 const CommandProtocol kCmdProtoDeviceReset = { 0, 0, false };                    // [9.2]  Device reset  (hardware reset)
-const CommandProtocol kCmdProtoDMA = { StDataRequest, StDataRequest, false, };   // [9.10] DMA           (data transfer between host and device via DMA)
 const CommandProtocol kCmdProtoPacket = { StDataRequest, 0, false };             // [9.11] PACKET        (non-data, PIO and DMA transfers)
 
 // Map commands to their protocols
 const std::unordered_map<Command, const CommandProtocol&, std::hash<uint8_t>> kCmdProtocols = {
     { CmdDeviceReset, kCmdProtoDeviceReset },
     { CmdPacket, kCmdProtoPacket },
-    { CmdReadDMA, kCmdProtoDMA },
-    { CmdWriteDMA, kCmdProtoDMA },
 };
 
 // --- Command data -------------------------------------------------------------------------------

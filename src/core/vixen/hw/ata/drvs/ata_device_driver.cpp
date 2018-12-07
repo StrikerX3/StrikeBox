@@ -21,6 +21,15 @@ namespace ata {
 IATADeviceDriver::~IATADeviceDriver() {
 }
 
+void IATADeviceDriver::SetPIOTransferMode(PIOTransferType type, uint8_t mode) {
+    m_pioTransferType = type;
+    m_pioTransferMode = mode;
+}
+
+void IATADeviceDriver::SetDMATransferMode(DMATransferType type, uint8_t mode) {
+    m_dmaTransferType = type;
+    m_dmaTransferMode = mode;
+}
 }
 }
 }

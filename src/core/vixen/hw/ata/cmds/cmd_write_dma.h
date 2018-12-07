@@ -9,28 +9,27 @@
 //
 // References to particular items in the specification are denoted between brackets
 // optionally followed by a quote from the specification.
-#include "ata_command.h"
+#pragma once
 
-#include "vixen/log.h"
+#include <cstdint>
+
+#include "proto_dma.h"
 
 namespace vixen {
 namespace hw {
 namespace ata {
 namespace cmd {
 
-IATACommand::IATACommand(ATADevice& device)
-    : m_device(device)
-    , m_regs(device.GetRegisters())
-    , m_driver(device.GetDriver())
-    , m_channel(device.GetChannel())
-    , m_devIndex(device.GetIndex())
-    , m_interrupt(device.GetInterrupt())
-    , m_finished(false)
-{
-}
+/*!
+ * Implements the Write DMA command (0xCA [8.45].
+ */
+class WriteDMA : public DMAProtocolCommand {
+public:
+    WriteDMA(ATADevice& device);
+    virtual ~WriteDMA() override;
 
-IATACommand::~IATACommand() {
-}
+    static IATACommand *Factory(ATADevice& device) { return new WriteDMA(device); }
+};
 
 }
 }

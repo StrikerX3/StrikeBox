@@ -43,24 +43,6 @@ public:
     void SetDeviceDriver(IATADeviceDriver *driver) { m_driver = driver; }
     bool IsAttached() const { return m_driver->IsAttached(); }
 
-    // ----- DMA transfer -----------------------------------------------------
-
-    bool ReadDMA(uint8_t dstBuffer[kSectorSize]);
-    bool WriteDMA(uint8_t srcBuffer[kSectorSize]);
-    bool IsDMAFinished() { return m_dma_currentLBA >= m_dma_endingLBA; }
-    void EndDMA();
-    
-    // ----- Command handlers -------------------------------------------------
-    // These functions must return false on error
-
-    bool BeginReadDMA();                 // [8.23] 0xC8   Read DMA
-    bool BeginWriteDMA();                // [8.45] 0xCA   Write DMA
-
-    // ----- Set Features subcommand handlers ---------------------------------
-
-    void SetPIOTransferMode(PIOTransferType type, uint8_t mode);
-    void SetDMATransferMode(DMATransferType type, uint8_t mode);
-
 private:
     friend class ATAChannel;
 
@@ -76,27 +58,6 @@ private:
 
     // A reference to the registers of the ATA channel that owns this device
     ATARegisters& m_regs;
-
-    // [8.37.10] PIO and DMA modes are separate
-    PIOTransferType m_pioTransferType = XferTypePIODefault;
-    uint8_t m_pioTransferMode = 0;
-
-    DMATransferType m_dmaTransferType = XferTypeMultiWordDMA;
-    uint8_t m_dmaTransferMode = 0;
-
-    // ----- DMA transfer -----------------------------------------------------
-    
-    // Parameters
-    uint32_t m_dma_startingLBA;
-    uint32_t m_dma_endingLBA;    // Exclusive
-    bool m_dma_isWrite;   // Current DMA operation type (true = write, false = read), used for sanity check
-  
-    // State
-    bool m_dma_transferActive;
-    uint8_t m_dma_currentLBA;
-
-    bool HandleReadDMA(uint8_t dstBuffer[kSectorSize]);
-    bool HandleWriteDMA(uint8_t srcBuffer[kSectorSize]);
 };
 
 }

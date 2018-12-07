@@ -38,6 +38,9 @@ public:
     virtual bool SecurityUnlock(uint8_t unlockData[kSectorSize]) = 0;
     virtual bool SetDeviceParameters(uint8_t heads, uint8_t sectorsPerTrack) = 0;
 
+    void SetPIOTransferMode(PIOTransferType type, uint8_t mode);
+    void SetDMATransferMode(DMATransferType type, uint8_t mode);
+
     // ----- Sector access ----------------------------------------------------
 
     virtual bool ReadSector(uint32_t lbaAddress, uint8_t buffer[kSectorSize]) = 0;
@@ -62,6 +65,12 @@ protected:
     char m_firmwareRevision[kFirmwareRevLength + 1];
     char m_modelNumber[kModelNumberLength + 1];
 
+    // [8.37.10] PIO and DMA modes are separate
+    PIOTransferType m_pioTransferType = XferTypePIODefault;
+    uint8_t m_pioTransferMode = 0;
+
+    DMATransferType m_dmaTransferType = XferTypeMultiWordDMA;
+    uint8_t m_dmaTransferMode = 0;
 };
 
 }

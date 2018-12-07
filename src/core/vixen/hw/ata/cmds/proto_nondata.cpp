@@ -33,15 +33,15 @@ void NonDataProtocolCommand::Execute() {
         regs.status |= StError;
     }
 
-    m_done = true;
+    Finish();
 }
 
-void NonDataProtocolCommand::ReadData(uint32_t * value, uint32_t size) {
+void NonDataProtocolCommand::ReadData(uint8_t *value, uint32_t size) {
     // Should never happen
     log_warning("NonDataProtocolCommand::ReadData:  Unexpected read!\n");
 }
 
-void NonDataProtocolCommand::WriteData(uint32_t value, uint32_t size) {
+void NonDataProtocolCommand::WriteData(uint8_t *value, uint32_t size) {
     // Should never happen
     log_warning("NonDataProtocolCommand::WriteData:  Unexpected write!\n");
 }

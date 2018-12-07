@@ -22,17 +22,46 @@ namespace cmd {
 
 /*!
  * Interface for ATA commands.
+ *
+ * Classes that derive this interface provide base implementations for ATA
+ * protocols, which handle the basic flow of the command execution in a device.
+ *
+ * When a command finishes execution (i.e., reaches the end of the fluxogram),
+ * it must invoke Finish() to allow resources to be cleaned up.
  */
 class IATACommand {
 public:
     IATACommand(ATADevice& device);
     virtual ~IATACommand();
 
+    /*!
+     * Execute is invoked upon receiving the command on the Command port.
+     * The BSY flag in the Status register is already set to 1.
+     */
     virtual void Execute() = 0;
-    virtual void ReadData(uint32_t *value, uint32_t size) = 0;
-    virtual void WriteData(uint32_t value, uint32_t size) = 0;
-    bool IsFinished();
 
+    /*!
+     * ReadData is invoked when the host reads from the Data register, or the
+     * Bus Master IDE controller reads during a DMA transfer.
+     */
+    virtual void ReadData(uint8_t *value, uint32_t size) = 0;
+
+    /*!
+     * WriteData is invoked when the host writes to the Data register, or the
+     * Bus Master IDE controller writes during a DMA transfer.
+     */
+    virtual void WriteData(uint8_t *value, uint32_t size) = 0;
+
+    /*!
+     * Determines if the command finished execution. This is checked after
+     * invoking Execute, ReadData and WriteData. Use the Finish method to
+     * indicate command completion.
+     */
+    bool IsFinished() { return m_finished; }
+
+    /*!
+     * Defines the factory function type used to build a factory table.
+     */
     typedef IATACommand* (*Factory)(ATADevice& device);
 
 protected:
@@ -42,7 +71,15 @@ protected:
     const Channel m_channel;
     const uint8_t m_devIndex;
     InterruptTrigger& m_interrupt;
-    bool m_done;
+
+    /*!
+     * Marks the command execution as completed so that the emulator can
+     * free up resources used by this command.
+     */
+    void Finish() { m_finished = true; }
+
+private:
+    bool m_finished;
 };
 
 }

@@ -21,12 +21,12 @@ namespace ata {
 namespace cmd {
 
 /*!
- * Base class for all commands based on the non-data protocol [9.9].
+ * Base class for all commands based on the DMA protocol [9.10].
  */
-class NonDataProtocolCommand : public IATACommand {
+class DMAProtocolCommand : public IATACommand {
 public:
-    NonDataProtocolCommand(ATADevice& device);
-    virtual ~NonDataProtocolCommand() override;
+    DMAProtocolCommand(ATADevice& device, bool isWrite);
+    virtual ~DMAProtocolCommand() override;
 
     // ----- Low-level operations ---------------------------------------------
 
@@ -37,9 +37,27 @@ public:
 protected:
     // ----- Protocol operations ----------------------------------------------
 
-    // Executes the command.
-    // Return value indicates success (true) or failure (false).
-    virtual bool ExecuteImpl() = 0;
+    // Invoked when the DMA transfer finishes. Updates registers and marks the
+    // command as finished.
+    void FinishTransfer();
+
+    // Invoked when an unrecoverable error occurred. Updates registers and
+    // marks the command as finished.
+    void UnrecoverableError();
+
+    // ----- Parameters -------------------------------------------------------
+
+    // Range of operation
+    uint32_t m_startingLBA;  // Inclusive
+    uint32_t m_endingLBA;    // Exclusive
+
+    // DMA operation type (true = write, false = read), used for sanity check.
+    // Specified in the constructor.
+    bool m_isWrite;
+
+    // ----- State ------------------------------------------------------------
+
+    uint8_t m_currentLBA;
 };
 
 }

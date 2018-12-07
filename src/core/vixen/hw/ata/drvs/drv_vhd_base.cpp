@@ -55,7 +55,11 @@ void BaseHardDriveATADeviceDriver::IdentifyDevice(IdentifyDeviceData *data) {
     data->currentSectorCapacity = currentSectorCapacity;
     data->numAddressableSectors = m_sectorCapacity;
 
-    data->multiwordDMASettings = IDMultiwordDMA0Supported | IDMultiwordDMA1Supported | IDMultiwordDMA2Supported | IDMultiwordDMA0Selected;
+    data->multiwordDMASettings = IDMultiwordDMA0Supported | IDMultiwordDMA1Supported | IDMultiwordDMA2Supported;
+    if (m_dmaTransferType == XferTypeMultiWordDMA) {
+        data->multiwordDMASettings |= IDMultiwordDMA0Selected << m_dmaTransferMode;
+    }
+
     data->advancedPIOModesSupported = 2; // Up to PIO mode 4
     data->minMDMATransferCyclePerWord = 120;
     data->recommendedMDMATransferCycleTime = 120;
@@ -74,8 +78,12 @@ void BaseHardDriveATADeviceDriver::IdentifyDevice(IdentifyDeviceData *data) {
     data->commandSetsEnabled3 = IDCmdSet3Bit14AlwaysOne;
 
     data->ultraDMASettings = IDUltraDMA0Supported | IDUltraDMA1Supported | IDUltraDMA2Supported;
+    if (m_dmaTransferType == XferTypeUltraDMA) {
+        data->ultraDMASettings |= IDUltraDMA0Selected << m_dmaTransferMode;
+    }
 
-    // Xbox hard drive must be locked
+    // Xbox hard drive must support security features and have them enabled.
+    // The hard drive doesn't necessarily need to be locked.
     data->securityStatus |= IDSecStatusSupported | IDSecStatusEnabled;
     if (m_locked) {
         data->securityStatus |= IDSecStatusLocked;

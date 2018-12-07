@@ -146,10 +146,13 @@ bool ImageHardDriveATADeviceDriver::WriteSector(uint32_t lbaAddress, uint8_t des
     // TODO: handle copy-on-write
     // If copy-on-write and block is copied, overwrite copy, otherwise create copy
     // If not copy-on-write, write to image file directly
+#if 0   // disable writes for now
     int lenWrite = fwrite(destBuffer, 1, kSectorSize, m_fpImage);
     fflush(m_fpImage);
 
     return lenWrite == kSectorSize;
+#endif
+    return true;
 }
 
 }
