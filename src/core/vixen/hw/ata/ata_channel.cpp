@@ -224,7 +224,7 @@ void ATAChannel::WriteCommand(uint8_t value) {
     }
 }
 
-DMATransferResult ATAChannel::ReadDMA(uint8_t dstBuffer[kSectorSize]) {
+DMATransferResult ATAChannel::ReadDMA(uint8_t *dstBuffer, uint32_t readLen) {
     // Check that there is a command in progress
     if (m_currentCommand == nullptr) {
         auto devIndex = m_regs.GetSelectedDeviceIndex();
@@ -233,7 +233,7 @@ DMATransferResult ATAChannel::ReadDMA(uint8_t dstBuffer[kSectorSize]) {
     }
 
     // Read data for the command and clear it if finished
-    m_currentCommand->ReadData(dstBuffer, kSectorSize);
+    m_currentCommand->ReadData(dstBuffer, readLen);
     if (m_currentCommand->IsFinished()) {
         delete m_currentCommand;
         m_currentCommand = nullptr;
@@ -243,7 +243,7 @@ DMATransferResult ATAChannel::ReadDMA(uint8_t dstBuffer[kSectorSize]) {
     return DMATransferOK;
 }
 
-DMATransferResult ATAChannel::WriteDMA(uint8_t srcBuffer[kSectorSize]) {
+DMATransferResult ATAChannel::WriteDMA(uint8_t *srcBuffer, uint32_t writeLen) {
     // Check that there is a command in progress
     if (m_currentCommand == nullptr) {
         auto devIndex = m_regs.GetSelectedDeviceIndex();
@@ -252,7 +252,7 @@ DMATransferResult ATAChannel::WriteDMA(uint8_t srcBuffer[kSectorSize]) {
     }
 
     // Write data for the command and clear it if finished
-    m_currentCommand->WriteData(srcBuffer, kSectorSize);
+    m_currentCommand->WriteData(srcBuffer, writeLen);
     if (m_currentCommand->IsFinished()) {
         delete m_currentCommand;
         m_currentCommand = nullptr;

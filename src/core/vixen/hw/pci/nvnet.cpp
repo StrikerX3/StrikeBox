@@ -408,7 +408,7 @@ int EmuNVNet_MiiReadWrite(uint64_t val) {
 }
 
 uint32_t EmuNVNet_Read(uint32_t addr, int size) {
-    log_debug("NET : Read%d: %s (0x%.8X)\n", size, EmuNVNet_GetRegisterName(addr), addr);
+    //log_debug("NET : Read%d: %s (0x%.8X)\n", size, EmuNVNet_GetRegisterName(addr), addr);
 
     switch (addr) {
     case NvRegMIIData:
@@ -434,8 +434,8 @@ void EmuNVNet_Write(uint32_t addr, uint32_t value, int size) {
         break;
     case NvRegTxRxControl:
         if (value == NVREG_TXRXCTL_KICK) {
-            log_debug("NvRegTxRxControl = NVREG_TXRXCTL_KICK!\n");
-            log_warning("TODO: nvnet_dma_packet_from_guest");
+            //log_debug("NvRegTxRxControl = NVREG_TXRXCTL_KICK!\n");
+            //log_warning("TODO: nvnet_dma_packet_from_guest");
             // nvnet_dma_packet_from_guest(s);
         }
 
@@ -472,7 +472,7 @@ void EmuNVNet_Write(uint32_t addr, uint32_t value, int size) {
         break;
     }
 
-    log_debug("NET : Write%d: %s (0x%.8X) = 0x%.8X\n", size, EmuNVNet_GetRegisterName(addr), addr, value);
+    //log_debug("NET : Write%d: %s (0x%.8X) = 0x%.8X\n", size, EmuNVNet_GetRegisterName(addr), addr, value);
 }
 
 /* NVNetDevice */

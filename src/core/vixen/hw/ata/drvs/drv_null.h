@@ -33,10 +33,10 @@ public:
     bool SecurityUnlock(uint8_t unlockData[kSectorSize]) override { return false; }
     bool SetDeviceParameters(uint8_t heads, uint8_t sectorsPerTrack) override { return false; }
 
-    // ----- Sector access ----------------------------------------------------
+    // ----- Data access ------------------------------------------------------
 
-    bool ReadSector(uint32_t lbaAddress, uint8_t destBuffer[kSectorSize]) override { return false; }
-    bool WriteSector(uint32_t lbaAddress, uint8_t destBuffer[kSectorSize]) override { return false; }
+    bool Read(uint64_t byteAddress, uint8_t *buffer, uint32_t size) override { return false; }
+    bool Write(uint64_t byteAddress, uint8_t *buffer, uint32_t size) override { return false; }
 
     // ----- Feature sets -----------------------------------------------------
 

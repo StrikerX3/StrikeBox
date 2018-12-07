@@ -50,28 +50,30 @@ void DMAProtocolCommand::Execute() {
     // Determine if we're using LBA address or CHS numbers
     bool useLBA = (m_regs.deviceHead & DevHeadDMALBA) != 0;
 
+    uint32_t startingLBA;
+    uint32_t endingLBA;
     // Read address accordingly and validate parameters
     if (useLBA) {
-        m_startingLBA = ((m_regs.deviceHead & 0b1111) << 24) | (m_regs.cylinder << 8) | (m_regs.sectorNumber);
+        startingLBA = ((m_regs.deviceHead & 0b1111) << 24) | (m_regs.cylinder << 8) | (m_regs.sectorNumber);
     }
     else {
         // Convert from CHS to LBA
         uint16_t cylinder = m_regs.cylinder;
         uint8_t head = m_regs.deviceHead & 0b1111;
         uint8_t sector = m_regs.sectorNumber;
-        m_startingLBA = m_driver->CHSToLBA(cylinder, head, sector);
+        startingLBA = m_driver->CHSToLBA(cylinder, head, sector);
     }
 
     // Calculate ending LBA
     if (m_regs.sectorCount == 0) {
-        m_endingLBA = m_startingLBA + 256;
+        endingLBA = startingLBA + 256;
     }
     else {
-        m_endingLBA = m_startingLBA + m_regs.sectorCount;
+        endingLBA = startingLBA + m_regs.sectorCount;
     }
 
     // Check that the address is user accessible
-    if (!m_driver->IsLBAAddressUserAccessible(m_startingLBA)) {
+    if (!m_driver->IsLBAAddressUserAccessible(startingLBA)) {
         m_regs.status |= StError;
         m_regs.status &= ~(StBusy | StDataRequest);
         m_interrupt.Assert();
@@ -80,7 +82,9 @@ void DMAProtocolCommand::Execute() {
     }
 
     // Good to go
-    m_currentLBA = m_startingLBA;
+    m_startingByte = (uint64_t)startingLBA * kSectorSize;
+    m_endingByte = (uint64_t)endingLBA * kSectorSize;
+    m_currentByte = m_startingByte;
     m_regs.status &= ~StBusy;
     m_regs.status |= StDataRequest;
 }
@@ -113,7 +117,7 @@ void DMAProtocolCommand::ReadData(uint8_t *value, uint32_t size) {
     }*/
 
     // Check that the next sector is accessible
-    if (!m_driver->IsLBAAddressUserAccessible(m_currentLBA)) {
+    if (!m_driver->IsLBAAddressUserAccessible(m_currentByte / kSectorSize)) {
         // [8.23.6]: "IDNF shall be set to one if a user-accessible address could not be found"
         m_regs.error |= ErrDMADataNotFound;
         UnrecoverableError();
@@ -121,17 +125,17 @@ void DMAProtocolCommand::ReadData(uint8_t *value, uint32_t size) {
     }
 
     // Try to read the next sector
-    if (!m_driver->ReadSector(m_currentLBA, value)) {
+    if (!m_driver->Read(m_currentByte, value, size)) {
         m_regs.status |= StDeviceFault;
         UnrecoverableError();
         return;
     }
 
     // Update position
-    m_currentLBA++;
+    m_currentByte += size;
 
     // Check if the DMA transfer has finished
-    if (m_currentLBA >= m_endingLBA) {
+    if (m_currentByte >= m_endingByte) {
         FinishTransfer();
         m_regs.status &= ~(StBusy | StDataRequest);
         // INTRQ will be asserted in BMIDEChannel::RunWorker()
@@ -164,7 +168,7 @@ void DMAProtocolCommand::WriteData(uint8_t *value, uint32_t size) {
     }*/
 
     // Check that the next sector is accessible
-    if (!m_driver->IsLBAAddressUserAccessible(m_currentLBA)) {
+    if (!m_driver->IsLBAAddressUserAccessible(m_currentByte / kSectorSize)) {
         // [8.23.6]: "IDNF shall be set to one if a user-accessible address could not be found"
         m_regs.error |= ErrDMADataNotFound;
         UnrecoverableError();
@@ -172,17 +176,17 @@ void DMAProtocolCommand::WriteData(uint8_t *value, uint32_t size) {
     }
 
     // Try to write next sector
-    if (!m_driver->WriteSector(m_currentLBA, value)) {
+    if (!m_driver->Write(m_currentByte, value, size)) {
         m_regs.status |= StDeviceFault;
         UnrecoverableError();
         return;
     }
 
     // Update position
-    m_currentLBA++;
+    m_currentByte += size;
 
     // Check if the DMA transfer has finished
-    if (m_currentLBA >= m_endingLBA) {
+    if (m_currentByte >= m_endingByte) {
         FinishTransfer();
         m_regs.status &= ~(StBusy | StDataRequest);
         // INTRQ will be asserted in BMIDEChannel::RunWorker()
@@ -219,7 +223,7 @@ void DMAProtocolCommand::UnrecoverableError() {
 
     // Sector Number, Cylinder Low, Cylinder High, Device/Head:
     //  "shall be written with the address of first unrecoverable error."
-    m_driver->LBAToCHS(m_currentLBA, &m_regs.cylinder, &m_regs.sectorNumber, &m_regs.deviceHead);
+    m_driver->LBAToCHS(m_currentByte / kSectorSize, &m_regs.cylinder, &m_regs.sectorNumber, &m_regs.deviceHead);
 
     // Device/Head register:
     //  "DEV shall indicate the selected device."

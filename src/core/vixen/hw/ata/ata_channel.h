@@ -72,8 +72,8 @@ public:
 
     // ----- DMA transfers ----------------------------------------------------
 
-    DMATransferResult ReadDMA(uint8_t dstBuffer[kSectorSize]);
-    DMATransferResult WriteDMA(uint8_t srcBuffer[kSectorSize]);
+    DMATransferResult ReadDMA(uint8_t *dstBuffer, uint32_t readLen);
+    DMATransferResult WriteDMA(uint8_t *srcBuffer, uint32_t writeLen);
 
     // ----- Interrupts -------------------------------------------------------
 

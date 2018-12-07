@@ -48,10 +48,10 @@ protected:
     // ----- Parameters -------------------------------------------------------
 
     // Range of operation
-    uint32_t m_startingLBA;  // Inclusive
-    uint32_t m_endingLBA;    // Exclusive
+    uint64_t m_startingByte;  // Inclusive
+    uint64_t m_endingByte;    // Exclusive
 
-    uint32_t m_currentLBA;
+    uint64_t m_currentByte;
 
     // DMA operation type (true = write, false = read), used for sanity check.
     // Specified in the constructor.

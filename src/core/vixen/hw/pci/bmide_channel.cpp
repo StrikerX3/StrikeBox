@@ -137,6 +137,7 @@ struct PRDHelper {
     uint32_t m_currByte;
     uint32_t physAddr;
     uint8_t *bufPtr;
+    uint32_t bufLen;
 
     PRDHelper(uint8_t *ram, uint32_t ramSize, uint32_t prdTableAddress)
         : m_ram(ram)
@@ -147,6 +148,7 @@ struct PRDHelper {
         m_currByte = 0;
         physAddr = 0;
         bufPtr = nullptr;
+        bufLen = 0;
     }
 
     bool NextSector() {
@@ -165,6 +167,7 @@ struct PRDHelper {
                 if (m_currPRD->endOfTable) {
                     log_debug("BM IDE:  last entry\n");
                     bufPtr = nullptr;
+                    bufLen = 0;
                     return false;
                 }
 
@@ -177,7 +180,11 @@ struct PRDHelper {
             // Prepare the pointer to the next block
             physAddr = m_currPRD->basePhysicalAddress + m_currByte;
             bufPtr = m_ram + physAddr;
-            m_currByte += kSectorSize;
+            bufLen = kSectorSize;
+            if (bufLen > byteCount - m_currByte) {
+                bufLen = byteCount - m_currByte;
+            }
+            m_currByte += bufLen;
             return true;
         }
     }
@@ -188,7 +195,7 @@ struct PRDHelper {
         if (byteCount == 0) {
             byteCount = 65536;
         }
-
+        
         // This is the last sector if we reached the end of the last PRD
         log_debug("BM IDE:  PRD: 0x%x / 0x%x bytes  at  0x%x%s\n", m_currByte, byteCount, m_currPRD->basePhysicalAddress, (m_currPRD->endOfTable ? " (EOT)" : ""));
         return m_currPRD->endOfTable && m_currByte >= byteCount;
@@ -222,14 +229,15 @@ void BMIDEChannel::RunWorker() {
                 if (helper.IsLastSector()) {
                     m_status &= ~StActive;
                     m_job_running = false;
+                    log_debug("BM IDE:  last sector in PRD table\n");
                 }
 
                 // Do DMA read or write
                 if (isWrite) {
-                    result = m_ataChannel.WriteDMA(helper.bufPtr);
+                    result = m_ataChannel.WriteDMA(helper.bufPtr, helper.bufLen);
                 }
                 else {
-                    result = m_ataChannel.ReadDMA(helper.bufPtr);
+                    result = m_ataChannel.ReadDMA(helper.bufPtr, helper.bufLen);
                 }
 
                 // Set Interrupt flag if the ATA device triggered an interrupt
@@ -237,7 +245,9 @@ void BMIDEChannel::RunWorker() {
                     if (m_ataChannel.AreInterruptsEnabled()) {
                         m_status |= StInterrupt;
                         m_ataChannel.GetInterruptTrigger().Assert();
+                        log_debug("BM IDE channel %d:  interrupt asserted\n", m_channel);
                     }
+                    log_debug("BM IDE:  transfer ended\n");
                     m_job_running = false;
                 }
             }

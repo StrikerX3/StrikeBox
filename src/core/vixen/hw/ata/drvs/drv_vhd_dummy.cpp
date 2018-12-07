@@ -44,15 +44,15 @@ DummyHardDriveATADeviceDriver::DummyHardDriveATADeviceDriver() {
 DummyHardDriveATADeviceDriver::~DummyHardDriveATADeviceDriver() {
 }
 
-bool DummyHardDriveATADeviceDriver::ReadSector(uint32_t lbaAddress, uint8_t destBuffer[kSectorSize]) {
+bool DummyHardDriveATADeviceDriver::Read(uint64_t byteAddress, uint8_t *buffer, uint32_t size) {
     // Fill with zeros, as if the disk was blank
-    memset(destBuffer, 0, kSectorSize);
+    memset(buffer, 0, size);
 
     // Always succeed
     return true;
 }
 
-bool DummyHardDriveATADeviceDriver::WriteSector(uint32_t lbaAddress, uint8_t destBuffer[kSectorSize]) {
+bool DummyHardDriveATADeviceDriver::Write(uint64_t byteAddress, uint8_t *buffer, uint32_t size) {
     // Lie about writing, always succeed
     return true;
 }

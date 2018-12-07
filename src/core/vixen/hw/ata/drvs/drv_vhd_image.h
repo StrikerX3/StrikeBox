@@ -35,10 +35,10 @@ public:
 
     bool LoadImageFile(const char *imagePath, bool copyOnWrite);
 
-    // ----- Sector access ----------------------------------------------------
+    // ----- Data access ------------------------------------------------------
     
-    bool ReadSector(uint32_t lbaAddress, uint8_t destBuffer[kSectorSize]) override;
-    bool WriteSector(uint32_t lbaAddress, uint8_t destBuffer[kSectorSize]) override;
+    bool Read(uint64_t byteAddress, uint8_t *buffer, uint32_t size) override;
+    bool Write(uint64_t byteAddress, uint8_t *buffer, uint32_t size) override;
 
 private:
     FILE *m_fpImage = NULL;

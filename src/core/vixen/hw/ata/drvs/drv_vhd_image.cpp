@@ -110,14 +110,20 @@ ImageHardDriveATADeviceDriver::~ImageHardDriveATADeviceDriver() {
     }
 }
 
-bool ImageHardDriveATADeviceDriver::ReadSector(uint32_t lbaAddress, uint8_t destBuffer[kSectorSize]) {
+bool ImageHardDriveATADeviceDriver::Read(uint64_t byteAddress, uint8_t *buffer, uint32_t size) {
     // Image not loaded
     if (m_fpImage == NULL) {
         return false;
     }
+    
+    // Limit size to sector size
+    if (size > kSectorSize) {
+        log_warning("ImageHardDriveATADeviceDriver::ReadSector:  Requested size (%d) truncated\n", size);
+        size = kSectorSize;
+    }
 
     // Seek address
-    if (_fseeki64(m_fpImage, (int64_t)lbaAddress * kSectorSize, SEEK_SET)) {
+    if (_fseeki64(m_fpImage, byteAddress, SEEK_SET)) {
         return false;
     }
 
@@ -125,20 +131,26 @@ bool ImageHardDriveATADeviceDriver::ReadSector(uint32_t lbaAddress, uint8_t dest
     // TODO: handle copy-on-write
     // If copy-on-write and the sector is copied, read from copy, otherwise read from image file
     // If not copy-on-write, read from image file directly
-    int lenRead = fread(destBuffer, 1, kSectorSize, m_fpImage);
+    int lenRead = fread(buffer, 1, size, m_fpImage);
     
-    // Read is successful if the full sector is read
-    return lenRead == kSectorSize;
+    // Read is successful if the full size is read
+    return lenRead == size;
 }
 
-bool ImageHardDriveATADeviceDriver::WriteSector(uint32_t lbaAddress, uint8_t destBuffer[kSectorSize]) {
+bool ImageHardDriveATADeviceDriver::Write(uint64_t byteAddress, uint8_t *buffer, uint32_t size) {
     // Image not loaded
     if (m_fpImage == NULL) {
         return false;
     }
 
+    // Limit size to sector size
+    if (size > kSectorSize) {
+        log_warning("ImageHardDriveATADeviceDriver::WriteSector:  Requested size (%d) truncated\n", size);
+        size = kSectorSize;
+    }
+
     // Seek address
-    if (_fseeki64(m_fpImage, (int64_t)lbaAddress * kSectorSize, SEEK_SET)) {
+    if (_fseeki64(m_fpImage, byteAddress, SEEK_SET)) {
         return false;
     }
 
@@ -147,10 +159,11 @@ bool ImageHardDriveATADeviceDriver::WriteSector(uint32_t lbaAddress, uint8_t des
     // If copy-on-write and block is copied, overwrite copy, otherwise create copy
     // If not copy-on-write, write to image file directly
 #if 0   // disable writes for now
-    int lenWrite = fwrite(destBuffer, 1, kSectorSize, m_fpImage);
+    int lenWrite = fwrite(buffer, 1, size, m_fpImage);
     fflush(m_fpImage);
 
-    return lenWrite == kSectorSize;
+    // Write is successful if the full size is written
+    return lenWrite == size;
 #endif
     return true;
 }

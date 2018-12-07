@@ -41,10 +41,10 @@ public:
     void SetPIOTransferMode(PIOTransferType type, uint8_t mode);
     void SetDMATransferMode(DMATransferType type, uint8_t mode);
 
-    // ----- Sector access ----------------------------------------------------
+    // ----- Data access ------------------------------------------------------
 
-    virtual bool ReadSector(uint32_t lbaAddress, uint8_t buffer[kSectorSize]) = 0;
-    virtual bool WriteSector(uint32_t lbaAddress, uint8_t buffer[kSectorSize]) = 0;
+    virtual bool Read(uint64_t byteAddress, uint8_t *buffer, uint32_t size) = 0;
+    virtual bool Write(uint64_t byteAddress, uint8_t *buffer, uint32_t size) = 0;
     
     // ----- Feature sets -----------------------------------------------------
 

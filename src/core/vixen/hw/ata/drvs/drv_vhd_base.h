@@ -39,10 +39,10 @@ public:
     bool SupportsPacketCommands() override { return false; }
     bool SupportsOverlap() override { return false; }
 
-    // ----- Sector access ----------------------------------------------------
+    // ----- Data access ------------------------------------------------------
     
-    virtual bool ReadSector(uint32_t lbaAddress, uint8_t destBuffer[kSectorSize]) override = 0;
-    virtual bool WriteSector(uint32_t lbaAddress, uint8_t destBuffer[kSectorSize]) override = 0;
+    virtual bool Read(uint64_t byteAddress, uint8_t *buffer, uint32_t size) override = 0;
+    virtual bool Write(uint64_t byteAddress, uint8_t *buffer, uint32_t size) override = 0;
     
     // ----- Utility functions ------------------------------------------------
     
