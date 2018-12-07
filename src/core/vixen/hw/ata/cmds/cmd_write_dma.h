@@ -21,7 +21,7 @@ namespace ata {
 namespace cmd {
 
 /*!
- * Implements the Write DMA command (0xCA [8.45].
+ * Implements the Write DMA command (0xCA) [8.45].
  */
 class WriteDMA : public DMAProtocolCommand {
 public:
