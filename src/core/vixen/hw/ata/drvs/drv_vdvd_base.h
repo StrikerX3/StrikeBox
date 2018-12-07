@@ -38,6 +38,7 @@ public:
 
     bool SupportsPacketCommands() override { return true; }
     bool SupportsOverlap() override { return false; }
+    bool IsOverlapEnabled() override { return false; }
 
     // ----- Data access ------------------------------------------------------
     

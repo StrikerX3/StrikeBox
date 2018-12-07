@@ -126,8 +126,8 @@ const uint8_t kDevSelectorBit = 4;  // [7.10.6] (DEV) Selects Device 0 when clea
 
 // Features bits for the PACKET protocol
 enum PacketFeaturesBits : uint8_t {
-    PkFeatOverlapped = (1 << 1),   // (OVL) Indicates that the PACKET command is to be overlapped
-    PkFeatDMA = (1 << 0),          // (DMA) Data transfer under the PACKET command is DMA or Ultra DMA
+    PkFeatOverlapped = (1 << 1),    // (OVL) Indicates that the PACKET command is to be overlapped
+    PkFeatDMATransfer = (1 << 0),   // (DMA) Data transfer under the PACKET command is DMA or Ultra DMA
 };
 
 // Interrupt reason bits for the PACKET protocol
@@ -191,29 +191,6 @@ enum Command : uint8_t {
 // [8.37.8] Set Features subcommands (specified in the Features register)
 enum SetFeaturesSubCommand : uint8_t {
     SFCmdSetTransferMode = 0x03,   // [8.37.10] Set Transfer Mode
-};
-
-// --- Command Protocols --------------------------------------------------------------------------
-
-// [9] Command Protocols
-// This struct specifies the behavior of commands that follow a particular protocol.
-// Flags and the INTRQ are asserted or negated depending on the outcome.
-// The BSY status flag is automatically managed by the code; it will be ignored if specified here.
-struct CommandProtocol {
-    uint8_t statusAssertedOnSuccess;   // Status flags asserted on successful command execution
-    uint8_t statusNegatedOnError;      // Status flags negated on failed command execution
-    bool assertINTRQOnSuccess;         // Command triggers INTRQ on success
-};
-
-// NOTE: Not all command protocols are included here.
-
-const CommandProtocol kCmdProtoDeviceReset = { 0, 0, false };                    // [9.2]  Device reset  (hardware reset)
-const CommandProtocol kCmdProtoPacket = { StDataRequest, 0, false };             // [9.11] PACKET        (non-data, PIO and DMA transfers)
-
-// Map commands to their protocols
-const std::unordered_map<Command, const CommandProtocol&, std::hash<uint8_t>> kCmdProtocols = {
-    { CmdDeviceReset, kCmdProtoDeviceReset },
-    { CmdPacket, kCmdProtoPacket },
 };
 
 // --- Command data -------------------------------------------------------------------------------

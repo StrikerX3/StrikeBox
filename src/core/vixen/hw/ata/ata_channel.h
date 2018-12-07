@@ -23,6 +23,7 @@
 #include "cmds/cmd_identify_device.h"
 #include "cmds/cmd_identify_packet_device.h"
 #include "cmds/cmd_init_dev_params.h"
+#include "cmds/cmd_packet.h"
 #include "cmds/cmd_read_dma.h"
 #include "cmds/cmd_security_unlock.h"
 #include "cmds/cmd_set_features.h"
@@ -37,6 +38,7 @@ const std::unordered_map<Command, cmd::IATACommand::Factory, std::hash<uint8_t>>
     { CmdIdentifyDevice, cmd::IdentifyDevice::Factory },
     { CmdIdentifyPacketDevice, cmd::IdentifyPacketDevice::Factory },
     { CmdInitializeDeviceParameters, cmd::InitializeDeviceParameters::Factory },
+    { CmdPacket, cmd::Packet::Factory },
     { CmdReadDMA, cmd::ReadDMA::Factory },
     { CmdSecurityUnlock, cmd::SecurityUnlock::Factory },
     { CmdSetFeatures, cmd::SetFeatures::Factory },

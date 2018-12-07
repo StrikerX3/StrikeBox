@@ -50,6 +50,7 @@ public:
 
     virtual bool SupportsPacketCommands() = 0;
     virtual bool SupportsOverlap() = 0;
+    virtual bool IsOverlapEnabled() = 0;
 
     // ----- Utility functions ------------------------------------------------
 
