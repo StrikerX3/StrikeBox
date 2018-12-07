@@ -11,6 +11,7 @@
 
 namespace vixen {
 
+using namespace hw;
 using namespace hw::bmide;
 using namespace hw::ata;
 
@@ -22,6 +23,7 @@ BMIDEChannel::BMIDEChannel(Channel channel, ATAChannel& ataChannel, uint8_t *ram
 {
     m_worker_running = true;
     m_job_running = false;
+    m_job_cancel = false;
     m_workerThread = std::thread(WorkerThreadFunc, this);
 }
 
@@ -158,13 +160,17 @@ struct PRDHelper {
             // Go to the next PRD if we reached the end of the current PRD
             // and there are more entries
             if (m_currByte >= byteCount) {
+                log_debug("BM IDE:  block finished\n", m_currByte, byteCount);
                 // No more entries
                 if (m_currPRD->endOfTable) {
+                    log_debug("BM IDE:  last entry\n");
                     bufPtr = nullptr;
                     return false;
                 }
 
                 m_currPRD++;
+                m_currByte = 0;
+                log_debug("BM IDE:  next block: 0x%x bytes\n", (m_currPRD->byteCount == 0 ? 65536 : m_currPRD->byteCount));
                 continue;
             }
 
@@ -174,6 +180,18 @@ struct PRDHelper {
             m_currByte += kSectorSize;
             return true;
         }
+    }
+
+    bool IsLastSector() {
+        // Get byte count from the PRD
+        uint16_t byteCount = m_currPRD->byteCount;
+        if (byteCount == 0) {
+            byteCount = 65536;
+        }
+
+        // This is the last sector if we reached the end of the last PRD
+        log_debug("BM IDE:  PRD: 0x%x / 0x%x bytes  at  0x%x%s\n", m_currByte, byteCount, m_currPRD->basePhysicalAddress, (m_currPRD->endOfTable ? " (EOT)" : ""));
+        return m_currPRD->endOfTable && m_currByte >= byteCount;
     }
 };
 
@@ -188,53 +206,44 @@ void BMIDEChannel::RunWorker() {
         // Do work
         PRDHelper helper(m_ram, m_ramSize, m_prdTableAddr);
 
-        while (m_job_running) {
-            // The manual says that 1 means Bus Master write and 0 means Bus Master read,
-            // which is true from the perspective of the bus itself, but confusing to a programmer.
-            // From the programmer's perspective, 0 means write to device and 1 means read from device.
-            // See https://wiki.osdev.org/ATA/ATAPI_using_DMA#The_Command_Byte
-            bool isWrite = (m_command & CmdReadWriteControl) == 0;
+        // The manual says that 1 means Bus Master write and 0 means Bus Master read,
+        // which is true from the perspective of the bus itself, but confusing to a programmer.
+        // From the programmer's perspective, 0 means write to device and 1 means read from device.
+        // See https://wiki.osdev.org/ATA/ATAPI_using_DMA#The_Command_Byte
+        bool isWrite = (m_command & CmdReadWriteControl) == 0;
 
-            bool finished = false;
-            if (isWrite) {
-                if (helper.NextSector()) {
-                    if (!m_ataChannel.WriteDMA(helper.bufPtr)) {
-                        finished = true;
-                    }
+        while (m_job_running) {
+            // Try to get the next sector from the PRD table
+            if (helper.NextSector()) {
+                DMATransferResult result;
+
+                // If this is the last sector in the PRD table, stop the
+                // Bus Master transfer after this last operation
+                if (helper.IsLastSector()) {
+                    m_status &= ~StActive;
+                    m_job_running = false;
+                }
+
+                // Do DMA read or write
+                if (isWrite) {
+                    result = m_ataChannel.WriteDMA(helper.bufPtr);
                 }
                 else {
-                    log_spew("BM IDE channel %d: Ran out of PRDs while writing\n", m_channel);
-                    m_status &= ~StActive;
-                    finished = true;
+                    result = m_ataChannel.ReadDMA(helper.bufPtr);
+                }
+
+                // Set Interrupt flag if the ATA device triggered an interrupt
+                if (result == DMATransferEnd) {
+                    if (m_ataChannel.AreInterruptsEnabled()) {
+                        m_status |= StInterrupt;
+                        m_ataChannel.GetInterruptTrigger().Assert();
+                    }
+                    m_job_running = false;
                 }
             }
             else {
-                uint8_t buf[kSectorSize];
-                if (m_ataChannel.ReadDMA(buf)) {
-                    if (helper.NextSector()) {
-                        memcpy(helper.bufPtr, buf, kSectorSize);
-                    }
-                    else {
-                        log_spew("BM IDE channel %d: Ran out of PRDs while reading\n", m_channel);
-                        m_status &= ~StActive;
-                        finished = true;
-                    }
-                }
-                else {
-                    finished = true;
-                }
-            }
-
-            if (finished) {
-                // Set Interrupt flag if the ATA device triggered an interrupt
-                if (m_ataChannel.AreInterruptsEnabled()) {
-                    m_status |= StInterrupt;
-                }
-
-                if (!helper.NextSector()) {
-                    m_status &= ~StActive;
-                }
-
+                log_spew("BM IDE channel %d: Ran out of PRDs\n", m_channel);
+                m_status &= ~StActive;
                 m_job_running = false;
             }
         }
@@ -242,6 +251,7 @@ void BMIDEChannel::RunWorker() {
         if (m_job_cancel) {
             // Clear Active flag if the job was cancelled
             m_status &= ~StActive;
+            m_job_cancel = false;
         }
     }
 }

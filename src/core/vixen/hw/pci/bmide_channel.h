@@ -18,7 +18,7 @@ namespace vixen {
 
 class BMIDEChannel {
 public:
-    BMIDEChannel(hw::ata::Channel channel, hw::ata::ATAChannel& ataChannel, uint8_t *ram, uint32_t m_ramSize);
+    BMIDEChannel(hw::ata::Channel channel, hw::ata::ATAChannel& ataChannel, uint8_t *ram, uint32_t ramSize);
     ~BMIDEChannel();
 private:
     friend class BMIDEDevice;

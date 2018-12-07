@@ -43,6 +43,13 @@ const std::unordered_map<Command, cmd::IATACommand::Factory, std::hash<uint8_t>>
     { CmdWriteDMA, cmd::WriteDMA::Factory },
 };
 
+// Possible outcomes for DMA transfers
+enum DMATransferResult {
+    DMATransferOK = 0,
+    DMATransferEnd,
+    DMATransferError,
+};
+
 /*!
  * Represents one of the two ATA channels in a machine (primary or secondary).
  *
@@ -65,12 +72,13 @@ public:
 
     // ----- DMA transfers ----------------------------------------------------
 
-    bool ReadDMA(uint8_t dstBuffer[kSectorSize]);
-    bool WriteDMA(uint8_t srcBuffer[kSectorSize]);
+    DMATransferResult ReadDMA(uint8_t dstBuffer[kSectorSize]);
+    DMATransferResult WriteDMA(uint8_t srcBuffer[kSectorSize]);
 
     // ----- Interrupts -------------------------------------------------------
 
     bool AreInterruptsEnabled() { return m_regs.AreInterruptsEnabled(); }
+    InterruptTrigger& GetInterruptTrigger() { return m_intrTrigger; }
 
 private:
     friend class ATA;

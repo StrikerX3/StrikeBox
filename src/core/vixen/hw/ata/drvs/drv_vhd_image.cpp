@@ -117,7 +117,7 @@ bool ImageHardDriveATADeviceDriver::ReadSector(uint32_t lbaAddress, uint8_t dest
     }
 
     // Seek address
-    if (fseek(m_fpImage, lbaAddress * kSectorSize, SEEK_SET)) {
+    if (_fseeki64(m_fpImage, (int64_t)lbaAddress * kSectorSize, SEEK_SET)) {
         return false;
     }
 
@@ -138,7 +138,7 @@ bool ImageHardDriveATADeviceDriver::WriteSector(uint32_t lbaAddress, uint8_t des
     }
 
     // Seek address
-    if (fseek(m_fpImage, lbaAddress * kSectorSize, SEEK_SET)) {
+    if (_fseeki64(m_fpImage, (int64_t)lbaAddress * kSectorSize, SEEK_SET)) {
         return false;
     }
 

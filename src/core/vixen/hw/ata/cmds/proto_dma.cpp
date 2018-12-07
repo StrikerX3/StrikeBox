@@ -134,7 +134,7 @@ void DMAProtocolCommand::ReadData(uint8_t *value, uint32_t size) {
     if (m_currentLBA >= m_endingLBA) {
         FinishTransfer();
         m_regs.status &= ~(StBusy | StDataRequest);
-        m_interrupt.Assert();
+        // INTRQ will be asserted in BMIDEChannel::RunWorker()
     }
 }
 
@@ -185,7 +185,7 @@ void DMAProtocolCommand::WriteData(uint8_t *value, uint32_t size) {
     if (m_currentLBA >= m_endingLBA) {
         FinishTransfer();
         m_regs.status &= ~(StBusy | StDataRequest);
-        m_interrupt.Assert();
+        // INTRQ will be asserted in BMIDEChannel::RunWorker()
     }
 }
 
