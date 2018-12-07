@@ -13,7 +13,6 @@
 
 #include <cstdint>
 
-#include "vixen/cpu.h"
 #include "../ata/ata_defs.h"
 
 namespace vixen {
@@ -43,6 +42,9 @@ struct ATARegisters {
 
     inline bool AreInterruptsEnabled() const { return (control & DevCtlNegateInterruptEnable) == 0; }
 
+    // ----- Signature and Persistence [9.1] ----------------------------------
+
+    void WriteSignature(bool packetFeatureSet);
 };
 
 }

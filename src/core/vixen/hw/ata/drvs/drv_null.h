@@ -29,7 +29,7 @@ public:
     // ----- ATA commands -----------------------------------------------------
 
     void IdentifyDevice(IdentifyDeviceData *data) override;
-    bool IdentifyPACKETDevice(IdentifyPACKETDeviceData *data) override { return false; }
+    bool IdentifyPacketDevice(IdentifyPacketDeviceData *data) override { return false; }
     bool SecurityUnlock(uint8_t unlockData[kSectorSize]) override { return false; }
     bool SetDeviceParameters(uint8_t heads, uint8_t sectorsPerTrack) override { return false; }
 
@@ -40,7 +40,7 @@ public:
 
     // ----- Feature sets -----------------------------------------------------
 
-    bool SupportsPACKETCommands() override { return false; }
+    bool SupportsPacketCommands() override { return false; }
     bool SupportsOverlap() override { return false; }
 
     // ----- Utility functions ------------------------------------------------

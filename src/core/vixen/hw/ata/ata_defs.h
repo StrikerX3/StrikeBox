@@ -125,7 +125,7 @@ enum DeviceHeadBits : uint8_t {
 const uint8_t kDevSelectorBit = 4;  // [7.10.6] (DEV) Selects Device 0 when cleared or Device 1 when set
 
 // Features bits for the PACKET protocol
-enum PACKETFeaturesBits : uint8_t {
+enum PacketFeaturesBits : uint8_t {
     PkFeatOverlapped = (1 << 1),   // (OVL) Indicates that the PACKET command is to be overlapped
     PkFeatDMA = (1 << 0),          // (DMA) Data transfer under the PACKET command is DMA or Ultra DMA
 };
@@ -179,7 +179,7 @@ const uint8_t kMaximumUltraDMATransferMode = 4;
 enum Command : uint8_t {
     CmdDeviceReset = 0x08,                  // [8.7]  Device Reset
     CmdIdentifyDevice = 0xEC,               // [8.12] Identify Device
-    CmdIdentifyPACKETDevice = 0xA1,         // [8.12] Identify PACKET Device
+    CmdIdentifyPacketDevice = 0xA1,         // [8.13] Identify PACKET Device
     CmdInitializeDeviceParameters = 0x91,   // [8.16] Initialize Device Parameters
     CmdPacket = 0xA0,                       // [8.23] Packet
     CmdReadDMA = 0xC8,                      // [8.23] Read DMA
@@ -208,22 +208,14 @@ struct CommandProtocol {
 // NOTE: Not all command protocols are included here.
 
 const CommandProtocol kCmdProtoDeviceReset = { 0, 0, false };                    // [9.2]  Device reset  (hardware reset)
-const CommandProtocol kCmdProtoPIODataIn = { StDataRequest, 0, true };           // [9.7]  PIO data in   (data transfer from device to host via Data register)
-const CommandProtocol kCmdProtoPIODataOut = { StDataRequest, 0, false };         // [9.8]  PIO data out  (data transfer from host to device via Data register)
-const CommandProtocol kCmdProtoNonData = { 0, 0, true, };                        // [9.9]  Non-data      (no data transfer)
 const CommandProtocol kCmdProtoDMA = { StDataRequest, StDataRequest, false, };   // [9.10] DMA           (data transfer between host and device via DMA)
-const CommandProtocol kCmdProtoPACKET = { StDataRequest, 0, false };             // [9.11] PACKET        (non-data, PIO and DMA transfers)
+const CommandProtocol kCmdProtoPacket = { StDataRequest, 0, false };             // [9.11] PACKET        (non-data, PIO and DMA transfers)
 
 // Map commands to their protocols
 const std::unordered_map<Command, const CommandProtocol&, std::hash<uint8_t>> kCmdProtocols = {
     { CmdDeviceReset, kCmdProtoDeviceReset },
-    { CmdIdentifyDevice, kCmdProtoPIODataIn },
-    { CmdIdentifyPACKETDevice, kCmdProtoPIODataIn },
-    { CmdInitializeDeviceParameters, kCmdProtoNonData },
-    { CmdPacket, kCmdProtoPACKET },
+    { CmdPacket, kCmdProtoPacket },
     { CmdReadDMA, kCmdProtoDMA },
-    { CmdSecurityUnlock, kCmdProtoPIODataOut },
-    { CmdSetFeatures, kCmdProtoNonData },
     { CmdWriteDMA, kCmdProtoDMA },
 };
 
@@ -332,7 +324,7 @@ enum IdentifyDeviceCapabilities2 : uint16_t {
 };
 
 // [8.12.8 table 11 word 53] Bits for the validTranslationFields field in the IdentifyDeviceData struct
-// [8.13.8 table 15 word 53] Bits for the validTranslationFields field in the IdentifyPACKETDeviceData struct
+// [8.13.8 table 15 word 53] Bits for the validTranslationFields field in the IdentifyPacketDeviceData struct
 enum IdentifyDeviceValidTranslationFields : uint16_t {
     IDValidXlatUltraDMA = (1 << 2),           // The fields reported in word 88 are valid -> supported and enabled Ultra DMA modes
     IDValidXlatTransferCycles = (1 << 1),     // The fields reported in words 64-70 are valid -> transfer cycles and advanced PIO modes supported
@@ -346,7 +338,7 @@ enum IdentifyDeviceCurrentMultiSectorSettings : uint16_t {
 };
 
 // [8.12.8 table 11 word 63] Bits for the multiwordDMASettings field in the IdentifyDeviceData struct
-// [8.13.8 table 15 word 63] Bits for the multiwordDMASettings field in the IdentifyPACKETDeviceData struct
+// [8.13.8 table 15 word 63] Bits for the multiwordDMASettings field in the IdentifyPacketDeviceData struct
 enum IdentifyDeviceMultiwordDMASettings : uint16_t {
     IDMultiwordDMA2Selected = (1 << 10),    // Multiword DMA mode 2 selected
     IDMultiwordDMA1Selected = (1 << 9),     // Multiword DMA mode 1 selected
@@ -357,7 +349,7 @@ enum IdentifyDeviceMultiwordDMASettings : uint16_t {
 };
 
 // [8.12.8 table 11 word 80] Bits for the majorVersionNumber field in the IdentifyDeviceData struct
-// [8.13.8 table 15 word 80] Bits for the majorVersionNumber field in the IdentifyPACKETDeviceData struct
+// [8.13.8 table 15 word 80] Bits for the majorVersionNumber field in the IdentifyPacketDeviceData struct
 enum IdentifyDeviceMajorVersionNumber : uint16_t {
     IDMajorVerNoReport = 0,          // Device does not report version
     IDMajorVerNoReportAlt = 0xFFFF,  // Device does not report version
@@ -379,7 +371,7 @@ enum IdentifyDeviceMajorVersionNumber : uint16_t {
 };
 
 // [8.12.8 table 11 word 81] Bits for the minorVersionNumber field in the IdentifyDeviceData struct
-// [8.13.8 table 15 word 81] Bits for the minorVersionNumber field in the IdentifyPACKETDeviceData struct
+// [8.13.8 table 15 word 81] Bits for the minorVersionNumber field in the IdentifyPacketDeviceData struct
 // (specified in [8.12.44 table 12])
 enum IdentifyDeviceMinorVersionNumber : uint16_t {
     IDMinorVerNoReport = 0,                         // Device does not report version
@@ -405,7 +397,7 @@ enum IdentifyDeviceMinorVersionNumber : uint16_t {
 };
 
 // [8.12.8 table 11 words 82 and 85] Bits for the commandSetsSupported1 and commandSetsEnabled1 fields in the IdentifyDeviceData struct
-// [8.13.8 table 15 words 82 and 85] Bits for the commandSetsSupported1 and commandSetsEnabled1 fields in the IdentifyPACKETDeviceData struct
+// [8.13.8 table 15 words 82 and 85] Bits for the commandSetsSupported1 and commandSetsEnabled1 fields in the IdentifyPacketDeviceData struct
 enum IdentifyDeviceCommandSets1 : uint16_t {
     IDCmdSet1NoReport = 0x0000,                     // Command set notification not supported
     IDCmdSet1NoReportAlt = 0xFFFF,                  // Command set notification not supported
@@ -426,7 +418,7 @@ enum IdentifyDeviceCommandSets1 : uint16_t {
 };
 
 // [8.12.8 table 11 words 83 and 86] Bits for the commandSetsSupported2 and commandSetsEnabled2 fields in the IdentifyDeviceData struct
-// [8.13.8 table 15 words 83 and 86] Bits for the commandSetsSupported2 and commandSetsEnabled2 fields in the IdentifyPACKETDeviceData struct
+// [8.13.8 table 15 words 83 and 86] Bits for the commandSetsSupported2 and commandSetsEnabled2 fields in the IdentifyPacketDeviceData struct
 enum IdentifyDeviceCommandSets2 : uint16_t {
     IDCmdSet2NoReport = 0x0000,                                 // Command set notification not supported
     IDCmdSet2NoReportAlt = 0xFFFF,                              // Command set notification not supported
@@ -440,7 +432,7 @@ enum IdentifyDeviceCommandSets2 : uint16_t {
 };
 
 // [8.12.8 table 11 words 84 and 87] Bits for the commandSetsSupported3 and commandSetsEnabled3 fields in the IdentifyDeviceData struct
-// [8.13.8 table 15 words 84 and 87] Bits for the commandSetsSupported3 and commandSetsEnabled3 fields in the IdentifyPACKETDeviceData struct
+// [8.13.8 table 15 words 84 and 87] Bits for the commandSetsSupported3 and commandSetsEnabled3 fields in the IdentifyPacketDeviceData struct
 enum IdentifyDeviceCommandSets3 : uint16_t {
     IDCmdSet3NoReport = 0x0000,             // Command set notification not supported
     IDCmdSet3NoReportAlt = 0xFFFF,          // Command set notification not supported
@@ -449,7 +441,7 @@ enum IdentifyDeviceCommandSets3 : uint16_t {
 };
 
 // [8.12.8 table 11 word 88] Bits for the ultraDMASettings field in the IdentifyDeviceData struct
-// [8.13.8 table 15 word 88] Bits for the ultraDMASettings field in the IdentifyPACKETDeviceData struct
+// [8.13.8 table 15 word 88] Bits for the ultraDMASettings field in the IdentifyPacketDeviceData struct
 enum IdentifyDeviceUltraDMASettings : uint16_t {
     IDUltraDMA2Selected = (1 << 10),    // Ultra DMA mode 2 selected
     IDUltraDMA1Selected = (1 << 9),     // Ultra DMA mode 1 selected
@@ -460,14 +452,14 @@ enum IdentifyDeviceUltraDMASettings : uint16_t {
 };
 
 // [8.12.8 table 11 word 127] Bits for the remMediaStatusNotificationFeatureSets field in the IdentifyDeviceData struct
-// [8.13.8 table 15 word 127] Bits for the remMediaStatusNotificationFeatureSets field in the IdentifyPACKETDeviceData struct
+// [8.13.8 table 15 word 127] Bits for the remMediaStatusNotificationFeatureSets field in the IdentifyPacketDeviceData struct
 enum IdentifyDeviceRemovableMediaStatus : uint16_t {
     IDRemMediaStatusNotSupported = 0b00,   // Removable Media Status Notification feature set not supported
     IDRemMediaStatusSupported = 0b01,      // Removable Media Status Notification feature set supported
 };
 
 // [8.12.8 table 11 word 128] Bits for the securityStatus field in the IdentifyDeviceData struct
-// [8.13.8 table 15 word 128] Bits for the securityStatus field in the IdentifyPACKETDeviceData struct
+// [8.13.8 table 15 word 128] Bits for the securityStatus field in the IdentifyPacketDeviceData struct
 enum IdentifyDeviceSecurityStatus : uint16_t {
     IDSecStatusSecurityLevel = (1 << 8),   // Security level (0 = high, 1 = maximum)
     IDSecStatusEnhancedSecurityEraseSupported = (1 << 5),   // Enhanced security erase supported
@@ -482,7 +474,7 @@ enum IdentifyDeviceSecurityStatus : uint16_t {
 #ifdef _MSC_VER
 #include <pshpack2.h>
 #endif
-struct IdentifyPACKETDeviceData {
+struct IdentifyPacketDeviceData {
     uint16_t generalConfiguration;                   // word 0
     uint16_t _reserved_1[9];                         // word 1-9
     char     serialNumber[kSerialNumberLength];      // word 10-19
@@ -532,7 +524,7 @@ struct IdentifyPACKETDeviceData {
 } __attribute__((aligned(2), packed));
 #endif
 
-// [8.13.8 table 15 word 0] Bits for the generalConfiguration field in the IdentifyPACKETDeviceData struct
+// [8.13.8 table 15 word 0] Bits for the generalConfiguration field in the IdentifyPacketDeviceData struct
 enum IdentifyPACKETDeviceGeneralConfiguration : uint16_t {
     IDPGenConfDeviceTypeShift = 14,                   // Bit shift for the device type field
     IDPGenConfDeviceTypeMask = 0b11,                  // Mask for the device type field, one of:
@@ -567,8 +559,8 @@ enum IdentifyPACKETDeviceGeneralConfiguration : uint16_t {
     IDPGenConfCS16Byte = 0b01,                        //   0b01 - 16 byte command packet
 };
 
-// [8.13.8 table 15 word 49] Bits for the capabilities field in the IdentifyPACKETDeviceData struct
-enum IdentifyPACKETDeviceCapabilities : uint16_t {
+// [8.13.8 table 15 word 49] Bits for the capabilities field in the IdentifyPacketDeviceData struct
+enum IdentifyPacketDeviceCapabilities : uint16_t {
     IDPCapsInterleavedDMA = (1 << 15),         // Interleaved DMA supported
     IDPCapsCommandQueuing = (1 << 14),         // Command queuing supported
     IDPCapsOverlapOperation = (1 << 13),       // Overlap operation supported

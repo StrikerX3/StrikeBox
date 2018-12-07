@@ -30,13 +30,13 @@ public:
     // ----- ATA commands -----------------------------------------------------
 
     void IdentifyDevice(IdentifyDeviceData *data) override;
-    bool IdentifyPACKETDevice(IdentifyPACKETDeviceData *data) override;
+    bool IdentifyPacketDevice(IdentifyPacketDeviceData *data) override;
     bool SecurityUnlock(uint8_t unlockData[kSectorSize]) override;
     bool SetDeviceParameters(uint8_t heads, uint8_t sectorsPerTrack) override;
     
     // ----- Feature sets -----------------------------------------------------
 
-    bool SupportsPACKETCommands() override { return false; }
+    bool SupportsPacketCommands() override { return false; }
     bool SupportsOverlap() override { return false; }
 
     // ----- Sector access ----------------------------------------------------

@@ -13,8 +13,8 @@
 
 #include <cstdint>
 
-#include "vixen/cpu.h"
 #include "../ata/ata_defs.h"
+#include "../basic/interrupt_trigger.h"
 #include "ata_common.h"
 #include "drvs/ata_device_driver.h"
 #include "drvs/drv_null.h"
@@ -29,20 +29,19 @@ namespace ata {
  */
 class ATADevice {
 public:
-    ATADevice(Channel channel, uint8_t devIndex, ATARegisters& regs);
+    ATADevice(Channel channel, uint8_t devIndex, ATARegisters& regs, InterruptTrigger& interrupt);
     ~ATADevice();
+
+    ATARegisters& GetRegisters() { return m_regs; }
+    IATADeviceDriver* GetDriver() { return m_driver; }
+    const Channel GetChannel() const { return m_channel; }
+    const uint8_t GetIndex() const { return m_devIndex; }
+    InterruptTrigger& GetInterrupt() const { return m_interrupt; }
 
     // ----- Device driver management -----------------------------------------
 
     void SetDeviceDriver(IATADeviceDriver *driver) { m_driver = driver; }
     bool IsAttached() const { return m_driver->IsAttached(); }
-
-    // ----- PIO data buffer --------------------------------------------------
-
-    uint32_t ReadBuffer(uint8_t *dst, uint32_t length);
-    uint32_t WriteBuffer(uint8_t *src, uint32_t length);
-    bool IsBlockTransferComplete();
-    bool RequestNextBlock();
 
     // ----- DMA transfer -----------------------------------------------------
 
@@ -51,33 +50,24 @@ public:
     bool IsDMAFinished() { return m_dma_currentLBA >= m_dma_endingLBA; }
     void EndDMA();
     
-    // ----- Transfer control -------------------------------------------------
-    
-    bool HasTransferError();
-    void FinishCommand();
-
     // ----- Command handlers -------------------------------------------------
     // These functions must return false on error
 
-    bool IdentifyDevice();               // [8.12] 0xEC   Identify Device
-    bool IdentifyPACKETDevice();         // [8.13] 0xA1   Identify PACKET Device
-    bool InitializeDeviceParameters();   // [8.16] 0x91   Initialize Device Parameters
     bool BeginReadDMA();                 // [8.23] 0xC8   Read DMA
-    bool BeginSecurityUnlock();          // [8.34] 0xF2   Security Unlock
-    bool SetFeatures();                  // [8.37] 0xEF   Set Features
     bool BeginWriteDMA();                // [8.45] 0xCA   Write DMA
 
     // ----- Set Features subcommand handlers ---------------------------------
 
-    bool SetTransferMode();
-    bool SetPIOTransferMode(PIOTransferType type, uint8_t mode);
-    bool SetDMATransferMode(DMATransferType type, uint8_t mode);
+    void SetPIOTransferMode(PIOTransferType type, uint8_t mode);
+    void SetDMATransferMode(DMATransferType type, uint8_t mode);
 
 private:
     friend class ATAChannel;
 
-    Channel m_channel;
-    uint8_t m_devIndex;
+    const Channel m_channel;
+    const uint8_t m_devIndex;
+
+    InterruptTrigger& m_interrupt;
 
     // The device driver that responds to commands
     IATADeviceDriver *m_driver;
@@ -94,35 +84,6 @@ private:
     DMATransferType m_dmaTransferType = XferTypeMultiWordDMA;
     uint8_t m_dmaTransferMode = 0;
 
-    // ----- Signature and Persistence [9.1] ----------------------------------
-
-    void WriteSignature(bool packetFeatureSet);
-
-    // ----- Data buffer (for PIO transfers) ----------------------------------
-
-    uint8_t m_dataBuffer[kSectorSize];
-    uint32_t m_dataBufferPos;
-
-    uint32_t GetRemainingBufferLength();
-
-    // ----- Data transfer ----------------------------------------------------
-
-    // true if any transfer is in progress (PIO or DMA)
-    bool m_transferActive;
-    
-    // How many sectors to read/write
-    uint32_t m_sectorsRemaining;
-
-    // Whether the command reported an error
-    bool m_transferError;
-    
-    // The command currently executing
-    bool m_transferHasCommand;
-    Command m_command;
-
-    // Execute the command after receiving a full sector of data
-    void ExecuteCommand();
-
     // ----- DMA transfer -----------------------------------------------------
     
     // Parameters
@@ -131,6 +92,7 @@ private:
     bool m_dma_isWrite;   // Current DMA operation type (true = write, false = read), used for sanity check
   
     // State
+    bool m_dma_transferActive;
     uint8_t m_dma_currentLBA;
 
     bool HandleReadDMA(uint8_t dstBuffer[kSectorSize]);

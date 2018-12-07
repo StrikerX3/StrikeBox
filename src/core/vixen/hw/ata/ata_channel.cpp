@@ -22,9 +22,11 @@ ATAChannel::ATAChannel(Channel channel, IRQHandler& irqHandler, uint8_t irqNum)
     : m_channel(channel)
     , m_irqHandler(irqHandler)
     , m_irqNum(irqNum)
+    , m_intrTrigger(IntrTrigger(*this))
+    , m_currentCommand(nullptr)
 {
     for (uint8_t i = 0; i < 2; i++) {
-        m_devs[i] = new ATADevice(m_channel, i, m_regs);
+        m_devs[i] = new ATADevice(m_channel, i, m_regs, m_intrTrigger);
     }
 }
 
@@ -191,39 +193,20 @@ bool ATAChannel::EndDMA() {
 }
 
 void ATAChannel::ReadData(uint32_t *value, uint8_t size) {
-    // Read from device buffer
     auto devIndex = m_regs.GetSelectedDeviceIndex();
     auto dev = m_devs[devIndex];
 
-    // Clear the destination value before reading from the buffer, in case
-    // there are not enough bytes to fulfill the request
-    *value = 0;
-    uint32_t lenRead = dev->ReadBuffer(reinterpret_cast<uint8_t *>(value), size);
-    if (lenRead != size) {
-        log_warning("ATAChannel::ReadData:  Buffer underflow!  channel = %d  device = %d  size = %d  read = %d\n", m_channel, devIndex, size, lenRead);
+    // Check that there is a command in progress
+    if (m_currentCommand == nullptr) {
+        log_warning("ATAChannel::ReadData:  No command in progress!  channel = %d  device = %d  size = %d\n", m_channel, devIndex, size);
+        return;
     }
 
-    // Update Status register
-    if (dev->IsBlockTransferComplete()) {
-        if (dev->RequestNextBlock()) {
-            // If the device indicates an error, set ERR=1
-            // Otherwise, set DRQ=1
-            if (dev->HasTransferError()) {
-                m_regs.status |= StError;
-            }
-            else {
-                m_regs.status |= StDataRequest;
-            }
-
-            // Assert interrupt
-            SetInterrupt(true);
-        }
-        else {
-            // Clear DRQ=0
-            m_regs.status &= ~StDataRequest;
-
-            dev->FinishCommand();
-        }
+    // Read data for the command and clear it if finished
+    m_currentCommand->ReadData(value, size);
+    if (m_currentCommand->IsFinished()) {
+        delete m_currentCommand;
+        m_currentCommand = nullptr;
     }
 }
 
@@ -235,105 +218,58 @@ void ATAChannel::ReadStatus(uint8_t *value) {
 }
 
 void ATAChannel::WriteData(uint32_t value, uint8_t size) {
-    // Write to device buffer
     auto devIndex = m_regs.GetSelectedDeviceIndex();
     auto dev = m_devs[devIndex];
 
-    uint32_t lenWritten = dev->WriteBuffer(reinterpret_cast<uint8_t *>(&value), size);
-    if (lenWritten != size) {
-        log_warning("ATAChannel::WriteData: Buffer overflow!   channel = %d  device = %d  size = %d  read = %d\n", m_channel, devIndex, size, lenWritten);
+    // Check that there is a command in progress
+    if (m_currentCommand == nullptr) {
+        log_warning("ATAChannel::WriteData:  No command in progress!  channel = %d  device = %d  size = %d\n", m_channel, devIndex, size);
+        return;
     }
 
-    // Update Status register
-    if (dev->IsBlockTransferComplete()) {
-        // Clear DRQ=0
-        m_regs.status &= ~StDataRequest;
-
-        // If the device indicates an error, set ERR=1 clear BSY=0
-        // then assert an interrupt
-        if (dev->HasTransferError()) {
-            m_regs.status |= StError;
-        }
-        else if (dev->RequestNextBlock()) {
-            // Set DRQ=1
-            m_regs.status |= StDataRequest;
-        }
-        else {
-            dev->FinishCommand();
-        }
-
-        // Assert interrupt
-        SetInterrupt(true);
+    // Write data for the command and clear it if finished
+    m_currentCommand->WriteData(value, size);
+    if (m_currentCommand->IsFinished()) {
+        delete m_currentCommand;
+        m_currentCommand = nullptr;
     }
 }
 
 void ATAChannel::WriteCommand(uint8_t value) {
     const Command cmd = (Command)value;
-    // Check that the command has an protocol associated with it
-    if (kCmdProtocols.count(cmd) == 0) {
-        log_warning("ATAChannel::WriteCommand: No protocol specified for command 0x%x\n", value);
+    auto devIndex = m_regs.GetSelectedDeviceIndex();
+    auto dev = m_devs[devIndex];
+
+    // Check that there is no command in progress
+    if (m_currentCommand != nullptr) {
+        log_warning("ATAChannel::WriteCommand:  Trying to run command while another command is in progress\n", value);
         m_regs.status |= StError;
+        SetInterrupt(true);
         return;
     }
 
-    // Determine which protocol is used by the command and collect all data needed for execution
-    auto protocol = kCmdProtocols.at(cmd);
-    auto devIndex = m_regs.GetSelectedDeviceIndex();
-    auto dev = m_devs[devIndex];
-    bool succeeded;
+    // Check that the command has a factory associated with it
+    if (kCmdFactories.count(cmd) == 0) {
+        log_warning("ATAChannel::WriteCommand:  Unhandled command 0x%x for channel %d, device %d\n", cmd, m_channel, devIndex);
+        m_regs.status |= StError;
+        SetInterrupt(true);
+        return;
+    }
+
+    // Instantiate the command
+    auto factory = kCmdFactories.at(cmd);
+    m_currentCommand = factory(*dev);
 
     // Every protocol starts by setting BSY=1
     m_regs.status |= StBusy;
     
-    // TODO: submit this entire block as a job to the command processor thread
+    // TODO: submit this block as a job to the command processor thread
     {
-        switch (cmd) {
-        case CmdIdentifyDevice:
-            succeeded = dev->IdentifyDevice();
-            break;
-        case CmdIdentifyPACKETDevice:
-            succeeded = dev->IdentifyPACKETDevice();
-            break;
-        case CmdInitializeDeviceParameters:
-            succeeded = dev->InitializeDeviceParameters();
-            break;
-        case CmdReadDMA:
-            succeeded = dev->BeginReadDMA();
-            break;
-        case CmdSecurityUnlock:
-            succeeded = dev->BeginSecurityUnlock();
-            break;
-        case CmdSetFeatures:
-            succeeded = dev->SetFeatures();
-            break;
-        case CmdWriteDMA:
-            succeeded = dev->BeginWriteDMA();
-            break;
-        default:
-            log_warning("ATAChannel::WriteCommand:  Unhandled command 0x%x for channel %d, device %d\n", cmd, m_channel, devIndex);
-            succeeded = false;
-            break;
+        m_currentCommand->Execute();
+        if (m_currentCommand->IsFinished()) {
+            delete m_currentCommand;
+            m_currentCommand = nullptr;
         }
-
-        // Assert and negate status flags according to the protocol and the outcome
-        if (succeeded) {
-            m_regs.status |= protocol.statusAssertedOnSuccess;
-        }
-        else {
-            m_regs.status |= StError;
-            m_regs.status &= ~protocol.statusNegatedOnError;
-        }
-
-        // Clear BSY=0
-        m_regs.status &= ~StBusy;
-
-        // Always assert INTRQ on error, or on success if specified by the protocol
-        if (!succeeded || protocol.assertINTRQOnSuccess) {
-            // INTRQ is not asserted if nIEN=1
-            // INTRQ will be negated when the host reads the Status register
-            SetInterrupt(true);
-        }
-
     }
 }
 

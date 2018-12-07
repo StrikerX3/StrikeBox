@@ -15,12 +15,29 @@
 
 #include "vixen/cpu.h"
 #include "../basic/irq.h"
+#include "../basic/interrupt_trigger.h"
 #include "ata_device.h"
 #include "ata_common.h"
+
+#include "cmds/ata_command.h"
+#include "cmds/cmd_identify_device.h"
+#include "cmds/cmd_identify_packet_device.h"
+#include "cmds/cmd_init_dev_params.h"
+#include "cmds/cmd_security_unlock.h"
+#include "cmds/cmd_set_features.h"
 
 namespace vixen {
 namespace hw {
 namespace ata {
+
+// Map commands to their factories
+const std::unordered_map<Command, cmd::IATACommand::Factory, std::hash<uint8_t>> kCmdFactories = {
+    { CmdIdentifyDevice, cmd::IdentifyDevice::Factory },
+    { CmdIdentifyPacketDevice, cmd::IdentifyPacketDevice::Factory },
+    { CmdInitializeDeviceParameters, cmd::InitializeDeviceParameters::Factory },
+    { CmdSecurityUnlock, cmd::SecurityUnlock::Factory },
+    { CmdSetFeatures, cmd::SetFeatures::Factory },
+};
 
 /*!
  * Represents one of the two ATA channels in a machine (primary or secondary).
@@ -49,6 +66,15 @@ public:
     bool IsDMAFinished();
     bool EndDMA();
 
+    class IntrTrigger : public InterruptTrigger {
+    public:
+        IntrTrigger(ATAChannel& channel) : m_channel(channel) {}
+        void Assert() override { m_channel.SetInterrupt(true); }
+        void Negate() override { m_channel.SetInterrupt(false); }
+    private:
+        ATAChannel& m_channel;
+    };
+
 private:
     friend class ATA;
 
@@ -60,11 +86,17 @@ private:
 
     // ----- Registers --------------------------------------------------------
 
+    // [7.1]: "In this standard, the register contents go to both devices (and
+    // their embedded controllers)."
+    // This means that the controller can own the set of registers, which is
+    // shared by both devices.
     ATARegisters m_regs;
 
     // ----- State ------------------------------------------------------------
 
     bool m_interrupt = false;  // [5.2.9] INTRQ (Device Interrupt)
+    InterruptTrigger& m_intrTrigger;
+    cmd::IATACommand *m_currentCommand;
 
     // ----- Interrupt handling -----------------------------------------------
 

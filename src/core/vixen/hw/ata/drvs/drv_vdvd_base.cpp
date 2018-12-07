@@ -30,8 +30,8 @@ void BaseDVDDriveATADeviceDriver::IdentifyDevice(IdentifyDeviceData *data) {
     memset(data, 0, sizeof(IdentifyDeviceData));
 }
 
-bool BaseDVDDriveATADeviceDriver::IdentifyPACKETDevice(IdentifyPACKETDeviceData *data) {
-    memset(data, 0, sizeof(IdentifyPACKETDeviceData));
+bool BaseDVDDriveATADeviceDriver::IdentifyPacketDevice(IdentifyPacketDeviceData *data) {
+    memset(data, 0, sizeof(IdentifyPacketDeviceData));
 
     // Adapted from https://github.com/mirror/vbox/blob/master/src/VBox/Devices/Storage/DevATA.cpp
     
@@ -98,7 +98,7 @@ void BaseDVDDriveATADeviceDriver::LBAToCHS(uint32_t lbaAddress, uint16_t *cylind
 }
 
 uint8_t BaseDVDDriveATADeviceDriver::GetPacketTransferSize() {
-    // Match the value specified in the IdentifyPACKETDeviceData struct
+    // Match the value specified in the IdentifyPacketDeviceData struct
     return 12;
 }
 }

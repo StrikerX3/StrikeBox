@@ -34,7 +34,7 @@ public:
     // ----- ATA commands -----------------------------------------------------
 
     virtual void IdentifyDevice(IdentifyDeviceData *data) = 0;
-    virtual bool IdentifyPACKETDevice(IdentifyPACKETDeviceData *data) = 0;
+    virtual bool IdentifyPacketDevice(IdentifyPacketDeviceData *data) = 0;
     virtual bool SecurityUnlock(uint8_t unlockData[kSectorSize]) = 0;
     virtual bool SetDeviceParameters(uint8_t heads, uint8_t sectorsPerTrack) = 0;
 
@@ -45,7 +45,7 @@ public:
     
     // ----- Feature sets -----------------------------------------------------
 
-    virtual bool SupportsPACKETCommands() = 0;
+    virtual bool SupportsPacketCommands() = 0;
     virtual bool SupportsOverlap() = 0;
 
     // ----- Utility functions ------------------------------------------------

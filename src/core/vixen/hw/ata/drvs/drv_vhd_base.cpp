@@ -82,7 +82,7 @@ void BaseHardDriveATADeviceDriver::IdentifyDevice(IdentifyDeviceData *data) {
     }
 }
 
-bool BaseHardDriveATADeviceDriver::IdentifyPACKETDevice(IdentifyPACKETDeviceData *data) {
+bool BaseHardDriveATADeviceDriver::IdentifyPacketDevice(IdentifyPacketDeviceData *data) {
     return false;
 }
 
