@@ -19,7 +19,7 @@ namespace ata {
 namespace cmd {
 
 WriteDMA::WriteDMA(ATADevice& device)
-    : DMAProtocolCommand(device, false) {
+    : DMAProtocolCommand(device, true) {
 }
 
 WriteDMA::~WriteDMA() {

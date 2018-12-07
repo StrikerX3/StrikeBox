@@ -231,6 +231,10 @@ void BMIDEChannel::RunWorker() {
                     m_status |= StInterrupt;
                 }
 
+                if (!helper.NextSector()) {
+                    m_status &= ~StActive;
+                }
+
                 m_job_running = false;
             }
         }

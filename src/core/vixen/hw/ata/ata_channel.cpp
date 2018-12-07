@@ -136,6 +136,10 @@ bool ATAChannel::WriteControlPort(uint32_t value, uint8_t size) {
     if (value & DevCtlSoftwareReset) {
         log_debug("ATAChannel::WriteControlPort: Software reset triggered on channel %d\n", m_channel);
         // TODO: implement [9.3.1] for device 0 and [9.3.2] for device 1
+        if (m_currentCommand != nullptr) {
+            delete m_currentCommand;
+            m_currentCommand = nullptr;
+        }
     }
 
     m_regs.control = value;
@@ -144,10 +148,9 @@ bool ATAChannel::WriteControlPort(uint32_t value, uint8_t size) {
 }
 
 void ATAChannel::ReadData(uint32_t *value, uint8_t size) {
-    auto devIndex = m_regs.GetSelectedDeviceIndex();
-
     // Check that there is a command in progress
     if (m_currentCommand == nullptr) {
+        auto devIndex = m_regs.GetSelectedDeviceIndex();
         log_warning("ATAChannel::ReadData:  No command in progress!  channel = %d  device = %d  size = %d\n", m_channel, devIndex, size);
         return;
     }
@@ -168,10 +171,9 @@ void ATAChannel::ReadStatus(uint8_t *value) {
 }
 
 void ATAChannel::WriteData(uint32_t value, uint8_t size) {
-    auto devIndex = m_regs.GetSelectedDeviceIndex();
-
     // Check that there is a command in progress
     if (m_currentCommand == nullptr) {
+        auto devIndex = m_regs.GetSelectedDeviceIndex();
         log_warning("ATAChannel::WriteData:  No command in progress!  channel = %d  device = %d  size = %d\n", m_channel, devIndex, size);
         return;
     }
@@ -223,10 +225,9 @@ void ATAChannel::WriteCommand(uint8_t value) {
 }
 
 bool ATAChannel::ReadDMA(uint8_t dstBuffer[kSectorSize]) {
-    auto devIndex = m_regs.GetSelectedDeviceIndex();
-
     // Check that there is a command in progress
     if (m_currentCommand == nullptr) {
+        auto devIndex = m_regs.GetSelectedDeviceIndex();
         log_warning("ATAChannel::ReadDMA:  No command in progress!  channel = %d  device = %d\n", m_channel, devIndex);
         return false;
     }
@@ -236,17 +237,15 @@ bool ATAChannel::ReadDMA(uint8_t dstBuffer[kSectorSize]) {
     if (m_currentCommand->IsFinished()) {
         delete m_currentCommand;
         m_currentCommand = nullptr;
-        return false;
     }
 
     return true;
 }
 
 bool ATAChannel::WriteDMA(uint8_t srcBuffer[kSectorSize]) {
-    auto devIndex = m_regs.GetSelectedDeviceIndex();
-
     // Check that there is a command in progress
     if (m_currentCommand == nullptr) {
+        auto devIndex = m_regs.GetSelectedDeviceIndex();
         log_warning("ATAChannel::WriteDMA:  No command in progress!  channel = %d  device = %d\n", m_channel, devIndex);
         return false;
     }
@@ -256,7 +255,6 @@ bool ATAChannel::WriteDMA(uint8_t srcBuffer[kSectorSize]) {
     if (m_currentCommand->IsFinished()) {
         delete m_currentCommand;
         m_currentCommand = nullptr;
-        return false;
     }
 
     return true;
