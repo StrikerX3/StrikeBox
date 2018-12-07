@@ -11,17 +11,19 @@ Essentially right now it just initializes an x86 system (courtesy of one of the
 various virtualization platforms supported by the emulator) and runs whatever
 is in ROM, which is provided by the user.
 
-No networking, no audio, no graphics, no games... yet ;).
+If provided with a particular BIOS ROM and a raw hard disk image containing the
+Microsoft Xbox Dashboard, it will load the Dashboard software succesfully.
+There's no networking, no audio, no graphics, no games... yet ;).
 
 The initial goal is to emulate the original Xbox at a low level. The user will
 have to provide their own dump of the MCPX and BIOS ROMs from an Xbox machine,
 as well as the appropriate game media dump in XISO format or from an extracted
-directory.
+directory and a hard disk image containing the system software.
 
 In the future, viXen will attempt to provide high level emulation of the kernel
-in order to sidestep the ROM requirements. It is a long way off, as research on
-the kernel is still incipient and existing implementations are incomplete,
-incorrect or straight up copies of illegally obtained code.
+in order to sidestep the ROM and dashboard requirements. It is a long way off,
+as research on the kernel is still incipient and existing implementations are
+incomplete, incorrect or straight up copies of illegally obtained code.
 
 How to Build
 ------------
