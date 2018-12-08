@@ -154,7 +154,7 @@ struct PRDHelper {
     bool NextSector() {
         for (;;) {
             // Get byte count from the PRD
-            uint16_t byteCount = m_currPRD->byteCount;
+            uint32_t byteCount = m_currPRD->byteCount;
             if (byteCount == 0) {
                 byteCount = 65536;
             }
@@ -162,10 +162,10 @@ struct PRDHelper {
             // Go to the next PRD if we reached the end of the current PRD
             // and there are more entries
             if (m_currByte >= byteCount) {
-                //log_spew("BM IDE:  block finished\n", m_currByte, byteCount);
+                //log_spew("BM IDE:  Block finished\n", m_currByte, byteCount);
                 // No more entries
                 if (m_currPRD->endOfTable) {
-                    //log_spew("BM IDE:  last entry\n");
+                    //log_spew("BM IDE:  Last entry\n");
                     bufPtr = nullptr;
                     bufLen = 0;
                     return false;
@@ -173,7 +173,7 @@ struct PRDHelper {
 
                 m_currPRD++;
                 m_currByte = 0;
-                //log_spew("BM IDE:  next block: 0x%x bytes\n", (m_currPRD->byteCount == 0 ? 65536 : m_currPRD->byteCount));
+                //log_spew("BM IDE:  Next block: 0x%x bytes\n", (m_currPRD->byteCount == 0 ? 65536 : m_currPRD->byteCount));
                 continue;
             }
 
@@ -191,13 +191,14 @@ struct PRDHelper {
 
     bool IsLastSector() {
         // Get byte count from the PRD
-        uint16_t byteCount = m_currPRD->byteCount;
+        uint32_t byteCount = m_currPRD->byteCount;
         if (byteCount == 0) {
             byteCount = 65536;
         }
         
-        // This is the last sector if we reached the end of the last PRD
         //log_spew("BM IDE:  PRD: 0x%x / 0x%x bytes  at  0x%x%s\n", m_currByte, byteCount, m_currPRD->basePhysicalAddress, (m_currPRD->endOfTable ? " (EOT)" : ""));
+        
+        // This is the last sector if we reached the end of the last PRD
         return m_currPRD->endOfTable && m_currByte >= byteCount;
     }
 };
@@ -229,7 +230,7 @@ void BMIDEChannel::RunWorker() {
                 if (helper.IsLastSector()) {
                     m_status &= ~StActive;
                     m_job_running = false;
-                    //log_spew("BM IDE:  last sector in PRD table\n");
+                    //log_spew("BM IDE:  Last sector in PRD table\n");
                 }
 
                 // Do DMA read or write
@@ -245,20 +246,21 @@ void BMIDEChannel::RunWorker() {
                     if (m_ataChannel.AreInterruptsEnabled()) {
                         m_status |= StInterrupt;
                         m_ataChannel.GetInterruptTrigger().Assert();
-                        //log_spew("BM IDE channel %d:  interrupt asserted\n", m_channel);
+                        //log_spew("BM IDE channel %d:  Interrupt asserted\n", m_channel);
                     }
-                    //log_spew("BM IDE:  transfer ended\n");
+                    //log_spew("BM IDE channel %d:  Transfer ended\n", m_channel);
                     m_job_running = false;
                 }
             }
             else {
-                //log_spew("BM IDE channel %d: Ran out of PRDs\n", m_channel);
+                //log_spew("BM IDE channel %d:  Ran out of PRDs\n", m_channel);
                 m_status &= ~StActive;
                 m_job_running = false;
             }
         }
 
         if (m_job_cancel) {
+            //log_spew("BM IDE channel %d:  Transfer cancelled\n", m_channel);
             // Clear Active flag if the job was cancelled
             m_status &= ~StActive;
             m_job_cancel = false;
