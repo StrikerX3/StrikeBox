@@ -72,7 +72,7 @@ void PacketProtocolCommand::Execute() {
         m_regs.status &= ~StBusy;
 
         // Allocate buffer for the packet
-        m_packetCmdBuffer = new uint8_t[m_driver->GetPacketTransferSize()];
+        m_packetCmdBuffer = new uint8_t[m_driver->GetPacketCommandSize()];
         m_packetCmdPos = 0;
 
         // Follow (A) in the protocol fluxogram
@@ -101,7 +101,7 @@ void PacketProtocolCommand::ReadData(uint8_t *value, uint32_t size) {
     if (m_packetDataSize == 0) {
         // Let the driver fill in the data buffer
         if (!m_driver->ProcessATAPIPacketDataRead(m_packetInfo, m_packetDataBuffer, m_byteCountLimit, &m_packetDataSize)) {
-            m_transferError = true;
+            HandleProtocolTail(true);
             return;
         }
     }
@@ -118,13 +118,13 @@ void PacketProtocolCommand::ReadData(uint8_t *value, uint32_t size) {
         // Done transferring all the data needed by the packet?
         m_packetDataTotal += m_packetDataPos;
         if (m_packetDataTotal >= m_packetInfo.transferSize) {
-            HandleProtocolTail(m_transferError);
+            HandleProtocolTail(false);
             return;
         }
 
         // Let the driver fill in the data buffer again
         if (!m_driver->ProcessATAPIPacketDataRead(m_packetInfo, m_packetDataBuffer, m_byteCountLimit, &m_packetDataSize)) {
-            m_transferError = true;
+            HandleProtocolTail(true);
             return;
         }
 
@@ -140,7 +140,7 @@ void PacketProtocolCommand::WriteData(uint8_t *value, uint32_t size) {
         m_packetCmdPos += size;
 
         // Done writing the Packet command?
-        if (m_packetCmdPos >= m_driver->GetPacketTransferSize()) {
+        if (m_packetCmdPos >= m_driver->GetPacketCommandSize()) {
             ProcessPacket();
         }
     }
@@ -156,14 +156,14 @@ void PacketProtocolCommand::WriteData(uint8_t *value, uint32_t size) {
             
             // Let the driver process the data
             if (!m_driver->ProcessATAPIPacketDataWrite(m_packetInfo, m_packetDataBuffer, m_byteCountLimit)) {
-                m_transferError = true;
+                HandleProtocolTail(true);
                 return;
             }
 
             // Done transferring all the data needed by the packet?
             m_packetDataTotal += m_packetDataPos;
             if (m_packetDataTotal >= m_packetInfo.transferSize) {
-                HandleProtocolTail(m_transferError);
+                HandleProtocolTail(false);
                 return;
             }
 
@@ -177,8 +177,23 @@ void PacketProtocolCommand::ProcessPacket() {
     m_regs.status |= StBusy;
     m_regs.status &= ~StDataRequest;
 
-    // Identify packet and check if the device can process it
-    bool succeeded = m_driver->IdentifyATAPIPacket(m_packetCmdBuffer, m_packetInfo);
+    // Identify packet
+    atapi::CommandDescriptorBlock *cdb = reinterpret_cast<atapi::CommandDescriptorBlock *>(m_packetCmdBuffer);
+    
+    // Check that there is an operation type for the operation code.
+    // Every command must have an operation type.
+    if (atapi::kOperationTypes.count(cdb->opCode.u8) == 0) {
+        log_warning("PacketProtocolCommand::ProcessPacket:  Unimplemented command 0x%x!\n", cdb->opCode.u8);
+        HandleProtocolTail(true);
+        return;
+    }
+
+    // Prepare packet info data
+    m_packetInfo.cdb = *cdb;
+    m_packetInfo.opType = atapi::kOperationTypes.at(cdb->opCode.u8);
+
+    // Check if the device can process the packet
+    bool succeeded = m_driver->ValidateATAPIPacket(m_packetInfo);
 
     // Handle error
     if (!succeeded) {
@@ -206,7 +221,7 @@ void PacketProtocolCommand::ProcessPacket() {
         m_byteCountLimit = 0xFFFE;
     }
 
-    if (m_packetInfo.operationType == atapi::PktOpNonData) {
+    if (m_packetInfo.opType == atapi::PktOpNonData) {
         // Execute non-data command
         bool succeeded = m_driver->ProcessATAPIPacketNonData(m_packetInfo);
         HandleProtocolTail(!succeeded);
@@ -224,8 +239,6 @@ void PacketProtocolCommand::PrepareDataTransfer() {
     else {
         ProcessPacketImmediate();
     }
-
-    m_transferError = false;
 }
 
 void PacketProtocolCommand::ProcessPacketImmediate() {
@@ -240,11 +253,11 @@ void PacketProtocolCommand::ProcessPacketImmediate() {
         m_regs.sectorCount |= m_tag << kPkTagShift;
 
         // Set byte count
-        m_regs.cylinder = m_packetInfo.transferSize;
+        m_regs.cylinder = m_byteCountLimit;
     }
 
     // Set I/O
-    if (m_packetInfo.operationType == atapi::PktOpDataOut) {
+    if (m_packetInfo.opType == atapi::PktOpDataOut) {
         m_regs.sectorCount |= PkIntrIODirection;
     }
     else {
@@ -265,7 +278,6 @@ void PacketProtocolCommand::ProcessPacketImmediate() {
     m_packetDataSize = 0;
 
     m_interrupt.Assert();
-    Finish();
 }
 
 void PacketProtocolCommand::ProcessPacketOverlapped() {
@@ -282,13 +294,13 @@ void PacketProtocolCommand::HandleProtocolTail(bool hasError) {
         // Error register:
         //  "Sense Key is a command packet set specific error indication."
         m_regs.error &= ~(kPkSenseMask << kPkSenseShift);
-        m_regs.error |= (m_packetInfo.senseKey & kPkSenseMask) << kPkSenseShift;
+        m_regs.error |= (m_packetInfo.result.senseKey & kPkSenseMask) << kPkSenseShift;
 
         //  "ABRT shall be set to one if the requested command has been command
         //   [sic] aborted because the command code or a command parameter is
         //   invalid. ABRT may be set to one if the device is not able to
         //   complete the action requested by the command."
-        if (m_packetInfo.aborted) {
+        if (m_packetInfo.result.aborted) {
             m_regs.error |= ErrAbort;
         }
         else {
@@ -297,7 +309,7 @@ void PacketProtocolCommand::HandleProtocolTail(bool hasError) {
 
         //  "EOM - the meaning of this bit is command set specific. See the
         //   appropriate command set standard for its definition."
-        if (m_packetInfo.endOfMedium) {
+        if (m_packetInfo.result.endOfMedium) {
             m_regs.error |= PkErrEndOfMedium;
         }
         else {
@@ -306,11 +318,11 @@ void PacketProtocolCommand::HandleProtocolTail(bool hasError) {
 
         //  "ILI - the meaning of this bit is command set specific. See the
         //   appropriate command set standard for its definition."
-        if (m_packetInfo.incorrectLengthIndicator) {
-            m_regs.error |= PkErrIncorrectLengthIndicator;
+        if (m_packetInfo.result.incorrectLength) {
+            m_regs.error |= PkErrIncorrectLength;
         }
         else {
-            m_regs.error &= ~PkErrIncorrectLengthIndicator;
+            m_regs.error &= ~PkErrIncorrectLength;
         }
         
         // Interrupt reason register:
@@ -322,7 +334,8 @@ void PacketProtocolCommand::HandleProtocolTail(bool hasError) {
         m_regs.sectorCount &= ~(kPkTagMask << kPkTagShift);
         m_regs.sectorCount |= m_tag << kPkTagShift;
 
-        //  "REL - Shall be cleared to zero."        m_regs.sectorCount &= ~PkIntrBusRelease;
+        //  "REL - Shall be cleared to zero."
+        m_regs.sectorCount &= ~PkIntrBusRelease;
         
         //  "I/O - Shall be set to one."
         //  "C/D - Shall be set to one."
@@ -344,7 +357,7 @@ void PacketProtocolCommand::HandleProtocolTail(bool hasError) {
         // TODO: support overlapped operations
 
         //  "DF(Device Fault) shall be set to one if a device fault has occurred."
-        if (m_packetInfo.deviceFault) {
+        if (m_packetInfo.result.deviceFault) {
             m_regs.status |= StDeviceFault;
         }
 

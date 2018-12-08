@@ -47,10 +47,12 @@ public:
 
     // ----- ATAPI ------------------------------------------------------------
 
-    virtual bool IdentifyATAPIPacket(uint8_t *buffer, atapi::PacketInformation& packetInfo) override = 0;
+    virtual bool ValidateATAPIPacket(atapi::PacketInformation& packetInfo) override = 0;
     virtual bool ProcessATAPIPacketNonData(atapi::PacketInformation& packetInfo) override = 0;
     virtual bool ProcessATAPIPacketDataRead(atapi::PacketInformation& packetInfo, uint8_t* packetDataBuffer, uint16_t byteCountLimit, uint32_t *packetDataSize) override = 0;
     virtual bool ProcessATAPIPacketDataWrite(atapi::PacketInformation& packetInfo, uint8_t* packetDataBuffer, uint16_t byteCountLimit) override = 0;
+
+    bool ValidateCommand(atapi::PacketInformation& packetInfo);
 
     // ----- Utility functions ------------------------------------------------
     
@@ -58,7 +60,7 @@ public:
     bool IsLBAAddressUserAccessible(uint32_t lbaAddress) override;
     uint32_t CHSToLBA(uint32_t cylinder, uint8_t head, uint8_t sector) override;
     void LBAToCHS(uint32_t lbaAddress, uint16_t *cylinder, uint8_t *head, uint8_t *sector) override;
-    uint8_t GetPacketTransferSize() override;
+    uint8_t GetPacketCommandSize() override;
 
 protected:
 };

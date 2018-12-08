@@ -140,8 +140,8 @@ enum InterruptReasonBits : uint8_t {
 
 // Error bits for the PACKET protocol
 enum PacketErrorBits : uint8_t {
-    PkErrEndOfMedium = (1 << 1),                // (EOM) End of Medium
-    PkErrIncorrectLengthIndicator = (1 << 0),   // (ILI) Incorrect length indicator
+    PkErrEndOfMedium = (1 << 1),       // (EOM) End of Medium
+    PkErrIncorrectLength = (1 << 0),   // (ILI) Incorrect length indicator
 };
 
 // Shift and mask for the Tag field used in the Interrupt Reason register by the Packet and Service commands

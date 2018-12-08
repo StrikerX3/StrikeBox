@@ -49,7 +49,7 @@ public:
 
     // ----- ATAPI ------------------------------------------------------------
 
-    virtual bool IdentifyATAPIPacket(uint8_t *packet, atapi::PacketInformation& packetInfo) = 0;
+    virtual bool ValidateATAPIPacket(atapi::PacketInformation& packetInfo) = 0;
     virtual bool ProcessATAPIPacketNonData(atapi::PacketInformation& packetInfo) = 0;
     virtual bool ProcessATAPIPacketDataRead(atapi::PacketInformation& packetInfo, uint8_t* packetDataBuffer, uint16_t byteCountLimit, uint32_t *packetDataSize) = 0;
     virtual bool ProcessATAPIPacketDataWrite(atapi::PacketInformation& packetInfo, uint8_t* packetDataBuffer, uint16_t byteCountLimit) = 0;
@@ -66,7 +66,7 @@ public:
     virtual bool IsLBAAddressUserAccessible(uint32_t lbaAddress) = 0;
     virtual uint32_t CHSToLBA(uint32_t cylinder, uint8_t head, uint8_t sector) = 0;
     virtual void LBAToCHS(uint32_t lbaAddress, uint16_t *cylinder, uint8_t *head, uint8_t *sector) = 0;
-    virtual uint8_t GetPacketTransferSize() = 0;
+    virtual uint8_t GetPacketCommandSize() = 0;
 protected:
     // ----- Common data ------------------------------------------------------
 

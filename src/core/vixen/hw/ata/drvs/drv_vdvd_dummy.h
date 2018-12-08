@@ -34,7 +34,7 @@ public:
 
     // ----- ATAPI ------------------------------------------------------------
 
-    bool IdentifyATAPIPacket(uint8_t *packet, atapi::PacketInformation& packetInfo) override;
+    bool ValidateATAPIPacket(atapi::PacketInformation& packetInfo) override;
     bool ProcessATAPIPacketNonData(atapi::PacketInformation& packetInfo) override;
     bool ProcessATAPIPacketDataRead(atapi::PacketInformation& packetInfo, uint8_t* packetDataBuffer, uint16_t byteCountLimit, uint32_t *packetDataSize) override;
     bool ProcessATAPIPacketDataWrite(atapi::PacketInformation& packetInfo, uint8_t* packetDataBuffer, uint16_t byteCountLimit) override;

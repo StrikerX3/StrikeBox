@@ -41,31 +41,31 @@ bool DummyDVDDriveATADeviceDriver::Write(uint64_t byteAddress, uint8_t *buffer, 
     return false;
 }
 
-bool DummyDVDDriveATADeviceDriver::IdentifyATAPIPacket(uint8_t *packet, atapi::PacketInformation& packetInfo) {
-    // Parse packet header
-    atapi::OperationCode *opCode = reinterpret_cast<atapi::OperationCode *>(packet);
-    log_debug("DummyDVDDriveATADeviceDriver::IdentifyATAPIPacket:  Operation Code 0x%x  ->  Command Code 0x%x  Group Code 0x%x\n", opCode->u8, opCode->fields.commandCode, opCode->fields.groupCode);
-
-    // TODO: implement
-    return false;
+bool DummyDVDDriveATADeviceDriver::ValidateATAPIPacket(atapi::PacketInformation& packetInfo) {
+    log_debug("DummyDVDDriveATADeviceDriver::ValidateATAPIPacket:  Operation Code 0x%x  ->  Command Code 0x%x  Group Code 0x%x\n", packetInfo.cdb.opCode.u8, packetInfo.cdb.opCode.fields.commandCode, packetInfo.cdb.opCode.fields.groupCode);
+    
+    // TODO: device-specific validation
+    
+    // Check if the command is supported and has valid parameters.
+    return ValidateCommand(packetInfo);
 }
 
 bool DummyDVDDriveATADeviceDriver::ProcessATAPIPacketNonData(atapi::PacketInformation& packetInfo) {
-    log_debug("DummyDVDDriveATADeviceDriver::ProcessATAPIPacketNonData:  Operation Code 0x%x  ->  Command Code 0x%x  Group Code 0x%x\n", packetInfo.opCode.u8, packetInfo.opCode.fields.commandCode, packetInfo.opCode.fields.groupCode);
+    log_debug("DummyDVDDriveATADeviceDriver::ProcessATAPIPacketNonData:  Operation Code 0x%x  ->  Command Code 0x%x  Group Code 0x%x\n", packetInfo.cdb.opCode.u8, packetInfo.cdb.opCode.fields.commandCode, packetInfo.cdb.opCode.fields.groupCode);
   
     // TODO: implement
     return false;
 }
 
 bool DummyDVDDriveATADeviceDriver::ProcessATAPIPacketDataRead(atapi::PacketInformation& packetInfo, uint8_t *packetDataBuffer, uint16_t byteCountLimit, uint32_t *packetDataSize) {
-    log_debug("DummyDVDDriveATADeviceDriver::ProcessATAPIPacketDataRead:  Operation Code 0x%x  ->  Command Code 0x%x  Group Code 0x%x   byte count limit = 0x%x\n", packetInfo.opCode.u8, packetInfo.opCode.fields.commandCode, packetInfo.opCode.fields.groupCode, byteCountLimit);
+    log_debug("DummyDVDDriveATADeviceDriver::ProcessATAPIPacketDataRead:  Operation Code 0x%x  ->  Command Code 0x%x  Group Code 0x%x   byte count limit = 0x%x\n", packetInfo.cdb.opCode.u8, packetInfo.cdb.opCode.fields.commandCode, packetInfo.cdb.opCode.fields.groupCode, byteCountLimit);
  
     // TODO: implement
     return false;
 }
 
 bool DummyDVDDriveATADeviceDriver::ProcessATAPIPacketDataWrite(atapi::PacketInformation& packetInfo, uint8_t *packetDataBuffer, uint16_t byteCountLimit) {
-    log_debug("DummyDVDDriveATADeviceDriver::ProcessATAPIPacketDataWrite:  Operation Code 0x%x  ->  Command Code 0x%x  Group Code 0x%x   byte count limit = 0x%x\n", packetInfo.opCode.u8, packetInfo.opCode.fields.commandCode, packetInfo.opCode.fields.groupCode, byteCountLimit);
+    log_debug("DummyDVDDriveATADeviceDriver::ProcessATAPIPacketDataWrite:  Operation Code 0x%x  ->  Command Code 0x%x  Group Code 0x%x   byte count limit = 0x%x\n", packetInfo.cdb.opCode.u8, packetInfo.cdb.opCode.fields.commandCode, packetInfo.cdb.opCode.fields.groupCode, byteCountLimit);
 
     // TODO: implement
     return false;

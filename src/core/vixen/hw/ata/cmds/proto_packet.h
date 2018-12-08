@@ -72,8 +72,6 @@ private:
     uint32_t m_packetDataTotal;
     uint32_t m_packetDataSize;
 
-    bool m_transferError;
-
     atapi::PacketInformation m_packetInfo;
 };
 

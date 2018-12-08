@@ -47,7 +47,7 @@ public:
 
     // ----- ATAPI ------------------------------------------------------------
 
-    bool IdentifyATAPIPacket(uint8_t *packet, atapi::PacketInformation& packetInfo) override { return false; }
+    bool ValidateATAPIPacket(atapi::PacketInformation& packetInfo) override { return false; }
     bool ProcessATAPIPacketNonData(atapi::PacketInformation& packetInfo) override { return false; }
     bool ProcessATAPIPacketDataRead(atapi::PacketInformation& packetInfo, uint8_t* packetDataBuffer, uint16_t byteCountLimit, uint32_t *packetDataSize) override { return false; }
     bool ProcessATAPIPacketDataWrite(atapi::PacketInformation& packetInfo, uint8_t* packetDataBuffer, uint16_t byteCountLimit) override { return false; }
@@ -58,7 +58,7 @@ public:
     bool IsLBAAddressUserAccessible(uint32_t lbaAddress) override;
     uint32_t CHSToLBA(uint32_t cylinder, uint8_t head, uint8_t sector) override;
     void LBAToCHS(uint32_t lbaAddress, uint16_t *cylinder, uint8_t *head, uint8_t *sector) override;
-    uint8_t GetPacketTransferSize() override { return 0; }
+    uint8_t GetPacketCommandSize() override { return 0; }
 
 protected:
     uint32_t m_sectorCapacity;

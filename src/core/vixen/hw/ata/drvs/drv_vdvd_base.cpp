@@ -13,10 +13,14 @@
 
 #include "vixen/log.h"
 #include "vixen/io.h"
+#include "vixen/hw/ata/atapi_xbox.h"
+#include "vixen/hw/ata/atapi_utils.h"
 
 namespace vixen {
 namespace hw {
 namespace ata {
+
+using namespace atapi;
 
 BaseDVDDriveATADeviceDriver::BaseDVDDriveATADeviceDriver() {
 }
@@ -87,28 +91,67 @@ bool BaseDVDDriveATADeviceDriver::SecurityUnlock(uint8_t unlockData[kSectorSize]
 }
 
 bool BaseDVDDriveATADeviceDriver::SetDeviceParameters(uint8_t heads, uint8_t sectorsPerTrack) {
-    // TODO: implement
-    return true;
+    // [8.16.2]: "Use prohibited for devices implementing the PACKET Command feature set."
+    return false;
 }
 
 bool BaseDVDDriveATADeviceDriver::IsLBAAddressUserAccessible(uint32_t lbaAddress) {
-    // TODO: implement
+    // Used by DMA protocol, which includes the Read DMA and Write DMA commands.
+    // According to [8.23.2] and [8.45.2], devices implementing the PACKE
+    // feature set are prohibited from using these commands. Therefore, this
+    // method is not going to be used.
+    log_warning("BaseDVDDriveATADeviceDriver::IsLBAAddressUserAccessible:  Unexpected DMA transfer!\n");
     return false;
 }
 
 uint32_t BaseDVDDriveATADeviceDriver::CHSToLBA(uint32_t cylinder, uint8_t head, uint8_t sector) {
-    // TODO: implement
+    // Used by DMA protocol, which includes the Read DMA and Write DMA commands.
+    // According to [8.23.2] and [8.45.2], devices implementing the PACKE
+    // feature set are prohibited from using these commands. Therefore, this
+    // method is not going to be used.
+    log_warning("BaseDVDDriveATADeviceDriver::CHSToLBA:  Unexpected DMA transfer!\n");
     return 0;
 }
 
 void BaseDVDDriveATADeviceDriver::LBAToCHS(uint32_t lbaAddress, uint16_t *cylinder, uint8_t *head, uint8_t *sector) {
-    // TODO: implement
+    // Used by DMA protocol, which includes the Read DMA and Write DMA commands.
+    // According to [8.23.2] and [8.45.2], devices implementing the PACKE
+    // feature set are prohibited from using these commands. Therefore, this
+    // method is not going to be used.
+    log_warning("BaseDVDDriveATADeviceDriver::LBAToCHS:  Unexpected DMA transfer!\n");
 }
 
-uint8_t BaseDVDDriveATADeviceDriver::GetPacketTransferSize() {
+uint8_t BaseDVDDriveATADeviceDriver::GetPacketCommandSize() {
     // Match the value specified in the IdentifyPacketDeviceData struct
     return 12;
 }
+
+bool BaseDVDDriveATADeviceDriver::ValidateCommand(PacketInformation& packetInfo) {
+    switch (packetInfo.cdb.opCode.u8) {
+    case OpModeSense10:
+        switch (packetInfo.cdb.modeSense10.pageCode) {
+        case kPageCodeAuthentication:
+            // TODO: is it correct to fail if the length is smaller than the page data?
+            if (B2L16(packetInfo.cdb.modeSense10.length) < sizeof(XboxDVDAuthentication)) {
+                packetInfo.result.aborted = true;
+                packetInfo.result.status = StCheckCondition;
+                packetInfo.result.senseKey = SKIllegalRequest;
+                packetInfo.result.additionalSenseCode = ASCInvalidFieldInCDB;
+                packetInfo.result.incorrectLength = true;
+                return false;
+            }
+            packetInfo.transferSize = sizeof(XboxDVDAuthentication);
+            return true;
+        }
+        return true;
+    case OpRequestSense:
+        packetInfo.transferSize = packetInfo.cdb.requestSense.length;
+        return true;
+    default:
+        return true;
+    }
+}
+
 }
 }
 }
