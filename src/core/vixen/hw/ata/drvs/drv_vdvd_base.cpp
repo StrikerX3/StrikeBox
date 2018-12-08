@@ -134,10 +134,10 @@ bool BaseDVDDriveATADeviceDriver::ValidateCommand(PacketInformation& packetInfo)
             // TODO: is it correct to fail if the length is smaller than the page data?
             if (B2L16(packetInfo.cdb.modeSense10.length) < sizeof(XboxDVDAuthentication)) {
                 packetInfo.result.aborted = true;
+                packetInfo.result.incorrectLength = true;
                 packetInfo.result.status = StCheckCondition;
                 packetInfo.result.senseKey = SKIllegalRequest;
                 packetInfo.result.additionalSenseCode = ASCInvalidFieldInCDB;
-                packetInfo.result.incorrectLength = true;
                 return false;
             }
             packetInfo.transferSize = sizeof(XboxDVDAuthentication);
@@ -146,6 +146,9 @@ bool BaseDVDDriveATADeviceDriver::ValidateCommand(PacketInformation& packetInfo)
         return true;
     case OpRequestSense:
         packetInfo.transferSize = packetInfo.cdb.requestSense.length;
+        return true;
+    case OpReadCapacity:
+        packetInfo.transferSize = sizeof(ReadCapacityData);
         return true;
     default:
         return true;

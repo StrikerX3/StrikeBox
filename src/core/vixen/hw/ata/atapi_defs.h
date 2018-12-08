@@ -161,10 +161,10 @@ enum PageControl : uint8_t {
 
 // Operation Codes
 enum Operations : uint8_t {
-    OpModeSense10 = 0x5A,     // MODE SENSE (10 bytes)
-    OpReadCapacity = 0x25,    // READ CAPACITY
-    OpRequestSense = 0x03,    // REQUEST SENSE
-    OpTestUnitReady = 0x00,   // TEST UNIT READY
+    OpModeSense10 = 0x5A,     // (0x5A) MODE SENSE (10 bytes)
+    OpReadCapacity = 0x25,    // (0x25) READ CAPACITY
+    OpRequestSense = 0x03,    // (0x03) REQUEST SENSE
+    OpTestUnitReady = 0x00,   // (0x00) TEST UNIT READY
 };
 
 // ----- Operation data -------------------------------------------------------
