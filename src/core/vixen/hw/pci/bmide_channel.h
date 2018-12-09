@@ -59,7 +59,7 @@ private:
     bool m_job_running;
     bool m_job_cancel;
 
-    void BeginWork();
+    void StartWork();
     void StopWork();
 };
 

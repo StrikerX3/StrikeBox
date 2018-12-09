@@ -62,7 +62,7 @@ void BMIDEChannel::ReadPRDTableAddress(uint32_t *value, uint8_t size) {
 void BMIDEChannel::WriteCommand(uint32_t value, uint8_t size) {
     m_command = value;
     if (value & CmdStartStopBusMaster) {
-        BeginWork();
+        StartWork();
     }
     else {
         StopWork();
@@ -100,8 +100,8 @@ void BMIDEChannel::WritePRDTableAddress(uint32_t value, uint8_t size) {
     //log_spew("BMIDEChannel::WritePRDTableAddress:  channel = %d,  address = 0x%x\n", m_channel, m_prdTableAddr);
 }
 
-void BMIDEChannel::BeginWork() {
-    //log_spew("BMIDEChannel::BeginWork:  Starting operation on channel %d\n", m_channel);
+void BMIDEChannel::StartWork() {
+    //log_spew("BMIDEChannel::StartWork:  Starting operation on channel %d\n", m_channel);
 
     m_status |= StActive;
 
