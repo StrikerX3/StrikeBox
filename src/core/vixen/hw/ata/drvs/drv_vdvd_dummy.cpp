@@ -32,19 +32,6 @@ DummyDVDDriveATADeviceDriver::DummyDVDDriveATADeviceDriver() {
 DummyDVDDriveATADeviceDriver::~DummyDVDDriveATADeviceDriver() {
 }
 
-bool DummyDVDDriveATADeviceDriver::Read(uint64_t byteAddress, uint8_t *buffer, uint32_t size) {
-    // Fill with zeros, as if the disk was blank
-    memset(buffer, 0, size);
-
-    // Always succeed
-    return true;
-}
-
-bool DummyDVDDriveATADeviceDriver::Write(uint64_t byteAddress, uint8_t *buffer, uint32_t size) {
-    // Lie about writing, always fail
-    return false;
-}
-
 bool DummyDVDDriveATADeviceDriver::ValidateATAPIPacket(PacketInformation& packetInfo) {
     log_debug("DummyDVDDriveATADeviceDriver::ValidateATAPIPacket:  Operation code 0x%x\n", packetInfo.cdb.opCode.u8, packetInfo.cdb.opCode.fields.commandCode, packetInfo.cdb.opCode.fields.groupCode);
     
@@ -74,7 +61,7 @@ bool DummyDVDDriveATADeviceDriver::ProcessATAPIPacketDataRead(PacketInformation&
         switch (packetInfo.cdb.modeSense10.pageCode) {
         case kPageCodeAuthentication:
         {
-            // TODO: handle partial reads
+            // TODO: handle partial reads (if those ever happen here)
             if (byteCountLimit < sizeof(XboxDVDAuthentication)) {
                 packetInfo.result.aborted = true;
                 packetInfo.result.deviceFault = true;
@@ -96,6 +83,15 @@ bool DummyDVDDriveATADeviceDriver::ProcessATAPIPacketDataRead(PacketInformation&
             log_debug("DummyDVDDriveATADeviceDriver::ProcessATAPIPacketDataRead:  Unimplemented page code 0x%x for MODE SENSE(10)\n", packetInfo.cdb.modeSense10.pageCode);
             return false;
         }
+    case OpRead10:
+    {
+        // Say that there is no disc in the drive
+        packetInfo.result.status = StCheckCondition;
+        packetInfo.result.senseKey = SKNotReady;
+        packetInfo.result.additionalSenseCode = ASCMediumNotPresent;
+
+        return true;
+    }
     case OpReadCapacity:
     {
         // Say that there is no disc in the drive

@@ -20,12 +20,21 @@ namespace hw {
 namespace ata {
 
 /*!
- * This dummy ATA device driver represents a basic DVD drive that does not contain media.
+ * A virtual DVD ATA device driver based on an image file.
+ *
+ * It can read/write directly to the image file or use write-on-copy, in which
+ * case all writes done on a temporary file and subsequent reads to overwritten
+ * sectors are redirected to the temporary file.
  */
-class DummyDVDDriveATADeviceDriver : public BaseDVDDriveATADeviceDriver {
+class ImageDVDDriveATADeviceDriver : public BaseDVDDriveATADeviceDriver {
 public:
-    DummyDVDDriveATADeviceDriver();
-    ~DummyDVDDriveATADeviceDriver() override;
+    ImageDVDDriveATADeviceDriver();
+    ~ImageDVDDriveATADeviceDriver() override;
+
+    // ----- Virtual DVD image management -------------------------------------
+
+    bool LoadImageFile(const char *imagePath, bool copyOnWrite);
+    bool EjectMedia();
 
     // ----- ATAPI ------------------------------------------------------------
 
@@ -33,6 +42,20 @@ public:
     bool ProcessATAPIPacketNonData(atapi::PacketInformation& packetInfo) override;
     bool ProcessATAPIPacketDataRead(atapi::PacketInformation& packetInfo, uint8_t* packetDataBuffer, uint16_t byteCountLimit, uint32_t *packetDataSize) override;
     bool ProcessATAPIPacketDataWrite(atapi::PacketInformation& packetInfo, uint8_t* packetDataBuffer, uint16_t byteCountLimit) override;
+    
+private:
+    FILE *m_fpImage = NULL;
+    bool m_copyOnWrite;
+
+    inline bool HasMedia() { return m_fpImage != NULL; }
+
+    uint64_t m_sectorCapacity;
+
+    // ----- Transfer state ---------------------------------------------------
+
+    bool m_transfer = false;
+    uint64_t m_currentByte;
+    uint64_t m_lastByte;
 };
 
 }

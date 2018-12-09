@@ -11,6 +11,9 @@
 //   [m] SCSI Multimedia Commands - 3 (MMC-3) Revision 10g
 //   https://www.rockbox.org/wiki/pub/Main/DataSheets/mmc2r11a.pdf
 //
+//   [b] SCSI Block Commands - 3 (SBC-3) Revision 25
+//   http://www.13thmonkey.org/documentation/SCSI/sbc3r25.pdf
+//
 //   [a] SCSI Architecture Model - 3 (SAM-3) Revision 13
 //   http://www.csit-sun.pub.ro/~cpop/Documentatie_SMP/Standarde_magistrale/SCSI/sam3r13.pdf
 //
@@ -30,6 +33,12 @@
 namespace vixen {
 namespace hw {
 namespace atapi {
+
+// --- Sizes and capacities ---------------------------------------------------
+
+const uint16_t kDVDSectorSize = 2048;
+const uint32_t kMaxSectorsDVDSingleLayer = 2298496;   // 4.7 GiB
+const uint32_t kMaxSectorsDVDDualLayer = 4171712;     // 8.5 GiB
 
 // --- Command Descriptor Block (CDB) [p 4.3] ---------------------------------
 
@@ -109,25 +118,42 @@ union CommandDescriptorBlock {
     // [p 6.10 table 99] [s 3.12 table 75]
     // CDB for the MODE SENSE (10) command
     struct ModeSense10 {
-        OperationCode opCode;                  // byte 0        Operation Code (0x5A)
-        uint8_t _reserved1 : 3;                // byte 1 [2:0]  Reserved
-        uint8_t disableBlockDescriptors : 1;   // byte 1 [3]    (DBD) Disable Block Descriptors
-        uint8_t longLBAAccepted : 1;           // byte 1 [4]    (LLBAA) Long LBA Accepted
-        uint8_t _reserved2 : 3;                // byte 1 [7:5]  Reserved
-        uint8_t pageCode : 6;                  // byte 2 [5:0]  Page code
-        uint8_t pageControl : 2;               // byte 2 [7:6]  (PC) Page control
-        uint8_t subpageCode;                   // byte 3        Subpage code
-        uint8_t _reserved3[3];                 // byte 4-6      Reserved
-        uint8_t length[2];                     // byte 7-8      Allocation Length
-        uint8_t control;                       // byte 9        Control
+        OperationCode opCode;                  // byte 0          Operation Code (0x5A)
+        uint8_t _reserved1 : 3;                // byte 1 [2:0]    Reserved
+        uint8_t disableBlockDescriptors : 1;   // byte 1 [3]      (DBD) Disable Block Descriptors
+        uint8_t longLBAAccepted : 1;           // byte 1 [4]      (LLBAA) Long LBA Accepted
+        uint8_t _reserved2 : 3;                // byte 1 [7:5]    Reserved
+        uint8_t pageCode : 6;                  // byte 2 [5:0]    Page code
+        uint8_t pageControl : 2;               // byte 2 [7:6]    (PC) Page control
+        uint8_t subpageCode;                   // byte 3          Subpage code
+        uint8_t _reserved3[3];                 // byte 4-6        Reserved
+        uint8_t length[2];                     // byte 7-8        Allocation Length
+        uint8_t control;                       // byte 9          Control
     } modeSense10;
+
+    // [b 5.11 table 56]
+    // CDB for the READ (10) command
+    struct Read10 {
+        OperationCode opCode;                  // byte 0          Operation Code (0x28)
+        uint8_t _obsolete1 : 1;                // byte 1 [0]      Obsolete
+        uint8_t forceUnitAccessNVCache : 1;    // byte 1 [1]      (FUA_NV) Force unit access non-volatile cache (read from/write to block cache before medium)
+        uint8_t _reserved1 : 1;                // byte 1 [2]      Reserved
+        uint8_t forceUnitAccess : 1;           // byte 1 [3]      (FUA) Force unit access (force access to media instead of cache)
+        uint8_t disablePageOut : 1;            // byte 1 [4]      (DPO) Disable page out (do not cache block)
+        uint8_t readProtect : 3;               // byte 1 [7:5]    (RDPROTECT) Read protect
+        uint8_t lba[4];                        // byte 2-5        Logical Block Address
+        uint8_t groupNumber : 5;               // byte 6 [4:0]    Group number
+        uint8_t _reserved2 : 3;                // byte 6 [7:5]    Reserved
+        uint8_t length[2];                     // byte 7-8        Transfer length
+        uint8_t control;                       // byte 9          Control
+    } read10;
 
     // [m 5.16 table 144]
     // CDB for the READ CAPACITY command
     struct ReadCapacity {
-        OperationCode opCode;                  // byte 0        Operation Code (0x25)
-        uint8_t _reservedOrObsolete[8];        // byte 1-8      Reserved or obsolete fields
-        uint8_t control;                       // byte 9        Control
+        OperationCode opCode;                  // byte 0          Operation Code (0x25)
+        uint8_t _reservedOrObsolete[8];        // byte 1-8        Reserved or obsolete fields
+        uint8_t control;                       // byte 9          Control
     } readCapacity;
 
     // [p 6.27 table 169] [s 3.37 table 164]
@@ -162,6 +188,7 @@ enum PageControl : uint8_t {
 // Operation Codes
 enum Operations : uint8_t {
     OpModeSense10 = 0x5A,     // (0x5A) MODE SENSE (10 bytes)
+    OpRead10 = 0x28,          // (0x28) READ (10 bytes)
     OpReadCapacity = 0x25,    // (0x25) READ CAPACITY
     OpRequestSense = 0x03,    // (0x03) REQUEST SENSE
     OpTestUnitReady = 0x00,   // (0x00) TEST UNIT READY
@@ -209,6 +236,7 @@ enum PacketOperationType {
 // Maps operation codes to their types
 const std::unordered_map<uint8_t, PacketOperationType, std::hash<uint8_t>> kOperationTypes = {
     { OpModeSense10, PktOpDataIn },
+    { OpRead10, PktOpDataIn },
     { OpReadCapacity, PktOpDataIn },
     { OpRequestSense, PktOpDataIn },
     { OpTestUnitReady, PktOpNonData },

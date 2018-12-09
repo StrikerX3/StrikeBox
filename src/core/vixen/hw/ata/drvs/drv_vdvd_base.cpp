@@ -28,6 +28,18 @@ BaseDVDDriveATADeviceDriver::BaseDVDDriveATADeviceDriver() {
 BaseDVDDriveATADeviceDriver::~BaseDVDDriveATADeviceDriver() {
 }
 
+bool BaseDVDDriveATADeviceDriver::Read(uint64_t byteAddress, uint8_t * buffer, uint32_t size) {
+    // Always fail; this function should never be called on devices that support the PACKET Command feature set
+    log_warning("BaseDVDDriveATADeviceDriver::Read:  Unexpected ATA read\n");
+    return false;
+}
+
+bool BaseDVDDriveATADeviceDriver::Write(uint64_t byteAddress, uint8_t * buffer, uint32_t size) {
+    // Always fail; this function should never be called on devices that support the PACKET Command feature set
+    log_warning("BaseDVDDriveATADeviceDriver::Write:  Unexpected ATA write\n");
+    return false;
+}
+
 void BaseDVDDriveATADeviceDriver::IdentifyDevice(IdentifyDeviceData *data) {
     // Should never be invoked since this device supports the PACKET Command feature set
     // Fill with zeros just in case

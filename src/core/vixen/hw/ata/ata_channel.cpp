@@ -207,6 +207,8 @@ void ATAChannel::WriteCommand(uint8_t value) {
         return;
     }
 
+    //log_spew("ATAChannel::WriteCommand:  Processing command 0x%x for channel %d, device %d\n", cmd, m_channel, devIndex);
+
     // Instantiate the command
     auto factory = kCmdFactories.at(cmd);
     m_currentCommand = factory(*dev);

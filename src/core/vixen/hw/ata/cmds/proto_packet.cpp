@@ -173,7 +173,7 @@ void PacketProtocolCommand::WriteData(uint8_t *value, uint32_t size) {
 }
 
 void PacketProtocolCommand::ProcessPacket() {
-    log_debug("PacketProtocolCommand::ProcessPacket:  Processing packet\n");
+    //log_spew("PacketProtocolCommand::ProcessPacket:  Processing packet\n");
     m_regs.status |= StBusy;
     m_regs.status &= ~StDataRequest;
 

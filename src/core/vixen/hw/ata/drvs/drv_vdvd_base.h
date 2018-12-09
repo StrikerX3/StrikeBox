@@ -42,8 +42,8 @@ public:
 
     // ----- Data access ------------------------------------------------------
     
-    virtual bool Read(uint64_t byteAddress, uint8_t *buffer, uint32_t size) override = 0;
-    virtual bool Write(uint64_t byteAddress, uint8_t *buffer, uint32_t size) override = 0;
+    bool Read(uint64_t byteAddress, uint8_t *buffer, uint32_t size) override;
+    bool Write(uint64_t byteAddress, uint8_t *buffer, uint32_t size) override;
 
     // ----- ATAPI ------------------------------------------------------------
 

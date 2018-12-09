@@ -17,7 +17,7 @@
 #include "vixen/hw/ata/drvs/drv_vhd_image.h"
 
 #include "vixen/hw/ata/drvs/drv_vdvd_dummy.h"
-//#include "vixen/hw/ata/drvs/drv_vdvd_image.h"
+#include "vixen/hw/ata/drvs/drv_vdvd_image.h"
 
 #ifdef __linux__
 #include <sys/mman.h>
@@ -395,9 +395,15 @@ EmulatorStatus Xbox::InitHardware() {
         m_ataDrivers[0][1] = new hw::ata::DummyDVDDriveATADeviceDriver();
         break;
     case VDVD_Image:
-        // TODO: implement
-        m_ataDrivers[0][1] = new hw::ata::NullATADeviceDriver();
+    {
+        auto imageVDVD = new hw::ata::ImageDVDDriveATADeviceDriver();
+        if (!imageVDVD->LoadImageFile(m_settings.vdvd_parameters.image.path, m_settings.vdvd_parameters.image.preserveImage)) {
+            log_fatal("Failed to load virtual DVD image file\n");
+            return EMUS_INIT_DVD_DRIVE_INIT_FAILED;
+        }
+        m_ataDrivers[0][1] = imageVDVD;
         break;
+    }
     default:
         log_fatal("Invalid virtual DVD drive type specified: %d\n", m_settings.vdvd_type);
         return EMUS_INIT_INVALID_DVD_DRIVE_TYPE;
