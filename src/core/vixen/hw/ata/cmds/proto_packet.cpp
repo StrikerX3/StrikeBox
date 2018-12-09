@@ -109,6 +109,7 @@ void PacketProtocolCommand::ReadData(uint8_t *value, uint32_t size) {
     }
     
     // Copy from buffer to value
+    // TODO: handle partial transfers
     memcpy(value, m_packetDataBuffer + m_packetDataPos, size);
     m_packetDataPos += size;
 
@@ -148,6 +149,7 @@ void PacketProtocolCommand::WriteData(uint8_t *value, uint32_t size) {
     }
     else {
         // Writing the data requested by the Packet command
+        // TODO: handle partial transfers
         memcpy(m_packetDataBuffer + m_packetDataPos, value, size);
         m_packetDataPos += size;
 
@@ -379,6 +381,7 @@ void PacketProtocolCommand::HandleProtocolTail(bool hasError) {
     m_regs.status |= StReady;
     m_regs.status &= ~StBusy;
     m_interrupt.Assert();
+    log_spew("PacketProtocolCommand::HandleProtocolTail:  Packet command finished\n");
     Finish();
 }
 

@@ -166,7 +166,7 @@ bool BaseDVDDriveATADeviceDriver::ValidateCommand(PacketInformation& packetInfo)
         packetInfo.transferSize = (uint32_t)B2L16(packetInfo.cdb.read10.length) * kDVDSectorSize;
         return true;
     case OpReadDVDStructure:
-        packetInfo.transferSize = B2L16(packetInfo.cdb.readDVDStructure.length);
+        packetInfo.transferSize = kDVDSectorSize;
         return true;
     default:
         return true;

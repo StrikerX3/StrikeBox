@@ -76,7 +76,7 @@ private:
         void OnChange(bool asserted) override {
             if (asserted) {
                 m_channel.m_status |= StInterrupt;
-                log_spew("BM IDE channel %d:  Interrupt asserted\n", m_channel.m_channel);
+                //log_spew("BM IDE channel %d:  Interrupt asserted\n", m_channel.m_channel);
             }
         }
         

@@ -199,7 +199,7 @@ bool ImageDVDDriveATADeviceDriver::ProcessATAPIPacketDataRead(PacketInformation&
     case OpReadDVDStructure:
     {
         ReadDVDStructureData *dvdData = reinterpret_cast<ReadDVDStructureData *>(packetDataBuffer);
-        memset(dvdData, 0, sizeof(ReadDVDStructureData));
+        memset(dvdData, 0, kDVDSectorSize);
         switch (packetInfo.cdb.readDVDStructure.format) {
         case DVDFmtPhysical:
             L2B16(dvdData->dataLength, (uint16_t)sizeof(ReadDVDStructureData::physicalFormatInformation));
@@ -218,7 +218,7 @@ bool ImageDVDDriveATADeviceDriver::ProcessATAPIPacketDataRead(PacketInformation&
             L2B24(dvdData->physicalFormatInformation.layer0EndingSector, 0);
             dvdData->physicalFormatInformation.burstCuttingArea = 0;
 
-            *packetDataSize = sizeof(ReadDVDStructureData);
+            *packetDataSize = kDVDSectorSize;
             return true;
         default:
             log_debug("ImageDVDDriveATADeviceDriver::ProcessATAPIPacketDataRead:  Unimplemented format 0x%x for READ DVD STRUCTURE\n", packetInfo.cdb.readDVDStructure.format);

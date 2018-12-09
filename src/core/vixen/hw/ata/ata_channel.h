@@ -13,6 +13,8 @@
 
 #include <cstdint>
 
+#include <mutex>
+
 #include "vixen/cpu.h"
 #include "../basic/irq.h"
 #include "../basic/interrupt.h"
@@ -103,7 +105,9 @@ private:
     // ----- State ------------------------------------------------------------
 
     bool m_interrupt = false;  // [5.2.9] INTRQ (Device Interrupt)
+    
     cmd::IATACommand *m_currentCommand;
+    std::mutex m_commandMutex;
 
     // ----- Interrupt handling -----------------------------------------------
 
