@@ -193,6 +193,35 @@ bool ImageDVDDriveATADeviceDriver::ProcessATAPIPacketDataRead(PacketInformation&
         *packetDataSize = sizeof(ReadCapacityData);
         return true;
     }
+    case OpReadDVDStructure:
+    {
+        ReadDVDStructureData *dvdData = reinterpret_cast<ReadDVDStructureData *>(packetDataBuffer);
+        memset(dvdData, 0, sizeof(ReadDVDStructureData));
+        switch (packetInfo.cdb.readDVDStructure.format) {
+        case DVDFmtPhysical:
+            L2B16(dvdData->dataLength, (uint16_t)sizeof(ReadDVDStructureData::physicalFormatInformation));
+            // TODO: compute fields based on the image file
+            dvdData->physicalFormatInformation.partVersion = 1;
+            dvdData->physicalFormatInformation.bookType = BookTypeDVDROM;
+            dvdData->physicalFormatInformation.maxRate = MaxRate10_08Mbps;
+            dvdData->physicalFormatInformation.discSize = DiscSize120mm;
+            dvdData->physicalFormatInformation.layerType = 0;
+            dvdData->physicalFormatInformation.trackPath = TrackPathOTP;
+            dvdData->physicalFormatInformation.numLayers = NumLayers2;
+            dvdData->physicalFormatInformation.trackDensity = TrackDensity0_74umPerTrack;
+            dvdData->physicalFormatInformation.linearDensity = LinearDensity0_293umPerBit;
+            L2B24(dvdData->physicalFormatInformation.dataStartingSector, kStartingSectorNumberDVDROM);
+            L2B24(dvdData->physicalFormatInformation.dataEndingSector, m_sectorCapacity);
+            L2B24(dvdData->physicalFormatInformation.layer0EndingSector, 0);
+            dvdData->physicalFormatInformation.burstCuttingArea = 0;
+
+            *packetDataSize = sizeof(ReadDVDStructureData);
+            return true;
+        default:
+            log_debug("ImageDVDDriveATADeviceDriver::ProcessATAPIPacketDataRead:  Unimplemented format 0x%x for READ DVD STRUCTURE\n", packetInfo.cdb.readDVDStructure.format);
+            return false;
+        }
+    }
     default:
         log_debug("ImageDVDDriveATADeviceDriver::ProcessATAPIPacketDataRead:  Unimplemented operation code 0x%x\n", packetInfo.cdb.opCode.u8);
         return false;

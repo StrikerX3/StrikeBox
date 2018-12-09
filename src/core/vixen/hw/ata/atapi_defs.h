@@ -156,6 +156,20 @@ union CommandDescriptorBlock {
         uint8_t control;                       // byte 9          Control
     } readCapacity;
 
+    // [m 5.20 table 169]
+    // CDB for the READ DVD STRUCTURE command
+    struct ReadDVDStructure {
+        OperationCode opCode;                  // byte 0          Operation Code (0xAD)
+        uint8_t _reserved1;                    // byte 1          Reserved
+        uint8_t address;                       // byte 2-5        Address
+        uint8_t layerNumber;                   // byte 6          Layer number
+        uint8_t format;                        // byte 7          Format
+        uint8_t length[2];                     // byte 8-9        Allocation Length
+        uint8_t _reserved2 : 6;                // byte 10 [5:0]   Reserved
+        uint8_t authGrantID : 2;               // byte 10 [7:6]   (AGID) Authenticaton Grant ID (used with formats 2, 6 and 7 when address is 0)
+        uint8_t control;                       // byte 11         Control
+    } readDVDStructure;
+
     // [p 6.27 table 169] [s 3.37 table 164]
     // CDB for the REQUEST SENSE command
     struct RequestSense {
@@ -187,11 +201,12 @@ enum PageControl : uint8_t {
 
 // Operation Codes
 enum Operations : uint8_t {
-    OpModeSense10 = 0x5A,     // (0x5A) MODE SENSE (10 bytes)
-    OpRead10 = 0x28,          // (0x28) READ (10 bytes)
-    OpReadCapacity = 0x25,    // (0x25) READ CAPACITY
-    OpRequestSense = 0x03,    // (0x03) REQUEST SENSE
-    OpTestUnitReady = 0x00,   // (0x00) TEST UNIT READY
+    OpModeSense10 = 0x5A,        // (0x5A) MODE SENSE (10 bytes)
+    OpRead10 = 0x28,             // (0x28) READ (10 bytes)
+    OpReadCapacity = 0x25,       // (0x25) READ CAPACITY
+    OpReadDVDStructure = 0xAD,   // (0xAD) READ DVD STRUCTURE
+    OpRequestSense = 0x03,       // (0x03) REQUEST SENSE
+    OpTestUnitReady = 0x00,      // (0x00) TEST UNIT READY
 };
 
 // ----- Operation data -------------------------------------------------------
@@ -202,6 +217,120 @@ struct ReadCapacityData {
     uint8_t lba[4];           // byte 0-3    Logical Block Address
     uint8_t blockLength[4];   // byte 4-7    Block length in bytes (typically 2048)
 };
+
+// [m 5.20 table 170]
+// Formats for the READ DVD STRUCTURE command
+enum DVDStructureFormatType {
+    DVDFmtPhysical = 0x00,       // Physical Format Information
+    DVDFmtManufacturer = 0x04,   // Disc Manufacturer Information
+};
+
+// [m 5.20 subclauses and tables]
+// Response data for the READ DVD STRUCTURE command
+struct ReadDVDStructureData {
+    // Common fields
+    uint8_t dataLength[2];              // byte 0-1        Data length
+    uint8_t _reserved[2];               // byte 2-3        Reserved
+
+    // [m 5.20.1 tables 171 and 172] Physical Format Information (format 00h)
+    union {
+        struct PhysicalFormatInformation {
+            uint8_t partVersion : 4;         // byte 0 [3:0]     Part version
+            uint8_t bookType : 4;            // byte 0 [7:4]     Book type
+            uint8_t maxRate : 4;             // byte 1 [3:0]     Maximum rate
+            uint8_t discSize : 4;            // byte 1 [7:4]     Disc size
+            uint8_t layerType : 4;           // byte 2 [3:0]     Layer type
+            uint8_t trackPath : 1;           // byte 2 [4]       Track path
+            uint8_t numLayers : 2;           // byte 2 [6:5]     Number of layers
+            uint8_t _reserved1 : 1;          // byte 2 [7]       Reserved
+            uint8_t trackDensity : 4;        // byte 3 [3:0]     Track density
+            uint8_t linearDensity : 4;       // byte 3 [7:4]     Linear density
+            uint8_t _zero1;                  // byte 4           00h
+            uint8_t dataStartingSector[3];   // byte 5-7         Starting physical sector number of data area
+            uint8_t _zero2;                  // byte 8           00h
+            uint8_t dataEndingSector[3];     // byte 9-11        Ending physical sector number of data area
+            uint8_t _zero3;                  // byte 12          00h
+            uint8_t layer0EndingSector[3];   // byte 13-15       Ending physical sector number in layer 0
+            uint8_t _reserved2 : 7;          // byte 16 [6:0]    Reserved
+            uint8_t burstCuttingArea : 1;    // byte 16 [7]      (BCA) Burst Cutting Area
+            // bytes 17 to 2047 are media specific
+        } physicalFormatInformation;
+    };
+};
+
+// [m 5.20.1 table 173]
+// Values for the Book Type field of the READ DVD STRUCTURE format 00h (Physical Format Information) CDB
+enum BookType : uint8_t {
+    BookTypeDVDROM = 0b0000,      // DVD-ROM
+    BookTypeDVDRAM = 0b0001,      // DVD-RAM
+    BookTypeDVDR = 0b0010,        // DVD-R
+    BookTypeDVDRW = 0b0011,       // DVD-RW
+    BookTypeDVDplusRW = 0b1001,   // DVD+RW
+};
+
+// [m 5.20.1]
+// Values for the Disc Size field of the READ DVD STRUCTURE format 00h (Physical Format Information) CDB
+enum DiscSize : uint8_t {
+    DiscSize120mm = 0b0000,   // 120 mm disc
+    DiscSize80mm = 0b0001,    // 80 mm disc
+};
+
+// [m 5.20.1 table 174]
+// Values for the Maximum Rate field of the READ DVD STRUCTURE format 00h (Physical Format Information) CDB
+enum MaximumRate : uint8_t {
+    MaxRate2_52Mbps = 0b0000,       // 2.52 Mbps
+    MaxRate5_04Mbps = 0b0001,       // 5.04 Mbps
+    MaxRate10_08Mbps = 0b0010,      // 10.08 Mbps
+    MaxRateNotSpecified = 0b1111,   // Not specified
+};
+
+// [m 5.20.1]
+// Values for the Number of Layers field of the READ DVD STRUCTURE format 00h (Physical Format Information) CDB
+enum NumLayers : uint8_t {
+    NumLayers1 = 0b00,   // 1 layer
+    NumLayers2 = 0b01,   // 2 layers
+};
+
+// [m 5.20.1]
+// Values for the Track Path field of the READ DVD STRUCTURE format 00h (Physical Format Information) CDB
+enum TrackPath : uint8_t {
+    TrackPathPTP = 0,    // (PTP) Parallel Track Path
+    TrackPathOTP = 1,    // (OTP) Opposite Track Path
+};
+
+// [m 5.20.1 table 175]
+// Values for the Layer Type field of the READ DVD STRUCTURE format 00h (Physical Format Information) CDB
+enum LayerType : uint8_t {
+    LayerTypeEmbossed = (1 << 0),     // Layer contains embossed data
+    LayerTypeRecordable = (1 << 1),   // Layer contains recordable data
+    LayerTypeRewritable = (1 << 2),   // Layer contains rewritable data
+};
+
+// [m 5.20.1 table 176]
+// Values for the Linear Density field of the READ DVD STRUCTURE format 00h (Physical Format Information) CDB
+enum LinearDensity : uint8_t {
+    LinearDensity0_267umPerBit = 0b0000,          // 0.267 um/bit
+    LinearDensity0_293umPerBit = 0b0001,          // 0.293 um/bit
+    LinearDensity0_409To0_435umPerBit = 0b0010,   // 0.409 to 0.435 um/bit
+    LinearDensity0_280To0_291umPerBit = 0b0100,   // 0.280 to 0.291 um/bit
+    LinearDensity0_353umPerBit = 0b1000,          // 0.353 um/bit
+};
+
+// [m 5.20.1 table 177]
+// Values for the Track Density field of the READ DVD STRUCTURE format 00h (Physical Format Information) CDB
+enum TrackDensity : uint8_t {
+    TrackDensity0_74umPerTrack = 0b0000,    // 0.74 um/track
+    TrackDensity0_80umPerTrack = 0b0001,    // 0.80 um/track
+    TrackDensity0_615umPerTrack = 0b0010,   // 0.615 um/track
+};
+
+// [m 5.20.1 table 178]
+// Standard starting physical sector number for DVD-ROM, DVD-R/-RW and DVD+RW discs
+const uint32_t kStartingSectorNumberDVDROM = 0x30000;
+
+// [m 5.20.1 table 178]
+// Standard starting physical sector number for DVD-RAM discs
+const uint32_t kStartingSectorNumberDVDRAM = 0x31000;
 
 // [c 10.8.20 table 137] [s 2.4.1.2 table 27]
 // Response data for the REQUEST SENSE command
@@ -224,7 +353,7 @@ struct RequestSenseData {
     uint8_t additionalSenseBytesStart;  // byte 18-n       Additional sense bytes
 };
 
-// ----- Operation descriptors ------------------------------------------------
+// ----- Operation types ------------------------------------------------------
 
 // Types of packet operation types
 enum PacketOperationType {
@@ -239,6 +368,7 @@ const std::unordered_map<uint8_t, PacketOperationType, std::hash<uint8_t>> kOper
     { OpRead10, PktOpDataIn },
     { OpReadCapacity, PktOpDataIn },
     { OpRequestSense, PktOpDataIn },
+    { OpReadDVDStructure, PktOpDataIn },
     { OpTestUnitReady, PktOpNonData },
 };
 

@@ -16,7 +16,12 @@ inline uint16_t B2L16(uint8_t bytes[2]) {
 }
 
 // Converts a 24-bit unsigned integer from big-endian to little-endian.
-inline uint32_t B2L24(uint8_t high, uint8_t low[2]) {
+inline uint32_t B2L24(uint8_t bytes[3]) {
+    return (bytes[0] << 16) | (bytes[1] << 8) | bytes[2];
+}
+
+// Converts a 24-bit unsigned integer split into low 16-bit and high 8-bit parts from big-endian to little-endian.
+inline uint32_t B2L24S(uint8_t high, uint8_t low[2]) {
     return (high << 16) | B2L16(low);
 }
 
@@ -39,7 +44,14 @@ inline void L2B16(uint8_t bytes[2], uint16_t val) {
 }
 
 // Converts a 24-bit unsigned integer from little-endian to big-endian.
-inline void L2B24(uint8_t *high, uint8_t low[2], uint32_t val) {
+inline void L2B24(uint8_t bytes[3], uint32_t val) {
+    bytes[0] = val >> 16;
+    bytes[1] = val >> 8;
+    bytes[2] = val;
+}
+
+// Converts a 24-bit unsigned integer split into low 16-bit and high 8-bit parts from little-endian to big-endian.
+inline void L2B24S(uint8_t *high, uint8_t low[2], uint32_t val) {
     *high = val >> 16;
     low[0] = val >> 8;
     low[1] = val;
