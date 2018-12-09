@@ -45,6 +45,8 @@ PacketProtocolCommand::PacketProtocolCommand(ATADevice& device)
     : IATACommand(device)
     , m_packetCmdBuffer(nullptr)
     , m_packetDataBuffer(nullptr)
+    , m_packetDataPos(0)
+    , m_packetDataSize(0)
 {
 }
 

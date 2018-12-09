@@ -15,6 +15,8 @@
 #include "vixen/hw/ata/ata.h"
 
 namespace vixen {
+namespace hw {
+namespace bmide {
 
 class BMIDEChannel {
 public:
@@ -61,6 +63,32 @@ private:
 
     void StartWork();
     void StopWork();
+
+    // ----- Interrupt hook ---------------------------------------------------
+
+    class IntrHook : public hw::InterruptHook {
+    private:
+        IntrHook(BMIDEChannel& channel)
+            : m_channel(channel)
+        {
+        }
+
+        void OnChange(bool asserted) override {
+            if (asserted) {
+                m_channel.m_status |= StInterrupt;
+                log_spew("BM IDE channel %d:  Interrupt asserted\n", m_channel.m_channel);
+            }
+        }
+        
+        BMIDEChannel& m_channel;
+
+        friend class BMIDEChannel;
+    };
+    friend class IntrHook;
+
+    IntrHook m_intrHook;
 };
 
+}
+}
 }

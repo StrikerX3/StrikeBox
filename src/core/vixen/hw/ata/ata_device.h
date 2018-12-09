@@ -14,7 +14,7 @@
 #include <cstdint>
 
 #include "../ata/ata_defs.h"
-#include "../basic/interrupt_trigger.h"
+#include "../basic/interrupt.h"
 #include "ata_common.h"
 #include "drvs/ata_device_driver.h"
 #include "drvs/drv_null.h"

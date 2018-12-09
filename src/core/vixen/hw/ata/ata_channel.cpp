@@ -158,6 +158,7 @@ void ATAChannel::ReadData(uint32_t *value, uint8_t size) {
     // Read data for the command and clear it if finished
     m_currentCommand->ReadData((uint8_t*)value, size);
     if (m_currentCommand->IsFinished()) {
+        log_spew("ATAChannel::ReadData:  Finished processing command for channel %d\n", m_channel);
         delete m_currentCommand;
         m_currentCommand = nullptr;
     }
@@ -181,6 +182,7 @@ void ATAChannel::WriteData(uint32_t value, uint8_t size) {
     // Write data for the command and clear it if finished
     m_currentCommand->WriteData((uint8_t*)&value, size);
     if (m_currentCommand->IsFinished()) {
+        //log_spew("ATAChannel::WriteData:  Finished processing command for channel %d\n", m_channel);
         delete m_currentCommand;
         m_currentCommand = nullptr;
     }
@@ -220,6 +222,7 @@ void ATAChannel::WriteCommand(uint8_t value) {
     {
         m_currentCommand->Execute();
         if (m_currentCommand->IsFinished()) {
+            //log_spew("ATAChannel::WriteCommand:  Finished processing command 0x%x for channel %d, device %d\n", cmd, m_channel, devIndex);
             delete m_currentCommand;
             m_currentCommand = nullptr;
         }
@@ -237,6 +240,7 @@ DMATransferResult ATAChannel::ReadDMA(uint8_t *dstBuffer, uint32_t readLen) {
     // Read data for the command and clear it if finished
     m_currentCommand->ReadData(dstBuffer, readLen);
     if (m_currentCommand->IsFinished()) {
+        log_spew("ATAChannel::ReadDMA:  Finished processing command for channel %d\n", m_channel);
         delete m_currentCommand;
         m_currentCommand = nullptr;
         return DMATransferEnd;
@@ -256,6 +260,7 @@ DMATransferResult ATAChannel::WriteDMA(uint8_t *srcBuffer, uint32_t writeLen) {
     // Write data for the command and clear it if finished
     m_currentCommand->WriteData(srcBuffer, writeLen);
     if (m_currentCommand->IsFinished()) {
+        log_spew("ATAChannel::WriteDMA:  Finished processing command for channel %d\n", m_channel);
         delete m_currentCommand;
         m_currentCommand = nullptr;
         return DMATransferEnd;
@@ -266,7 +271,11 @@ DMATransferResult ATAChannel::WriteDMA(uint8_t *srcBuffer, uint32_t writeLen) {
 
 void ATAChannel::SetInterrupt(bool asserted) {
     if (asserted != m_interrupt && m_regs.AreInterruptsEnabled()) {
+        log_spew("ATAChannel::SetInterrupt:  %s interrupt for channel %d\n", (asserted ? "asserting" : "negating"), m_channel);
         m_interrupt = asserted;
+        for (auto it = m_intrHooks.begin(); it != m_intrHooks.end(); it++) {
+            (*it)->OnChange(asserted);
+        }
         m_irqHandler.HandleIRQ(m_irqNum, m_interrupt);
     }
 }

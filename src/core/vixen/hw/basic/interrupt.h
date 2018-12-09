@@ -9,5 +9,10 @@ public:
     virtual void Negate() = 0;
 };
 
+class InterruptHook {
+public:
+    virtual void OnChange(bool asserted) = 0;
+};
+
 }
 }

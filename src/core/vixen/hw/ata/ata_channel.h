@@ -15,7 +15,7 @@
 
 #include "vixen/cpu.h"
 #include "../basic/irq.h"
-#include "../basic/interrupt_trigger.h"
+#include "../basic/interrupt.h"
 #include "ata_device.h"
 #include "ata_common.h"
 
@@ -81,6 +81,7 @@ public:
 
     bool AreInterruptsEnabled() { return m_regs.AreInterruptsEnabled(); }
     InterruptTrigger& GetInterruptTrigger() { return m_intrTrigger; }
+    void RegisterInterruptHook(InterruptHook *hook) { m_intrHooks.push_back(hook); }
 
 private:
     friend class ATA;
@@ -120,6 +121,8 @@ private:
     IntrTrigger m_intrTrigger;
     IRQHandler& m_irqHandler;
     uint8_t m_irqNum;
+
+    std::vector<InterruptHook *> m_intrHooks;
 
     // ----- Command port operations ------------------------------------------
 

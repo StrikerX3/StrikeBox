@@ -10,6 +10,8 @@
 #include "vixen/thread.h"
 
 namespace vixen {
+namespace hw {
+namespace bmide {
 
 using namespace hw;
 using namespace hw::bmide;
@@ -20,7 +22,9 @@ BMIDEChannel::BMIDEChannel(Channel channel, ATAChannel& ataChannel, uint8_t *ram
     , m_ataChannel(ataChannel)
     , m_ram(ram)
     , m_ramSize(ramSize) 
+    , m_intrHook(IntrHook(*this))
 {
+    ataChannel.RegisterInterruptHook(&m_intrHook);
     m_worker_running = true;
     m_job_running = false;
     m_job_cancel = false;
@@ -243,11 +247,6 @@ void BMIDEChannel::RunWorker() {
 
                 // Set Interrupt flag if the ATA device triggered an interrupt
                 if (result == DMATransferEnd) {
-                    if (m_ataChannel.AreInterruptsEnabled()) {
-                        m_status |= StInterrupt;
-                        m_ataChannel.GetInterruptTrigger().Assert();
-                        //log_spew("BM IDE channel %d:  Interrupt asserted\n", m_channel);
-                    }
                     //log_spew("BM IDE channel %d:  Transfer ended\n", m_channel);
                     m_job_running = false;
                 }
@@ -268,4 +267,6 @@ void BMIDEChannel::RunWorker() {
     }
 }
 
+}
+}
 }

@@ -138,7 +138,7 @@ void DMAProtocolCommand::ReadData(uint8_t *value, uint32_t size) {
     if (m_currentByte >= m_endingByte) {
         FinishTransfer();
         m_regs.status &= ~(StBusy | StDataRequest);
-        // INTRQ will be asserted in BMIDEChannel::RunWorker()
+        m_interrupt.Assert();
     }
 }
 
@@ -189,7 +189,7 @@ void DMAProtocolCommand::WriteData(uint8_t *value, uint32_t size) {
     if (m_currentByte >= m_endingByte) {
         FinishTransfer();
         m_regs.status &= ~(StBusy | StDataRequest);
-        // INTRQ will be asserted in BMIDEChannel::RunWorker()
+        m_interrupt.Assert();
     }
 }
 

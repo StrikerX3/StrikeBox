@@ -462,7 +462,7 @@ EmulatorStatus Xbox::InitHardware() {
     m_NVAPU = new NVAPUDevice();
     m_AC97 = new AC97Device();
     m_PCIBridge = new PCIBridgeDevice();
-    m_BMIDE = new BMIDEDevice(m_ram, m_ramSize, *m_ATA);
+    m_BMIDE = new hw::bmide::BMIDEDevice(m_ram, m_ramSize, *m_ATA);
     m_AGPBridge = new AGPBridgeDevice();
     m_NV2A = new NV2ADevice(m_ram, m_ramSize, *m_i8259);
 

@@ -10,6 +10,8 @@
 #include "vixen/thread.h"
 
 namespace vixen {
+namespace hw {
+namespace bmide {
 
 using namespace hw::bmide;
 using namespace hw::ata;
@@ -80,4 +82,6 @@ void BMIDEDevice::PCIIOWrite(int barIndex, uint32_t port, uint32_t value, uint8_
     }
 }
 
+}
+}
 }

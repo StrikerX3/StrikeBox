@@ -17,6 +17,8 @@
 #include "vixen/hw/ata/ata.h"
 
 namespace vixen {
+namespace hw {
+namespace bmide {
 
 class BMIDEDevice : public PCIDevice {
 public:
@@ -34,4 +36,6 @@ private:
     BMIDEChannel *m_channels[2];
 };
 
+}
+}
 }

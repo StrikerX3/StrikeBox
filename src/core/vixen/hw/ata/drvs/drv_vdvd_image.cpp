@@ -145,6 +145,8 @@ bool ImageDVDDriveATADeviceDriver::ProcessATAPIPacketDataRead(PacketInformation&
             if (!m_transfer) {
                 m_currentByte = lba * kDVDSectorSize;
                 m_lastByte = m_currentByte + transferLength * kDVDSectorSize;
+                m_transfer = true;
+                log_spew("ImageDVDDriveATADeviceDriver::ProcessATAPIPacketDataRead:  Starting transfer: 0x%llx to 0x%llx\n", m_currentByte, m_lastByte);
             }
 
             // TODO: maybe handle caching? Could improve performance if accessing real media on supported drives
@@ -160,6 +162,7 @@ bool ImageDVDDriveATADeviceDriver::ProcessATAPIPacketDataRead(PacketInformation&
             // Update position
             m_currentByte += *packetDataSize;
             if (m_currentByte >= m_lastByte || *packetDataSize < readLen) {
+                log_spew("ImageDVDDriveATADeviceDriver::ProcessATAPIPacketDataRead:  Transfer finished\n");
                 m_transfer = false;
             }
         }
