@@ -279,7 +279,7 @@ EmulatorStatus Xbox::InitROM() {
     long sz;
 
     // Load MCPX ROM
-    log_debug("Loading MCPX ROM %s.. .", m_settings.rom_mcpx);
+    log_debug("Loading MCPX ROM %s... ", m_settings.rom_mcpx);
     fp = fopen(m_settings.rom_mcpx, "rb");
     if (fp == NULL) {
         log_debug("file %s could not be opened\n", m_settings.rom_mcpx);
