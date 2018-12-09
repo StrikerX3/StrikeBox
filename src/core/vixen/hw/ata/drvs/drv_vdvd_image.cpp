@@ -104,6 +104,8 @@ bool ImageDVDDriveATADeviceDriver::ProcessATAPIPacketNonData(PacketInformation& 
 }
 
 bool ImageDVDDriveATADeviceDriver::ProcessATAPIPacketDataRead(PacketInformation& packetInfo, uint8_t *packetDataBuffer, uint16_t byteCountLimit, uint32_t *packetDataSize) {
+    // TODO: refactor command handling
+    // - make a structure similar to ATA commands
     switch (packetInfo.cdb.opCode.u8) {
     case OpModeSense10:
         switch (packetInfo.cdb.modeSense10.pageCode) {
