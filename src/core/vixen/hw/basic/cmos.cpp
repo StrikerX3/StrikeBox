@@ -23,14 +23,19 @@ static inline bool IsRTCRegister(uint8_t reg) {
 
 CMOS::CMOS() {
     // TODO: Are IRQs needed?
+    // TODO: Persist memory
+    memset(m_memory, 0, sizeof(m_memory));
 }
 
 CMOS::~CMOS() {
 }
 
 void CMOS::Reset() {
-    // The Xbox kernel checks that the CMOS user memory has an specific pattern
+    // Reset registers
+    m_memory[RegB] &= ~(RegB_PIE | RegB_AIE | RegB_SQWE);
+    m_memory[RegC] &= ~(RegC_UF | RegC_IRQF | RegC_PF | RegC_AF);
 
+    // The Xbox kernel checks that the CMOS user memory has an specific pattern
     for (int i = 0x10; i < 0x70; i++) {
         m_memory[i] = 0x55 << (i & 1);
     }
@@ -96,7 +101,7 @@ bool CMOS::IOWrite(uint32_t port, uint32_t value, uint8_t size) {
             case RegB:
             case RegC:
             case RegD:
-                log_debug("handle this\n");
+                // TODO: Handle these
                 break;
             }
             m_memory[m_regAddr] = value;
