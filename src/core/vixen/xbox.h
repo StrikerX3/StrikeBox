@@ -36,6 +36,7 @@
 #include "vixen/hw/sm/smc.h"
 #include "vixen/hw/sm/eeprom.h"
 #include "vixen/hw/sm/tvenc.h"
+#include "vixen/hw/sm/adm1032.h"
 
 #include "vixen/hw/pci/hostbridge.h"
 #include "vixen/hw/pci/mcpx_ram.h"
@@ -130,6 +131,7 @@ protected:
     SMCDevice        *m_SMC;
     EEPROMDevice     *m_EEPROM;
     TVEncoderDevice  *m_TVEncoder;
+    ADM1032Device    *m_ADM1032;
 
     PCIBus           *m_PCIBus;
     HostBridgeDevice *m_HostBridge;

@@ -102,6 +102,7 @@ Xbox::~Xbox() {
     if (m_SMC != nullptr) delete m_SMC;
     if (m_EEPROM != nullptr) delete m_EEPROM;
     if (m_TVEncoder != nullptr) delete m_TVEncoder;
+    if (m_ADM1032 != nullptr) delete m_ADM1032;
     
     if (m_SMBus != nullptr) delete m_SMBus;
     
@@ -453,6 +454,7 @@ EmulatorStatus Xbox::InitHardware() {
 
     m_SMC = new SMCDevice(smcRevision);
     m_EEPROM = new EEPROMDevice();
+    m_ADM1032 = new ADM1032Device();
     m_HostBridge = new HostBridgeDevice();
     m_MCPXRAM = new MCPXRAMDevice(mcpxRevision);
     m_LPC = new LPCDevice(m_IRQs, m_rom, m_bios, m_biosSize, m_mcpxROM, m_settings.hw_revision != DebugKit);
@@ -480,10 +482,10 @@ EmulatorStatus Xbox::InitHardware() {
 
     m_SMBus->ConnectDevice(kSMBusAddress_SystemMicroController, m_SMC); // W 0x20 R 0x21
     m_SMBus->ConnectDevice(kSMBusAddress_EEPROM, m_EEPROM); // W 0xA8 R 0xA9
+    m_SMBus->ConnectDevice(kSMBusAddress_TemperatureMeasurement, m_ADM1032); // W 0x98 R 0x99
 
     // TODO: Other SMBus devices to connect
     //m_SMBus->ConnectDevice(kSMBusAddress_MCPX, m_MCPX); // W 0x10 R 0x11 -- TODO : Is MCPX an SMBus and/or PCI device?
-    //m_SMBus->ConnectDevice(kSMBusAddress_TemperatureMeasurement, m_TemperatureMeasurement); // W 0x98 R 0x99
     //m_SMBus->ConnectDevice(kSMBusAddress_TVEncoder, m_TVEncoder); // W 0x88 R 0x89
     switch (tvEncoder) {
     case TVEncoder::Conexant:
