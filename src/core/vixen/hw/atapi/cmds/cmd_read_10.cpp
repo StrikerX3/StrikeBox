@@ -111,7 +111,7 @@ bool Read10::Execute() {
     // Update position and check if the transfer ended
     m_currentByte += readLen;
     if (m_currentByte >= m_lastByte) {
-        log_spew("Read10::Execute:  Transfer finished\n");
+        //log_spew("Read10::Execute:  Transfer finished\n");
         EndTransfer();
     }
 

@@ -158,7 +158,7 @@ void ATAChannel::ReadData(uint32_t *value, uint8_t size) {
     // Read data for the command and clear it if finished
     m_currentCommand->ReadData((uint8_t*)value, size);
     if (m_currentCommand->IsFinished()) {
-        log_spew("ATAChannel::ReadData:  Finished processing command for channel %d\n", m_channel);
+        //log_spew("ATAChannel::ReadData:  Finished processing command for channel %d\n", m_channel);
         delete m_currentCommand;
         m_currentCommand = nullptr;
     }
@@ -213,7 +213,7 @@ void ATAChannel::WriteCommand(uint8_t value) {
         return;
     }
 
-    log_spew("ATAChannel::WriteCommand:  Processing command 0x%x for channel %d, device %d\n", cmd, m_channel, devIndex);
+    //log_spew("ATAChannel::WriteCommand:  Processing command 0x%x for channel %d, device %d\n", cmd, m_channel, devIndex);
 
     // Instantiate the command
     auto factory = kCmdFactories.at(cmd);
@@ -245,7 +245,7 @@ DMATransferResult ATAChannel::ReadDMA(uint8_t *dstBuffer, uint32_t readLen) {
     std::lock_guard<std::mutex> lk(m_commandMutex);
     m_currentCommand->ReadData(dstBuffer, readLen);
     if (m_currentCommand->IsFinished()) {
-        log_spew("ATAChannel::ReadDMA:  Finished processing command for channel %d\n", m_channel);
+        //log_spew("ATAChannel::ReadDMA:  Finished processing command for channel %d\n", m_channel);
         delete m_currentCommand;
         m_currentCommand = nullptr;
         return DMATransferEnd;
@@ -266,7 +266,7 @@ DMATransferResult ATAChannel::WriteDMA(uint8_t *srcBuffer, uint32_t writeLen) {
     std::lock_guard<std::mutex> lk(m_commandMutex);
     m_currentCommand->WriteData(srcBuffer, writeLen);
     if (m_currentCommand->IsFinished()) {
-        log_spew("ATAChannel::WriteDMA:  Finished processing command for channel %d\n", m_channel);
+        //log_spew("ATAChannel::WriteDMA:  Finished processing command for channel %d\n", m_channel);
         delete m_currentCommand;
         m_currentCommand = nullptr;
         return DMATransferEnd;

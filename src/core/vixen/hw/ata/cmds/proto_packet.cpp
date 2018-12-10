@@ -355,7 +355,7 @@ void PacketProtocolCommand::HandleProtocolTail(bool hasError) {
     m_regs.status |= StReady;
     m_regs.status &= ~StBusy;
     m_interrupt.Assert();
-    log_spew("PacketProtocolCommand::HandleProtocolTail:  Packet command finished\n");
+    //log_spew("PacketProtocolCommand::HandleProtocolTail:  Packet command finished\n");
     Finish();
 }
 
