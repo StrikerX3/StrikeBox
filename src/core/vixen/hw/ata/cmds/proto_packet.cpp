@@ -255,7 +255,10 @@ void PacketProtocolCommand::ProcessPacketImmediate() {
     m_regs.status |= StDataRequest;
     m_regs.status &= ~StBusy;
 
-    m_interrupt.Assert();
+    // Only assert INTRQ on PIO transfers
+    if (!m_packetCmdState.input.dmaTransfer) {
+        m_interrupt.Assert();
+    }
 }
 
 void PacketProtocolCommand::ProcessPacketOverlapped() {
