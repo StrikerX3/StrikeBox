@@ -152,14 +152,11 @@ bool ImageHardDriveATADeviceDriver::Write(uint64_t byteAddress, uint8_t *buffer,
     // TODO: handle copy-on-write
     // If copy-on-write and block is copied, overwrite copy, otherwise create copy
     // If not copy-on-write, write to image file directly
-#if 0   // disable writes for now
     int lenWrite = fwrite(buffer, 1, size, m_fpImage);
     fflush(m_fpImage);
 
     // Write is successful if the full size is written
     return lenWrite == size;
-#endif
-    return true;
 }
 
 }
