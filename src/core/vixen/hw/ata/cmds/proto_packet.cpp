@@ -103,27 +103,32 @@ void PacketProtocolCommand::Execute() {
 
 void PacketProtocolCommand::ReadData(uint8_t *value, uint32_t size) {
     // Host is reading the data requested by the Packet command
+
+    uint32_t pos = 0;
    
-    // Read from buffer
-    uint32_t sizeRead = m_packetCmdState.dataBuffer.Read(value, size);
+    do {
+        // Read from buffer
+        uint32_t sizeRead = m_packetCmdState.dataBuffer.Read(value + pos, size - pos);
+        pos += sizeRead;
 
-    // Done reading the packet data?
-    if (m_packetCmdState.dataBuffer.IsReadFinished()) {
-        m_regs.status |= StBusy;
-        m_regs.status &= ~StDataRequest;
+        // Done reading the packet data?
+        if (m_packetCmdState.dataBuffer.IsReadFinished()) {
+            m_regs.status |= StBusy;
+            m_regs.status &= ~StDataRequest;
 
-        // Done transferring all the data needed by the packet?
-        if (m_command->IsTransferFinished()) {
-            HandleProtocolTail(false);
-            return;
+            // Done transferring all the data needed by the packet?
+            if (m_command->IsTransferFinished()) {
+                HandleProtocolTail(false);
+                return;
+            }
+
+            // Read more data
+            if (!m_command->Execute()) {
+                HandleProtocolTail(true);
+                return;
+            }
         }
-
-        // Read more data
-        if (!m_command->Execute()) {
-            HandleProtocolTail(true);
-            return;
-        }
-    }
+    } while (pos < size);
 }
 
 void PacketProtocolCommand::WriteData(uint8_t *value, uint32_t size) {
@@ -141,26 +146,31 @@ void PacketProtocolCommand::WriteData(uint8_t *value, uint32_t size) {
     else {
         // Writing the data requested by the Packet command
 
-        // Write to buffer
-        uint32_t sizeWritten = m_packetCmdState.dataBuffer.Write(value, size);
+        uint32_t pos = 0;
 
-        // Done writing the packet data?
-        if (m_packetCmdState.dataBuffer.IsWriteFinished()) {
-            m_regs.status |= StBusy;
-            m_regs.status &= ~StDataRequest;
+        do {
+            // Write to buffer
+            uint32_t sizeWritten = m_packetCmdState.dataBuffer.Write(value, size);
+            pos += sizeWritten;
 
-            // Execute command with the current buffer
-            if (!m_command->Execute()) {
-                HandleProtocolTail(true);
-                return;
+            // Done writing the packet data?
+            if (m_packetCmdState.dataBuffer.IsWriteFinished()) {
+                m_regs.status |= StBusy;
+                m_regs.status &= ~StDataRequest;
+
+                // Execute command with the current buffer
+                if (!m_command->Execute()) {
+                    HandleProtocolTail(true);
+                    return;
+                }
+
+                // Done transferring all the data needed by the packet?
+                if (m_command->IsTransferFinished()) {
+                    HandleProtocolTail(false);
+                    return;
+                }
             }
-            
-            // Done transferring all the data needed by the packet?
-            if (m_command->IsTransferFinished()) {
-                HandleProtocolTail(false);
-                return;
-            }
-        }
+        } while (pos < size);
     }
 }
 
