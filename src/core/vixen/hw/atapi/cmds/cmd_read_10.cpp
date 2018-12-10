@@ -70,7 +70,7 @@ bool Read10::BeginTransfer() {
     m_lastByte = m_currentByte + transferLengthBytes;
     m_buffer = new uint8_t[m_transferLength];
     
-    log_spew("Read10::BeginTransfer:  Starting transfer: 0x%llx to 0x%llx\n", m_currentByte, m_lastByte);
+    //log_spew("Read10::BeginTransfer:  Starting transfer: 0x%llx to 0x%llx\n", m_currentByte, m_lastByte);
 
     // Read from media
     return Execute();

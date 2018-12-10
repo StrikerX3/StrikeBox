@@ -189,7 +189,7 @@ void PacketProtocolCommand::ProcessPacket() {
         return;
     }
 
-    log_spew("PacketProtocolCommand::ProcessPacket:  Processing command 0x%x\n", cdb->opCode.u8);
+    //log_spew("PacketProtocolCommand::ProcessPacket:  Processing command 0x%x\n", cdb->opCode.u8);
 
     // Instantiate the command.
     // This will also allocate the data buffer if necessary.
