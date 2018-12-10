@@ -27,12 +27,14 @@ public:
     DummyDVDDriveATADeviceDriver();
     ~DummyDVDDriveATADeviceDriver() override;
 
-    // ----- ATAPI ------------------------------------------------------------
+    // ----- Data access ------------------------------------------------------
 
-    bool ValidateATAPIPacket(atapi::PacketInformation& packetInfo) override;
-    bool ProcessATAPIPacketNonData(atapi::PacketInformation& packetInfo) override;
-    bool ProcessATAPIPacketDataRead(atapi::PacketInformation& packetInfo, uint8_t* packetDataBuffer, uint16_t byteCountLimit, uint32_t *packetDataSize) override;
-    bool ProcessATAPIPacketDataWrite(atapi::PacketInformation& packetInfo, uint8_t* packetDataBuffer, uint16_t byteCountLimit) override;
+    bool Read(uint64_t byteAddress, uint8_t *buffer, uint32_t size) override;
+
+    // ----- Medium -----------------------------------------------------------
+
+    bool HasMedium() override { return false; }
+    uint32_t GetMediumCapacitySectors() override { return 0; }
 };
 
 }

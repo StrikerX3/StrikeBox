@@ -13,8 +13,6 @@
 
 #include "vixen/log.h"
 #include "vixen/io.h"
-#include "vixen/hw/ata/atapi_xbox.h"
-#include "vixen/hw/ata/atapi_utils.h"
 
 namespace vixen {
 namespace hw {
@@ -28,15 +26,9 @@ BaseDVDDriveATADeviceDriver::BaseDVDDriveATADeviceDriver() {
 BaseDVDDriveATADeviceDriver::~BaseDVDDriveATADeviceDriver() {
 }
 
-bool BaseDVDDriveATADeviceDriver::Read(uint64_t byteAddress, uint8_t * buffer, uint32_t size) {
-    // Always fail; this function should never be called on devices that support the PACKET Command feature set
-    log_warning("BaseDVDDriveATADeviceDriver::Read:  Unexpected ATA read\n");
-    return false;
-}
-
-bool BaseDVDDriveATADeviceDriver::Write(uint64_t byteAddress, uint8_t * buffer, uint32_t size) {
-    // Always fail; this function should never be called on devices that support the PACKET Command feature set
-    log_warning("BaseDVDDriveATADeviceDriver::Write:  Unexpected ATA write\n");
+bool BaseDVDDriveATADeviceDriver::Write(uint64_t byteAddress, uint8_t *buffer, uint32_t size) {
+    // Always fail; the Xbox DVD drive doesn't support writes
+    log_warning("BaseDVDDriveATADeviceDriver::Write:  Unexpected write\n");
     return false;
 }
 
@@ -136,41 +128,6 @@ void BaseDVDDriveATADeviceDriver::LBAToCHS(uint32_t lbaAddress, uint16_t *cylind
 uint8_t BaseDVDDriveATADeviceDriver::GetPacketCommandSize() {
     // Match the value specified in the IdentifyPacketDeviceData struct
     return 12;
-}
-
-bool BaseDVDDriveATADeviceDriver::ValidateCommand(PacketInformation& packetInfo) {
-    switch (packetInfo.cdb.opCode.u8) {
-    case OpModeSense10:
-        switch (packetInfo.cdb.modeSense10.pageCode) {
-        case kPageCodeAuthentication:
-            // TODO: is it correct to fail if the length is smaller than the page data?
-            if (B2L16(packetInfo.cdb.modeSense10.length) < sizeof(XboxDVDAuthentication)) {
-                packetInfo.result.aborted = true;
-                packetInfo.result.incorrectLength = true;
-                packetInfo.result.status = StCheckCondition;
-                packetInfo.result.senseKey = SKIllegalRequest;
-                packetInfo.result.additionalSenseCode = ASCInvalidFieldInCDB;
-                return false;
-            }
-            packetInfo.transferSize = sizeof(XboxDVDAuthentication);
-            return true;
-        }
-        return true;
-    case OpRequestSense:
-        packetInfo.transferSize = packetInfo.cdb.requestSense.length;
-        return true;
-    case OpReadCapacity:
-        packetInfo.transferSize = sizeof(ReadCapacityData);
-        return true;
-    case OpRead10:
-        packetInfo.transferSize = (uint32_t)B2L16(packetInfo.cdb.read10.length) * kDVDSectorSize;
-        return true;
-    case OpReadDVDStructure:
-        packetInfo.transferSize = kDVDSectorSize;
-        return true;
-    default:
-        return true;
-    }
 }
 
 }

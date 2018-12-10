@@ -13,9 +13,9 @@
 
 #include "vixen/log.h"
 #include "vixen/io.h"
-#include "vixen/hw/ata/atapi_defs.h"
-#include "vixen/hw/ata/atapi_xbox.h"
-#include "vixen/hw/ata/atapi_utils.h"
+#include "vixen/hw/atapi/atapi_defs.h"
+#include "vixen/hw/atapi/atapi_xbox.h"
+#include "vixen/hw/atapi/atapi_utils.h"
 
 namespace vixen {
 namespace hw {
@@ -25,8 +25,8 @@ using namespace atapi;
 
 ImageDVDDriveATADeviceDriver::ImageDVDDriveATADeviceDriver() {
     strcpy(m_serialNumber, "9876543210");
-    strcpy(m_firmwareRevision, "1.00");
-    strcpy(m_modelNumber, "IMAGE DVD 12345");
+    strcpy(m_firmwareRevision, "1.0.0");
+    strcpy(m_modelNumber, "vXn VDVDD0010000");
 }
 
 ImageDVDDriveATADeviceDriver::~ImageDVDDriveATADeviceDriver() {
@@ -63,178 +63,40 @@ bool ImageDVDDriveATADeviceDriver::LoadImageFile(const char *imagePath, bool cop
     return true;
 }
 
-bool ImageDVDDriveATADeviceDriver::EjectMedia() {
+bool ImageDVDDriveATADeviceDriver::EjectMedium() {
     if (m_fpImage == NULL) {
-        log_warning("ImageDVDDriveATADeviceDriver::EjectMedia:  No media to eject\n");
+        log_warning("ImageDVDDriveATADeviceDriver::EjectMedium:  No medium to eject\n");
         return false;
     }
 
-    log_info("ImageDVDDriveATADeviceDriver::EjectMedia:  Media ejected\n");
+    log_info("ImageDVDDriveATADeviceDriver::EjectMedium:  Medium ejected\n");
     fclose(m_fpImage);
     m_fpImage = NULL;
-    // TODO: notify media removal
+    // TODO: should we notify media removal?
     return true;
 }
 
-bool ImageDVDDriveATADeviceDriver::ValidateATAPIPacket(PacketInformation& packetInfo) {
-    log_debug("ImageDVDDriveATADeviceDriver::ValidateATAPIPacket:  Operation code 0x%x\n", packetInfo.cdb.opCode.u8, packetInfo.cdb.opCode.fields.commandCode, packetInfo.cdb.opCode.fields.groupCode);
-    
-    // TODO: device-specific validation
-    
-    // Check if the command is supported and has valid parameters.
-    return ValidateCommand(packetInfo);
-}
-
-bool ImageDVDDriveATADeviceDriver::ProcessATAPIPacketNonData(PacketInformation& packetInfo) {
-    switch (packetInfo.cdb.opCode.u8) {
-    case OpTestUnitReady:
-        // If there is no disc in the drive, return the expected sense key and parameters.
-        // The default values tell that there is media in the drive and the device is ready to accept commands.
-        if (!HasMedia()) {
-            packetInfo.result.status = StCheckCondition;
-            packetInfo.result.senseKey = SKNotReady;
-            packetInfo.result.additionalSenseCode = ASCMediumNotPresent;
-        }
-
-        return true;
-    default:
-        log_debug("ImageDVDDriveATADeviceDriver::ProcessATAPIPacketNonData:  Unimplemented operation code 0x%x\n", packetInfo.cdb.opCode.u8);
+bool ImageDVDDriveATADeviceDriver::Read(uint64_t byteAddress, uint8_t *buffer, uint32_t size) {
+    // TODO: maybe handle caching? Could improve performance if accessing real media on supported drives
+    // Should also honor the cache flags
+    // Image not loaded
+    if (m_fpImage == NULL) {
         return false;
     }
-}
 
-bool ImageDVDDriveATADeviceDriver::ProcessATAPIPacketDataRead(PacketInformation& packetInfo, uint8_t *packetDataBuffer, uint16_t byteCountLimit, uint32_t *packetDataSize) {
-    // TODO: refactor command handling
-    // - make a structure similar to ATA commands
-    switch (packetInfo.cdb.opCode.u8) {
-    case OpModeSense10:
-        switch (packetInfo.cdb.modeSense10.pageCode) {
-        case kPageCodeAuthentication:
-        {
-            // TODO: handle partial reads (if those ever happen here)
-            if (byteCountLimit < sizeof(XboxDVDAuthentication)) {
-                packetInfo.result.aborted = true;
-                packetInfo.result.deviceFault = true;
-                return false;
-            }
-
-            // Fill in just enough information to pass basic authentication checks on modified kernels
-            // TODO: Research Xbox DVD authentication
-            // https://multimedia.cx/eggs/xbox-sphinx-protocol/
-            XboxDVDAuthentication *dvdAuth = reinterpret_cast<XboxDVDAuthentication *>(packetDataBuffer);
-            dvdAuth->CDFValid = 1;
-            dvdAuth->PartitionArea = 1;
-            dvdAuth->Authentication = 1;
-            
-            *packetDataSize = sizeof(XboxDVDAuthentication);
-            return true;
-        }
-        default:
-            log_debug("ImageDVDDriveATADeviceDriver::ProcessATAPIPacketDataRead:  Unimplemented page code 0x%x for MODE SENSE(10)\n", packetInfo.cdb.modeSense10.pageCode);
-            return false;
-        }
-    case OpRead10:
-    {
-        if (HasMedia()) {
-            uint32_t lba = B2L32(packetInfo.cdb.read10.lba);
-            uint16_t transferLength = B2L16(packetInfo.cdb.read10.length);
-            
-            packetInfo.transferSize = transferLength * kDVDSectorSize;
-
-            // If this is the first read, fill in transfer data
-            if (!m_transfer) {
-                m_currentByte = lba * kDVDSectorSize;
-                m_lastByte = m_currentByte + transferLength * kDVDSectorSize;
-                m_transfer = true;
-                log_spew("ImageDVDDriveATADeviceDriver::ProcessATAPIPacketDataRead:  Starting transfer: 0x%llx to 0x%llx\n", m_currentByte, m_lastByte);
-            }
-
-            // TODO: maybe handle caching? Could improve performance if accessing real media on supported drives
-
-            // Read from media
-            uint16_t readLen = (byteCountLimit < m_lastByte - m_currentByte)
-                ? byteCountLimit
-                : m_lastByte - m_currentByte;
-            _fseeki64(m_fpImage, m_currentByte, SEEK_SET);
-
-            *packetDataSize = fread(packetDataBuffer, 1, readLen, m_fpImage);
-
-            // Update position
-            m_currentByte += *packetDataSize;
-            if (m_currentByte >= m_lastByte || *packetDataSize < readLen) {
-                log_spew("ImageDVDDriveATADeviceDriver::ProcessATAPIPacketDataRead:  Transfer finished\n");
-                m_transfer = false;
-            }
-        }
-        else {
-            // Say that there is no disc in the drive
-            packetInfo.result.status = StCheckCondition;
-            packetInfo.result.senseKey = SKNotReady;
-            packetInfo.result.additionalSenseCode = ASCMediumNotPresent;
-        }
-
-        return true;
-    }
-    case OpReadCapacity:
-    {
-        ReadCapacityData *capData = reinterpret_cast<ReadCapacityData *>(packetDataBuffer);
-      
-        if (HasMedia()) {
-            L2B32(capData->lba, m_sectorCapacity);
-            L2B32(capData->blockLength, kDVDSectorSize);
-        }
-        else {
-            // Say that there is no disc in the drive
-            packetInfo.result.status = StCheckCondition;
-            packetInfo.result.senseKey = SKNotReady;
-            packetInfo.result.additionalSenseCode = ASCMediumNotPresent;
-
-            L2B32(capData->lba, 0);
-            L2B32(capData->blockLength, 0);
-        }
-
-        *packetDataSize = sizeof(ReadCapacityData);
-        return true;
-    }
-    case OpReadDVDStructure:
-    {
-        ReadDVDStructureData *dvdData = reinterpret_cast<ReadDVDStructureData *>(packetDataBuffer);
-        memset(dvdData, 0, kDVDSectorSize);
-        switch (packetInfo.cdb.readDVDStructure.format) {
-        case DVDFmtPhysical:
-            L2B16(dvdData->dataLength, (uint16_t)sizeof(ReadDVDStructureData::physicalFormatInformation));
-            // TODO: compute fields based on the image file
-            dvdData->physicalFormatInformation.partVersion = 1;
-            dvdData->physicalFormatInformation.bookType = BookTypeDVDROM;
-            dvdData->physicalFormatInformation.maxRate = MaxRate10_08Mbps;
-            dvdData->physicalFormatInformation.discSize = DiscSize120mm;
-            dvdData->physicalFormatInformation.layerType = 0;
-            dvdData->physicalFormatInformation.trackPath = TrackPathOTP;
-            dvdData->physicalFormatInformation.numLayers = NumLayers2;
-            dvdData->physicalFormatInformation.trackDensity = TrackDensity0_74umPerTrack;
-            dvdData->physicalFormatInformation.linearDensity = LinearDensity0_293umPerBit;
-            L2B24(dvdData->physicalFormatInformation.dataStartingSector, kStartingSectorNumberDVDROM);
-            L2B24(dvdData->physicalFormatInformation.dataEndingSector, m_sectorCapacity);
-            L2B24(dvdData->physicalFormatInformation.layer0EndingSector, 0);
-            dvdData->physicalFormatInformation.burstCuttingArea = 0;
-
-            *packetDataSize = kDVDSectorSize;
-            return true;
-        default:
-            log_debug("ImageDVDDriveATADeviceDriver::ProcessATAPIPacketDataRead:  Unimplemented format 0x%x for READ DVD STRUCTURE\n", packetInfo.cdb.readDVDStructure.format);
-            return false;
-        }
-    }
-    default:
-        log_debug("ImageDVDDriveATADeviceDriver::ProcessATAPIPacketDataRead:  Unimplemented operation code 0x%x\n", packetInfo.cdb.opCode.u8);
+    // Seek address
+    if (_fseeki64(m_fpImage, byteAddress, SEEK_SET)) {
         return false;
     }
-}
 
-bool ImageDVDDriveATADeviceDriver::ProcessATAPIPacketDataWrite(PacketInformation& packetInfo, uint8_t *packetDataBuffer, uint16_t byteCountLimit) {
+    // Read data from image
+    // TODO: handle copy-on-write
+    // If copy-on-write and the sector is copied, read from copy, otherwise read from image file
+    // If not copy-on-write, read from image file directly
+    int lenRead = fread(buffer, 1, size, m_fpImage);
 
-    log_debug("ImageDVDDriveATADeviceDriver::ProcessATAPIPacketDataWrite:  Unimplemented operation code 0x%x\n", packetInfo.cdb.opCode.u8);
-    return false;
+    // Read is successful if the full size is read
+    return lenRead == size;
 }
 
 }

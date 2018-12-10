@@ -1,7 +1,7 @@
 // ATAPI Command set emulation for the Original Xbox
 // (C) Ivan "StrikerX3" Oliveira
 //
-// This code aims to implement a subset of the ATAPI Command set used by the
+// This code aims to implement the subset of the ATAPI Command set used by the
 // Original Xbox to access the DVD drive.
 //
 // Based on:
@@ -10,6 +10,9 @@
 //
 //   [m] SCSI Multimedia Commands - 3 (MMC-3) Revision 10g
 //   https://www.rockbox.org/wiki/pub/Main/DataSheets/mmc2r11a.pdf
+//
+//   [b] SCSI Block Commands - 3 (SBC-3) Revision 25
+//   http://www.13thmonkey.org/documentation/SCSI/sbc3r25.pdf
 //
 //   [a] SCSI Architecture Model - 3 (SAM-3) Revision 13
 //   http://www.csit-sun.pub.ro/~cpop/Documentatie_SMP/Standarde_magistrale/SCSI/sam3r13.pdf
@@ -33,18 +36,67 @@ namespace vixen {
 namespace hw {
 namespace atapi {
 
-// ----- Packet Information ---------------------------------------------------
+// ----- Packet Command State -------------------------------------------------
 
-// Information about a packet command
-struct PacketInformation {
+// Keeps the state of a packet command execution
+struct PacketCommandState {
+    struct InputParameters {
+        // Whether the operation is to be overlapped
+        bool overlapped;
+
+        // Whether to execute a DMA (true) or PIO (false) transfer
+        bool dmaTransfer;
+
+        // The operation tag
+        uint8_t tag;
+
+        // The maximum number of bytes to transfer in a single DRQ block
+        uint16_t byteCountLimit;
+
+        // The selected device (DEV)
+        uint8_t selectedDevice;
+    } input;
+
     // The command descriptor block
     CommandDescriptorBlock cdb;
 
-    // The operation type
-    PacketOperationType opType;
+    struct DataBuffer {
+        ~DataBuffer();
 
-    // The size of the data to be transferred for this packet command
-    uint32_t transferSize;
+        // Allocates a buffer for data transfer
+        bool Allocate(uint32_t size);
+
+        // Copy data into the destination buffer, returning the number of bytes read
+        uint32_t Read(void *dst, uint32_t length);
+
+        // Copy data from the source buffer, returning the number of bytes written
+        uint32_t Write(void *src, uint32_t length);
+
+        // Clears the buffer, resetting the read and write pointers
+        void Clear() { m_readPos = m_writePos = m_size = 0; }
+
+        // Determines if the buffer's data has been fully read from
+        bool IsReadFinished() { return m_readPos >= m_size; }
+
+        // Determines if the buffer's data has been fully written to
+        bool IsWriteFinished() { return m_writePos >= m_cap; }
+
+    private:
+        // The data buffer to be used with transfer operations
+        uint8_t *m_buf = nullptr;
+
+        // The size of the data buffer, i.e. the number of valid bytes written to the buffer
+        uint32_t m_size;
+
+        // The capacity of the data buffer, i.e. the length of the buffer
+        uint32_t m_cap;
+
+        // The position of the writer
+        uint32_t m_writePos;
+
+        // The position of the reader
+        uint32_t m_readPos;
+    } dataBuffer;
 
     // Execution result data, filled in by the driver once the command is processed
     struct ExecutionResult {

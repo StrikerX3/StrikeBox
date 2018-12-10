@@ -246,9 +246,6 @@ DMATransferResult ATAChannel::ReadDMA(uint8_t *dstBuffer, uint32_t readLen) {
     m_currentCommand->ReadData(dstBuffer, readLen);
     if (m_currentCommand->IsFinished()) {
         log_spew("ATAChannel::ReadDMA:  Finished processing command for channel %d\n", m_channel);
-        if (m_currentCommand == nullptr) {
-            log_spew("This thing broke :(\n", m_channel);
-        }
         delete m_currentCommand;
         m_currentCommand = nullptr;
         return DMATransferEnd;
@@ -270,9 +267,6 @@ DMATransferResult ATAChannel::WriteDMA(uint8_t *srcBuffer, uint32_t writeLen) {
     m_currentCommand->WriteData(srcBuffer, writeLen);
     if (m_currentCommand->IsFinished()) {
         log_spew("ATAChannel::WriteDMA:  Finished processing command for channel %d\n", m_channel);
-        if (m_currentCommand == nullptr) {
-            log_spew("This thing broke :(\n", m_channel);
-        }
         delete m_currentCommand;
         m_currentCommand = nullptr;
         return DMATransferEnd;

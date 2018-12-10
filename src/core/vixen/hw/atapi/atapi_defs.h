@@ -1,7 +1,7 @@
 // ATAPI Command set emulation for the Original Xbox
 // (C) Ivan "StrikerX3" Oliveira
 //
-// This code aims to implement a subset of the ATAPI Command set used by the
+// This code aims to implement the subset of the ATAPI Command set used by the
 // Original Xbox to access the DVD drive.
 //
 // Based on:
@@ -127,7 +127,7 @@ union CommandDescriptorBlock {
         uint8_t pageControl : 2;               // byte 2 [7:6]    (PC) Page control
         uint8_t subpageCode;                   // byte 3          Subpage code
         uint8_t _reserved3[3];                 // byte 4-6        Reserved
-        uint8_t length[2];                     // byte 7-8        Allocation Length
+        uint8_t allocLength[2];                // byte 7-8        Allocation Length
         uint8_t control;                       // byte 9          Control
     } modeSense10;
 
@@ -144,7 +144,7 @@ union CommandDescriptorBlock {
         uint8_t lba[4];                        // byte 2-5        Logical Block Address
         uint8_t groupNumber : 5;               // byte 6 [4:0]    Group number
         uint8_t _reserved2 : 3;                // byte 6 [7:5]    Reserved
-        uint8_t length[2];                     // byte 7-8        Transfer length
+        uint8_t transferLength[2];             // byte 7-8        Transfer length
         uint8_t control;                       // byte 9          Control
     } read10;
 
@@ -164,7 +164,7 @@ union CommandDescriptorBlock {
         uint8_t address;                       // byte 2-5        Address
         uint8_t layerNumber;                   // byte 6          Layer number
         uint8_t format;                        // byte 7          Format
-        uint8_t length[2];                     // byte 8-9        Allocation Length
+        uint8_t allocLength[2];                // byte 8-9        Allocation Length
         uint8_t _reserved2 : 6;                // byte 10 [5:0]   Reserved
         uint8_t authGrantID : 2;               // byte 10 [7:6]   (AGID) Authenticaton Grant ID (used with formats 2, 6 and 7 when address is 0)
         uint8_t control;                       // byte 11         Control
@@ -175,7 +175,7 @@ union CommandDescriptorBlock {
     struct RequestSense {
         OperationCode opCode;   // byte 0      Operation Code (0x03)
         uint8_t _reserved1[3];  // byte 1-3    Reserved
-        uint8_t length;         // byte 4      Allocation Length
+        uint8_t allocLength;    // byte 4      Allocation Length
         uint8_t control;        // byte 5      Control
     } requestSense;
 
@@ -420,6 +420,7 @@ enum AdditionalSenseCode : uint16_t {
     ASCNone = 0x0000,                // No additional sense information
     ASCInvalidFieldInCDB = 0x2400,   // Invalid field in CDB
     ASCMediumNotPresent = 0x3A00,    // Medium not present
+    ASCEndOfMediumReached = 0x3B0F,  // End of medium reached
 };
 
 }

@@ -14,6 +14,11 @@
 #include <cstdint>
 
 #include "ata_command.h"
+#include "vixen/hw/atapi/cmds/cmd_mode_sense_10.h"
+#include "vixen/hw/atapi/cmds/cmd_read_10.h"
+#include "vixen/hw/atapi/cmds/cmd_read_capacity.h"
+#include "vixen/hw/atapi/cmds/cmd_read_dvd_structure.h"
+#include "vixen/hw/atapi/cmds/cmd_test_unit_ready.h"
 
 namespace vixen {
 namespace hw {
@@ -37,9 +42,6 @@ public:
 private:
     // ----- Protocol operations ----------------------------------------------
 
-    // Parses the input registers and stores the values in the parameters.
-    bool ReadInput();
-
     // Corresponds to the end of the protocol fluxogram starting from (C) when
     // hasError is true, or (D) if false.
     void HandleProtocolTail(bool hasError);
@@ -51,28 +53,30 @@ private:
     // Corresponds to the protocol fluxogram starting from (B).
     void PrepareDataTransfer();
 
+    // Prepares registers for an immediate (non-overlapped) data transfer.
     void ProcessPacketImmediate();
+
+    // Prepares registers for an overlapped data transfer.
     void ProcessPacketOverlapped();
-
-    // ----- Parameters -------------------------------------------------------
-
-    bool m_overlapped;
-    bool m_dmaTransfer;
-    uint8_t m_tag;
-    uint16_t m_byteCountLimit;
-    uint8_t m_selectedDevice;
     
     // ----- State ------------------------------------------------------------
 
     uint8_t *m_packetCmdBuffer;
     uint8_t m_packetCmdPos;
 
-    uint8_t *m_packetDataBuffer;
-    uint16_t m_packetDataPos;
-    uint32_t m_packetDataTotal;
-    uint32_t m_packetDataSize;
+    atapi::PacketCommandState m_packetCmdState;
 
-    atapi::PacketInformation m_packetInfo;
+    atapi::cmd::IATAPICommand *m_command;
+};
+
+// Map commands to their factories
+const std::unordered_map<uint8_t, atapi::cmd::IATAPICommand::Factory, std::hash<uint8_t>> kCmdFactories = {
+    { atapi::OpModeSense10, atapi::cmd::ModeSense10::Factory },
+    { atapi::OpRead10, atapi::cmd::Read10::Factory },
+    { atapi::OpReadCapacity, atapi::cmd::ReadCapacity::Factory },
+    { atapi::OpReadDVDStructure, atapi::cmd::ReadDVDStructure::Factory },
+    //{ atapi::OpRequestSense, atapi::cmd::RequestSense::Factory },
+    { atapi::OpTestUnitReady, atapi::cmd::TestUnitReady::Factory },
 };
 
 }

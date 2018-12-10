@@ -14,7 +14,7 @@
 #include <cstdint>
 
 #include "../../ata/ata_defs.h"
-#include "../../ata/atapi_common.h"
+#include "../../atapi/atapi_common.h"
 #include "../ata_common.h"
 #include "util.h"
 
@@ -47,18 +47,17 @@ public:
     virtual bool Read(uint64_t byteAddress, uint8_t *buffer, uint32_t size) = 0;
     virtual bool Write(uint64_t byteAddress, uint8_t *buffer, uint32_t size) = 0;
 
-    // ----- ATAPI ------------------------------------------------------------
-
-    virtual bool ValidateATAPIPacket(atapi::PacketInformation& packetInfo) = 0;
-    virtual bool ProcessATAPIPacketNonData(atapi::PacketInformation& packetInfo) = 0;
-    virtual bool ProcessATAPIPacketDataRead(atapi::PacketInformation& packetInfo, uint8_t* packetDataBuffer, uint16_t byteCountLimit, uint32_t *packetDataSize) = 0;
-    virtual bool ProcessATAPIPacketDataWrite(atapi::PacketInformation& packetInfo, uint8_t* packetDataBuffer, uint16_t byteCountLimit) = 0;
-    
     // ----- Feature sets -----------------------------------------------------
 
     virtual bool SupportsPacketCommands() = 0;
     virtual bool SupportsOverlap() = 0;
     virtual bool IsOverlapEnabled() = 0;
+    
+    // ----- Medium -----------------------------------------------------------
+
+    virtual bool HasMedium() = 0;
+    virtual uint32_t GetMediumCapacitySectors() = 0;
+    virtual uint32_t GetSectorSize() = 0;
 
     // ----- Utility functions ------------------------------------------------
 
@@ -67,6 +66,7 @@ public:
     virtual uint32_t CHSToLBA(uint32_t cylinder, uint8_t head, uint8_t sector) = 0;
     virtual void LBAToCHS(uint32_t lbaAddress, uint16_t *cylinder, uint8_t *head, uint8_t *sector) = 0;
     virtual uint8_t GetPacketCommandSize() = 0;
+
 protected:
     // ----- Common data ------------------------------------------------------
 

@@ -31,9 +31,9 @@ static void padString(uint8_t *dest, const char *src, uint32_t length) {
 
 ImageHardDriveATADeviceDriver::ImageHardDriveATADeviceDriver() {
     // TODO: fill in with appropriate data
-    strcpy(m_serialNumber, "1234567890");
-    strcpy(m_firmwareRevision, "1.00");
-    strcpy(m_modelNumber, "IMAGE HD 12345");
+    strcpy(m_serialNumber, "9876543210");
+    strcpy(m_firmwareRevision, "1.0.0");
+    strcpy(m_modelNumber, "vXn VHDD0010000");
 
     // Initialize an empty (invalid) disk
     m_numCylinders = 0;
@@ -116,12 +116,6 @@ bool ImageHardDriveATADeviceDriver::Read(uint64_t byteAddress, uint8_t *buffer, 
         return false;
     }
     
-    // Limit size to sector size
-    if (size > kSectorSize) {
-        log_warning("ImageHardDriveATADeviceDriver::ReadSector:  Requested size (%d) truncated\n", size);
-        size = kSectorSize;
-    }
-
     // Seek address
     if (_fseeki64(m_fpImage, byteAddress, SEEK_SET)) {
         return false;

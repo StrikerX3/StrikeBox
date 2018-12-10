@@ -13,108 +13,22 @@
 
 #include "vixen/log.h"
 #include "vixen/io.h"
-#include "vixen/hw/ata/atapi_defs.h"
-#include "vixen/hw/ata/atapi_xbox.h"
-#include "vixen/hw/ata/atapi_utils.h"
 
 namespace vixen {
 namespace hw {
 namespace ata {
 
-using namespace atapi;
-
 DummyDVDDriveATADeviceDriver::DummyDVDDriveATADeviceDriver() {
-    strcpy(m_serialNumber, "1234567890");
-    strcpy(m_firmwareRevision, "1.00");
-    strcpy(m_modelNumber, "DUMMY DVD 12345");
+    strcpy(m_serialNumber, "0123456789");
+    strcpy(m_firmwareRevision, "1.0.0");
+    strcpy(m_modelNumber, "vXn DDVDD0010000");
 }
 
 DummyDVDDriveATADeviceDriver::~DummyDVDDriveATADeviceDriver() {
 }
 
-bool DummyDVDDriveATADeviceDriver::ValidateATAPIPacket(PacketInformation& packetInfo) {
-    log_debug("DummyDVDDriveATADeviceDriver::ValidateATAPIPacket:  Operation code 0x%x\n", packetInfo.cdb.opCode.u8, packetInfo.cdb.opCode.fields.commandCode, packetInfo.cdb.opCode.fields.groupCode);
-    
-    // TODO: device-specific validation
-    
-    // Check if the command is supported and has valid parameters.
-    return ValidateCommand(packetInfo);
-}
-
-bool DummyDVDDriveATADeviceDriver::ProcessATAPIPacketNonData(PacketInformation& packetInfo) {
-    switch (packetInfo.cdb.opCode.u8) {
-    case OpTestUnitReady:
-        // Say that there is no disc in the drive
-        packetInfo.result.status = StCheckCondition;
-        packetInfo.result.senseKey = SKNotReady;
-        packetInfo.result.additionalSenseCode = ASCMediumNotPresent;
-        return true;
-    default:
-        log_debug("DummyDVDDriveATADeviceDriver::ProcessATAPIPacketNonData:  Unimplemented operation code 0x%x\n", packetInfo.cdb.opCode.u8);
-        return false;
-    }
-}
-
-bool DummyDVDDriveATADeviceDriver::ProcessATAPIPacketDataRead(PacketInformation& packetInfo, uint8_t *packetDataBuffer, uint16_t byteCountLimit, uint32_t *packetDataSize) {
-    switch (packetInfo.cdb.opCode.u8) {
-    case OpModeSense10:
-        switch (packetInfo.cdb.modeSense10.pageCode) {
-        case kPageCodeAuthentication:
-        {
-            // TODO: handle partial reads (if those ever happen here)
-            if (byteCountLimit < sizeof(XboxDVDAuthentication)) {
-                packetInfo.result.aborted = true;
-                packetInfo.result.deviceFault = true;
-                return false;
-            }
-
-            // Fill in just enough information to pass basic authentication checks on modified kernels
-            // TODO: Research Xbox DVD authentication
-            // https://multimedia.cx/eggs/xbox-sphinx-protocol/
-            XboxDVDAuthentication *dvdAuth = reinterpret_cast<XboxDVDAuthentication *>(packetDataBuffer);
-            dvdAuth->CDFValid = 1;
-            dvdAuth->PartitionArea = 1;
-            dvdAuth->Authentication = 1;
-            
-            *packetDataSize = sizeof(XboxDVDAuthentication);
-            return true;
-        }
-        default:
-            log_debug("DummyDVDDriveATADeviceDriver::ProcessATAPIPacketDataRead:  Unimplemented page code 0x%x for MODE SENSE(10)\n", packetInfo.cdb.modeSense10.pageCode);
-            return false;
-        }
-    case OpRead10:
-    {
-        // Say that there is no disc in the drive
-        packetInfo.result.status = StCheckCondition;
-        packetInfo.result.senseKey = SKNotReady;
-        packetInfo.result.additionalSenseCode = ASCMediumNotPresent;
-
-        return true;
-    }
-    case OpReadCapacity:
-    {
-        // Say that there is no disc in the drive
-        packetInfo.result.status = StCheckCondition;
-        packetInfo.result.senseKey = SKNotReady;
-        packetInfo.result.additionalSenseCode = ASCMediumNotPresent;
-
-        ReadCapacityData *capData = reinterpret_cast<ReadCapacityData *>(packetDataBuffer);
-        L2B32(capData->lba, 0);
-        L2B32(capData->blockLength, 0);
-
-        *packetDataSize = sizeof(ReadCapacityData);
-        return true;
-    }
-    default:
-        log_debug("DummyDVDDriveATADeviceDriver::ProcessATAPIPacketDataRead:  Unimplemented operation code 0x%x\n", packetInfo.cdb.opCode.u8);
-        return false;
-    }
-}
-
-bool DummyDVDDriveATADeviceDriver::ProcessATAPIPacketDataWrite(PacketInformation& packetInfo, uint8_t *packetDataBuffer, uint16_t byteCountLimit) {
-
-    log_debug("DummyDVDDriveATADeviceDriver::ProcessATAPIPacketDataWrite:  Unimplemented operation code 0x%x\n", packetInfo.cdb.opCode.u8);
+bool DummyDVDDriveATADeviceDriver::Read(uint64_t byteAddress, uint8_t *buffer, uint32_t size) {
+    // Always fail; no media in drive
     return false;
 }
 

@@ -34,28 +34,22 @@ public:
     // ----- Virtual DVD image management -------------------------------------
 
     bool LoadImageFile(const char *imagePath, bool copyOnWrite);
-    bool EjectMedia();
+    bool EjectMedium();
 
-    // ----- ATAPI ------------------------------------------------------------
+    // ----- Data access ------------------------------------------------------
 
-    bool ValidateATAPIPacket(atapi::PacketInformation& packetInfo) override;
-    bool ProcessATAPIPacketNonData(atapi::PacketInformation& packetInfo) override;
-    bool ProcessATAPIPacketDataRead(atapi::PacketInformation& packetInfo, uint8_t* packetDataBuffer, uint16_t byteCountLimit, uint32_t *packetDataSize) override;
-    bool ProcessATAPIPacketDataWrite(atapi::PacketInformation& packetInfo, uint8_t* packetDataBuffer, uint16_t byteCountLimit) override;
-    
+    bool Read(uint64_t byteAddress, uint8_t *buffer, uint32_t size) override;
+
+    // ----- Medium -----------------------------------------------------------
+
+    bool HasMedium() override { return m_fpImage != NULL; }
+    uint32_t GetMediumCapacitySectors() override { return m_sectorCapacity; }
+
 private:
     FILE *m_fpImage = NULL;
     bool m_copyOnWrite;
 
-    inline bool HasMedia() { return m_fpImage != NULL; }
-
     uint64_t m_sectorCapacity;
-
-    // ----- Transfer state ---------------------------------------------------
-
-    bool m_transfer = false;
-    uint64_t m_currentByte;
-    uint64_t m_lastByte;
 };
 
 }

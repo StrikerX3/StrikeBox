@@ -30,9 +30,9 @@ static void padString(uint8_t *dest, const char *src, uint32_t length) {
 }
 
 DummyHardDriveATADeviceDriver::DummyHardDriveATADeviceDriver() {
-    strcpy(m_serialNumber, "1234567890");
-    strcpy(m_firmwareRevision, "1.00");
-    strcpy(m_modelNumber, "DUMMY HD 12345");
+    strcpy(m_serialNumber, "0123456789");
+    strcpy(m_firmwareRevision, "1.0.0");
+    strcpy(m_modelNumber, "vXn DHDD0010000");
 
     // Initialize with parameters for a 10 GiB hard drive
     m_numCylinders = 20480;

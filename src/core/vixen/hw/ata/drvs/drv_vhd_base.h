@@ -33,24 +33,23 @@ public:
     bool IdentifyPacketDevice(IdentifyPacketDeviceData *data) override;
     bool SecurityUnlock(uint8_t unlockData[kSectorSize]) override;
     bool SetDeviceParameters(uint8_t heads, uint8_t sectorsPerTrack) override;
-    
-    // ----- Feature sets -----------------------------------------------------
-
-    bool SupportsPacketCommands() override { return false; }
-    bool SupportsOverlap() override { return false; }
-    bool IsOverlapEnabled() override { return false; }
 
     // ----- Data access ------------------------------------------------------
     
     virtual bool Read(uint64_t byteAddress, uint8_t *buffer, uint32_t size) override = 0;
     virtual bool Write(uint64_t byteAddress, uint8_t *buffer, uint32_t size) override = 0;
 
-    // ----- ATAPI ------------------------------------------------------------
+    // ----- Feature sets -----------------------------------------------------
 
-    bool ValidateATAPIPacket(atapi::PacketInformation& packetInfo) override { return false; }
-    bool ProcessATAPIPacketNonData(atapi::PacketInformation& packetInfo) override { return false; }
-    bool ProcessATAPIPacketDataRead(atapi::PacketInformation& packetInfo, uint8_t* packetDataBuffer, uint16_t byteCountLimit, uint32_t *packetDataSize) override { return false; }
-    bool ProcessATAPIPacketDataWrite(atapi::PacketInformation& packetInfo, uint8_t* packetDataBuffer, uint16_t byteCountLimit) override { return false; }
+    bool SupportsPacketCommands() override { return false; }
+    bool SupportsOverlap() override { return false; }
+    bool IsOverlapEnabled() override { return false; }
+
+    // ----- Medium -----------------------------------------------------------
+
+    bool HasMedium() override { return true; }
+    virtual uint32_t GetMediumCapacitySectors() override { return m_sectorCapacity; }
+    uint32_t GetSectorSize() override { return kSectorSize; }
 
     // ----- Utility functions ------------------------------------------------
     

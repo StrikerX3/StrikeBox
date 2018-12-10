@@ -3,6 +3,8 @@ file(GLOB DIR_HEADERS
     ${CMAKE_CURRENT_SOURCE_DIR}/ata/*.h
     ${CMAKE_CURRENT_SOURCE_DIR}/ata/cmds/*.h
     ${CMAKE_CURRENT_SOURCE_DIR}/ata/drvs/*.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/atapi/*.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/atapi/cmds/*.h
     ${CMAKE_CURRENT_SOURCE_DIR}/basic/*.h
     ${CMAKE_CURRENT_SOURCE_DIR}/bus/*.h
     ${CMAKE_CURRENT_SOURCE_DIR}/sm/*.h
@@ -18,6 +20,8 @@ file(GLOB DIR_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/ata/*.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/ata/cmds/*.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/ata/drvs/*.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/atapi/*.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/atapi/cmds/*.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/basic/*.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/bus/*.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/sm/*.cpp

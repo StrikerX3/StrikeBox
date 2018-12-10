@@ -37,19 +37,18 @@ public:
 
     bool Read(uint64_t byteAddress, uint8_t *buffer, uint32_t size) override { return false; }
     bool Write(uint64_t byteAddress, uint8_t *buffer, uint32_t size) override { return false; }
-    // ----- ATAPI ------------------------------------------------------------
-
-    bool ValidateATAPIPacket(atapi::PacketInformation& packetInfo) override { return false; }
-    bool ProcessATAPIPacketNonData(atapi::PacketInformation& packetInfo) override { return false; }
-    bool ProcessATAPIPacketDataRead(atapi::PacketInformation& packetInfo, uint8_t* packetDataBuffer, uint16_t byteCountLimit, uint32_t *packetDataSize) override { return false; }
-    bool ProcessATAPIPacketDataWrite(atapi::PacketInformation& packetInfo, uint8_t* packetDataBuffer, uint16_t byteCountLimit) override { return false; }
-
 
     // ----- Feature sets -----------------------------------------------------
 
     bool SupportsPacketCommands() override { return false; }
     bool SupportsOverlap() override { return false; }
     bool IsOverlapEnabled() override { return false; }
+
+    // ----- Medium -----------------------------------------------------------
+
+    bool HasMedium() override { return false; }
+    uint32_t GetMediumCapacitySectors() override { return 0; }
+    uint32_t GetSectorSize() override { return kSectorSize; }
 
     // ----- Utility functions ------------------------------------------------
  

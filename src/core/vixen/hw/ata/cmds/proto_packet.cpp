@@ -12,12 +12,17 @@
 #include "proto_packet.h"
 
 #include "vixen/log.h"
-#include "../atapi_defs.h"
+#include "vixen/hw/atapi/atapi_defs.h"
+#include "vixen/hw/atapi/atapi_xbox.h"
+#include "vixen/hw/atapi/atapi_utils.h"
+#include "vixen/hw/atapi/cmds/atapi_command.h"
 
 namespace vixen {
 namespace hw {
 namespace ata {
 namespace cmd {
+
+using namespace vixen::hw::atapi;
 
 // Notes regarding the protocol:
 // - There are two fluxograms: PIO/non-data transfers and DMA transfers
@@ -33,7 +38,7 @@ namespace cmd {
 //     bit 2     (REL)  (Overlapped only) Indicates that the device is performing a bus release
 //     bit 1     (I/O)  When set to 1, indicates a transfer to the host; 0 indicates transfer to the device
 //     bit 0     (C/D)  When set to 1, indicates a command packet; 0 indicates a data packet
-// - The Status register is largely the same, except for the following fields:
+// - The Status register includes the following fields:
 //     bit 5     (DMRD) DMA ready
 //     bit 4     (SERV) (Overlapped only) Indicates that another command can be serviced
 //     bit 0     (CHK)  Indicates an error; host should check the Error register sense key or code bit
@@ -44,9 +49,7 @@ namespace cmd {
 PacketProtocolCommand::PacketProtocolCommand(ATADevice& device)
     : IATACommand(device)
     , m_packetCmdBuffer(nullptr)
-    , m_packetDataBuffer(nullptr)
-    , m_packetDataPos(0)
-    , m_packetDataSize(0)
+    , m_command(nullptr)
 {
 }
 
@@ -54,84 +57,72 @@ PacketProtocolCommand::~PacketProtocolCommand() {
     if (m_packetCmdBuffer != nullptr) {
         delete[] m_packetCmdBuffer;
     }
-    if (m_packetDataBuffer != nullptr) {
-        delete[] m_packetDataBuffer;
+    if (m_command != nullptr) {
+        delete m_command;
     }
 }
 
 void PacketProtocolCommand::Execute() {
-    if (ReadInput()) {
-        // Update Interrupt register
-        m_regs.sectorCount |= PkIntrCmdOrData;
-        m_regs.sectorCount &= ~PkIntrIODirection;
-        // On PIO and non-data transfers, Bus Release is cleared
-        if (!m_dmaTransfer) {
-            m_regs.sectorCount &= ~PkIntrBusRelease;
-        }
-
-        // Update Status register
-        m_regs.status |= StDataRequest;
-        m_regs.status &= ~StBusy;
-
-        // Allocate buffer for the packet
-        m_packetCmdBuffer = new uint8_t[m_driver->GetPacketCommandSize()];
-        m_packetCmdPos = 0;
-
-        // Follow (A) in the protocol fluxogram
-    }
-    else {
-        HandleProtocolTail(true);
-    }
-}
-
-bool PacketProtocolCommand::ReadInput() {
     // Read input according to the protocol [8.21.4]
-    m_overlapped = !!(m_regs.features & PkFeatOverlapped);
-    m_dmaTransfer = !!(m_regs.features & PkFeatDMATransfer);
-    m_tag = (m_regs.sectorCount >> kPkTagShift) & kPkTagMask;
-    m_byteCountLimit = m_regs.cylinder;
-    m_selectedDevice = m_regs.GetSelectedDeviceIndex();
+    m_packetCmdState.input.overlapped = !!(m_regs.features & PkFeatOverlapped);
+    m_packetCmdState.input.dmaTransfer = !!(m_regs.features & PkFeatDMATransfer);
+    m_packetCmdState.input.tag = (m_regs.sectorCount >> kPkTagShift) & kPkTagMask;
+    m_packetCmdState.input.byteCountLimit = m_regs.cylinder;
+    m_packetCmdState.input.selectedDevice = m_regs.GetSelectedDeviceIndex();
+    
+    // If the byte count limit is zero, set ABRT and stop command
+    if (m_packetCmdState.input.byteCountLimit == 0) {
+        m_regs.error |= ErrAbort;
+        HandleProtocolTail(true);
+        return;
+    }
 
-    return true;
+    // A byte count limit of 0xFFFF is interpreted by the device as though it were 0xFFFE
+    if (m_packetCmdState.input.byteCountLimit == 0xFFFF) {
+        m_packetCmdState.input.byteCountLimit = 0xFFFE;
+    }
+
+    // Update Interrupt register
+    m_regs.sectorCount |= PkIntrCmdOrData;
+    m_regs.sectorCount &= ~PkIntrIODirection;
+    // On PIO and non-data transfers, Bus Release is cleared
+    if (!m_packetCmdState.input.dmaTransfer) {
+        m_regs.sectorCount &= ~PkIntrBusRelease;
+    }
+
+    // Update Status register
+    m_regs.status |= StDataRequest;
+    m_regs.status &= ~StBusy;
+
+    // Allocate buffer for the packet
+    m_packetCmdBuffer = new uint8_t[m_driver->GetPacketCommandSize()];
+    m_packetCmdPos = 0;
+
+    // Follow (A) in the protocol fluxogram
 }
 
 void PacketProtocolCommand::ReadData(uint8_t *value, uint32_t size) {
     // Host is reading the data requested by the Packet command
    
-    // If the packet data buffer is empty, ask driver to fill in a full block
-    // of data (up to the byte count limit) and tell us how many bytes it filled
-    if (m_packetDataSize == 0) {
-        // Let the driver fill in the data buffer
-        if (!m_driver->ProcessATAPIPacketDataRead(m_packetInfo, m_packetDataBuffer, m_byteCountLimit, &m_packetDataSize)) {
-            HandleProtocolTail(true);
-            return;
-        }
-    }
-    
-    // Copy from buffer to value
-    // TODO: handle partial transfers
-    memcpy(value, m_packetDataBuffer + m_packetDataPos, size);
-    m_packetDataPos += size;
+    // Read from buffer
+    uint32_t sizeRead = m_packetCmdState.dataBuffer.Read(value, size);
 
     // Done reading the packet data?
-    if (m_packetDataPos >= m_packetDataSize) {
+    if (m_packetCmdState.dataBuffer.IsReadFinished()) {
         m_regs.status |= StBusy;
         m_regs.status &= ~StDataRequest;
 
         // Done transferring all the data needed by the packet?
-        m_packetDataTotal += m_packetDataPos;
-        if (m_packetDataTotal >= m_packetInfo.transferSize) {
+        if (m_command->IsTransferFinished()) {
             HandleProtocolTail(false);
             return;
         }
 
-        // Let the driver fill in the data buffer again
-        if (!m_driver->ProcessATAPIPacketDataRead(m_packetInfo, m_packetDataBuffer, m_byteCountLimit, &m_packetDataSize)) {
+        // Read more data
+        if (!m_command->Execute()) {
             HandleProtocolTail(true);
             return;
         }
-
-        m_packetDataPos = 0;
     }
 }
 
@@ -149,29 +140,26 @@ void PacketProtocolCommand::WriteData(uint8_t *value, uint32_t size) {
     }
     else {
         // Writing the data requested by the Packet command
-        // TODO: handle partial transfers
-        memcpy(m_packetDataBuffer + m_packetDataPos, value, size);
-        m_packetDataPos += size;
+
+        // Write to buffer
+        uint32_t sizeWritten = m_packetCmdState.dataBuffer.Write(value, size);
 
         // Done writing the packet data?
-        if (m_packetDataPos >= m_byteCountLimit) {
+        if (m_packetCmdState.dataBuffer.IsWriteFinished()) {
             m_regs.status |= StBusy;
             m_regs.status &= ~StDataRequest;
-            
-            // Let the driver process the data
-            if (!m_driver->ProcessATAPIPacketDataWrite(m_packetInfo, m_packetDataBuffer, m_byteCountLimit)) {
+
+            // Execute command with the current buffer
+            if (!m_command->Execute()) {
                 HandleProtocolTail(true);
                 return;
             }
-
+            
             // Done transferring all the data needed by the packet?
-            m_packetDataTotal += m_packetDataPos;
-            if (m_packetDataTotal >= m_packetInfo.transferSize) {
+            if (m_command->IsTransferFinished()) {
                 HandleProtocolTail(false);
                 return;
             }
-
-            m_packetDataPos = 0;
         }
     }
 }
@@ -181,63 +169,45 @@ void PacketProtocolCommand::ProcessPacket() {
     m_regs.status |= StBusy;
     m_regs.status &= ~StDataRequest;
 
-    // Identify packet
+    // Get the command descriptor block
     atapi::CommandDescriptorBlock *cdb = reinterpret_cast<atapi::CommandDescriptorBlock *>(m_packetCmdBuffer);
-    
-    // Check that there is an operation type for the operation code.
-    // Every command must have an operation type.
-    if (atapi::kOperationTypes.count(cdb->opCode.u8) == 0) {
+
+    // Get the command factory for the command's operation code
+    if (kCmdFactories.count(cdb->opCode.u8) == 0) {
         log_warning("PacketProtocolCommand::ProcessPacket:  Unimplemented command 0x%x!\n", cdb->opCode.u8);
         HandleProtocolTail(true);
         return;
     }
 
-    // Prepare packet info data
-    m_packetInfo.cdb = *cdb;
-    m_packetInfo.opType = atapi::kOperationTypes.at(cdb->opCode.u8);
+    log_spew("PacketProtocolCommand::ProcessPacket:  Processing command 0x%x\n", cdb->opCode.u8);
 
-    // Check if the device can process the packet
-    bool succeeded = m_driver->ValidateATAPIPacket(m_packetInfo);
+    // Instantiate the command.
+    // This will also allocate the data buffer if necessary.
+    m_packetCmdState.cdb = *cdb;
+    auto factory = kCmdFactories.at(cdb->opCode.u8);
+    m_command = factory(m_packetCmdState, m_driver);
 
-    // Handle error
-    if (!succeeded) {
+    // Validate parameters; return error immediately if invalid.
+    // Will also initialize the data buffer if a transfer is required.
+    if (!m_command->Prepare()) {
         HandleProtocolTail(true);
         return;
     }
 
-    // If the byte count limit is zero, set ABRT and stop command
-    if (m_byteCountLimit == 0) {
-        m_regs.error |= ErrAbort;
-        HandleProtocolTail(true);
-        return;
-    }
-
-    // If the total requested data transfer length is greater than the byte count limit, then the byte count limit must be even
-    // If the total requested data transfer length is less than or equal to the byte count limit, then the byte count limit could be even or odd
-    if (m_packetInfo.transferSize > m_byteCountLimit && (m_byteCountLimit & 1)) {
-        m_regs.error |= ErrAbort;
-        HandleProtocolTail(true);
-        return;
-    }
-
-    // A byte count limit of 0xFFFF is interpreted by the device as though it were 0xFFFE
-    if (m_byteCountLimit == 0xFFFF) {
-        m_byteCountLimit = 0xFFFE;
-    }
-
-    if (m_packetInfo.opType == atapi::PktOpNonData) {
-        // Execute non-data command
-        bool succeeded = m_driver->ProcessATAPIPacketNonData(m_packetInfo);
+    if (m_command->GetOperationType() == PktOpNonData) {
+        // Execute non-data command immediately
+        bool succeeded = m_command->Execute();
         HandleProtocolTail(!succeeded);
     }
     else {
+        // Prepare registers for a data transfer (in or out)
         PrepareDataTransfer();
     }
 }
 
 void PacketProtocolCommand::PrepareDataTransfer() {
     // Check for overlapped execution (corresponds to (B) in the protocol fluxogram)
-    if (m_driver->SupportsOverlap() && m_driver->IsOverlapEnabled() && m_overlapped) {
+    if (m_driver->SupportsOverlap() && m_driver->IsOverlapEnabled() && m_packetCmdState.input.overlapped) {
         ProcessPacketOverlapped();
     }
     else {
@@ -246,7 +216,7 @@ void PacketProtocolCommand::PrepareDataTransfer() {
 }
 
 void PacketProtocolCommand::ProcessPacketImmediate() {
-    if (m_dmaTransfer) {
+    if (m_packetCmdState.input.dmaTransfer) {
         m_regs.sectorCount &= ~PkIntrBusRelease;
         m_regs.status &= ~StService;
         m_regs.status |= StDMAReady;
@@ -254,14 +224,14 @@ void PacketProtocolCommand::ProcessPacketImmediate() {
     else {
         // Set Tag
         m_regs.sectorCount &= ~(kPkTagMask << kPkTagShift);
-        m_regs.sectorCount |= m_tag << kPkTagShift;
+        m_regs.sectorCount |= m_packetCmdState.input.tag << kPkTagShift;
 
         // Set byte count
-        m_regs.cylinder = m_byteCountLimit;
+        m_regs.cylinder = m_packetCmdState.input.byteCountLimit;
     }
 
     // Set I/O
-    if (m_packetInfo.opType == atapi::PktOpDataOut) {
+    if (m_command->GetOperationType() == atapi::PktOpDataOut) {
         m_regs.sectorCount |= PkIntrIODirection;
     }
     else {
@@ -274,12 +244,6 @@ void PacketProtocolCommand::ProcessPacketImmediate() {
     // Update Status register
     m_regs.status |= StDataRequest;
     m_regs.status &= ~StBusy;
-
-    // Allocate buffer for the data transfer
-    m_packetDataBuffer = new uint8_t[m_byteCountLimit];
-    m_packetDataPos = 0;
-    m_packetDataTotal = 0;
-    m_packetDataSize = 0;
 
     m_interrupt.Assert();
 }
@@ -298,13 +262,13 @@ void PacketProtocolCommand::HandleProtocolTail(bool hasError) {
         // Error register:
         //  "Sense Key is a command packet set specific error indication."
         m_regs.error &= ~(kPkSenseMask << kPkSenseShift);
-        m_regs.error |= (m_packetInfo.result.senseKey & kPkSenseMask) << kPkSenseShift;
+        m_regs.error |= (m_packetCmdState.result.senseKey & kPkSenseMask) << kPkSenseShift;
 
         //  "ABRT shall be set to one if the requested command has been command
         //   [sic] aborted because the command code or a command parameter is
         //   invalid. ABRT may be set to one if the device is not able to
         //   complete the action requested by the command."
-        if (m_packetInfo.result.aborted) {
+        if (m_packetCmdState.result.aborted) {
             m_regs.error |= ErrAbort;
         }
         else {
@@ -313,7 +277,7 @@ void PacketProtocolCommand::HandleProtocolTail(bool hasError) {
 
         //  "EOM - the meaning of this bit is command set specific. See the
         //   appropriate command set standard for its definition."
-        if (m_packetInfo.result.endOfMedium) {
+        if (m_packetCmdState.result.endOfMedium) {
             m_regs.error |= PkErrEndOfMedium;
         }
         else {
@@ -322,7 +286,7 @@ void PacketProtocolCommand::HandleProtocolTail(bool hasError) {
 
         //  "ILI - the meaning of this bit is command set specific. See the
         //   appropriate command set standard for its definition."
-        if (m_packetInfo.result.incorrectLength) {
+        if (m_packetCmdState.result.incorrectLength) {
             m_regs.error |= PkErrIncorrectLength;
         }
         else {
@@ -336,7 +300,7 @@ void PacketProtocolCommand::HandleProtocolTail(bool hasError) {
         //   disabled, this field is not applicable."
         //     We'll fill it in regardless of command queuing or overlap support
         m_regs.sectorCount &= ~(kPkTagMask << kPkTagShift);
-        m_regs.sectorCount |= m_tag << kPkTagShift;
+        m_regs.sectorCount |= m_packetCmdState.input.tag << kPkTagShift;
 
         //  "REL - Shall be cleared to zero."
         m_regs.sectorCount &= ~PkIntrBusRelease;
@@ -361,7 +325,7 @@ void PacketProtocolCommand::HandleProtocolTail(bool hasError) {
         // TODO: support overlapped operations
 
         //  "DF(Device Fault) shall be set to one if a device fault has occurred."
-        if (m_packetInfo.result.deviceFault) {
+        if (m_packetCmdState.result.deviceFault) {
             m_regs.status |= StDeviceFault;
         }
 
@@ -375,7 +339,7 @@ void PacketProtocolCommand::HandleProtocolTail(bool hasError) {
     m_regs.sectorCount |= PkIntrIODirection | PkIntrCmdOrData;
     m_regs.sectorCount &= ~PkIntrBusRelease;
 
-    if (m_dmaTransfer) {
+    if (m_packetCmdState.input.dmaTransfer) {
         m_regs.status &= ~StDataRequest;
     }
     m_regs.status |= StReady;

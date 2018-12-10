@@ -33,26 +33,23 @@ public:
     bool IdentifyPacketDevice(IdentifyPacketDeviceData *data) override;
     bool SecurityUnlock(uint8_t unlockData[kSectorSize]) override;
     bool SetDeviceParameters(uint8_t heads, uint8_t sectorsPerTrack) override;
+
+    // ----- Data access ------------------------------------------------------
     
+    virtual bool Read(uint64_t byteAddress, uint8_t *buffer, uint32_t size) override = 0;
+    bool Write(uint64_t byteAddress, uint8_t *buffer, uint32_t size) override;
+
     // ----- Feature sets -----------------------------------------------------
 
     bool SupportsPacketCommands() override { return true; }
     bool SupportsOverlap() override { return false; }
     bool IsOverlapEnabled() override { return false; }
 
-    // ----- Data access ------------------------------------------------------
-    
-    bool Read(uint64_t byteAddress, uint8_t *buffer, uint32_t size) override;
-    bool Write(uint64_t byteAddress, uint8_t *buffer, uint32_t size) override;
+    // ----- Medium -----------------------------------------------------------
 
-    // ----- ATAPI ------------------------------------------------------------
-
-    virtual bool ValidateATAPIPacket(atapi::PacketInformation& packetInfo) override = 0;
-    virtual bool ProcessATAPIPacketNonData(atapi::PacketInformation& packetInfo) override = 0;
-    virtual bool ProcessATAPIPacketDataRead(atapi::PacketInformation& packetInfo, uint8_t* packetDataBuffer, uint16_t byteCountLimit, uint32_t *packetDataSize) override = 0;
-    virtual bool ProcessATAPIPacketDataWrite(atapi::PacketInformation& packetInfo, uint8_t* packetDataBuffer, uint16_t byteCountLimit) override = 0;
-
-    bool ValidateCommand(atapi::PacketInformation& packetInfo);
+    virtual bool HasMedium() override = 0;
+    virtual uint32_t GetMediumCapacitySectors() override = 0;
+    uint32_t GetSectorSize() override { return atapi::kDVDSectorSize; }
 
     // ----- Utility functions ------------------------------------------------
     
@@ -61,8 +58,6 @@ public:
     uint32_t CHSToLBA(uint32_t cylinder, uint8_t head, uint8_t sector) override;
     void LBAToCHS(uint32_t lbaAddress, uint16_t *cylinder, uint8_t *head, uint8_t *sector) override;
     uint8_t GetPacketCommandSize() override;
-
-protected:
 };
 
 }

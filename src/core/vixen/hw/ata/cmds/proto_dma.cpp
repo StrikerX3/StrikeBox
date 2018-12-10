@@ -100,7 +100,7 @@ void DMAProtocolCommand::ReadData(uint8_t *value, uint32_t size) {
 
     // If the device uses removable media, check if it has media
     // TODO: implement removable media functions in the driver
-    /*if (m_driver->IsRemovableMedia() && !m_driver->HasMedia()) {
+    /*if (m_driver->IsRemovableMedia() && !m_driver->HasMedium()) {
         // [8.23.6]: "NM shall be set to one if no media is present in a removable media device."
         m_regs.error |= ErrDMANoMedia;
         UnrecoverableError();
@@ -151,7 +151,7 @@ void DMAProtocolCommand::WriteData(uint8_t *value, uint32_t size) {
 
     // If the device uses removable media, check if it has media
     // TODO: implement removable media functions in the driver
-    /*if (m_driver->IsRemovableMedia() && !m_driver->HasMedia()) {
+    /*if (m_driver->IsRemovableMedia() && !m_driver->HasMedium()) {
         // [8.23.6]: "NM shall be set to one if no media is present in a removable media device."
         m_regs.error |= ErrDMANoMedia;
         UnrecoverableError();
