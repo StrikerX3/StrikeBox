@@ -48,23 +48,31 @@ bool ReadDVDStructure::BeginTransfer() {
     ReadDVDStructureData dvdData = { 0 };
     switch (cdb.format) {
     case DVDFmtPhysical:
-        L2B16(dvdData.dataLength, (uint16_t)sizeof(ReadDVDStructureData::physicalFormatInformation));
+        if (m_driver->HasMedium()) {
+            L2B16(dvdData.dataLength, 2048+2/*(uint16_t)sizeof(ReadDVDStructureData::physicalFormatInformation)*/);
         
-        // TODO: Compute fields based on the data reported by the driver
-        // Or perhaps let the driver fill it in?
-        dvdData.physicalFormatInformation.partVersion = 1;
-        dvdData.physicalFormatInformation.bookType = BookTypeDVDROM;
-        dvdData.physicalFormatInformation.maxRate = MaxRate10_08Mbps;
-        dvdData.physicalFormatInformation.discSize = DiscSize120mm;
-        dvdData.physicalFormatInformation.layerType = 0;
-        dvdData.physicalFormatInformation.trackPath = TrackPathOTP;
-        dvdData.physicalFormatInformation.numLayers = NumLayers2;
-        dvdData.physicalFormatInformation.trackDensity = TrackDensity0_74umPerTrack;
-        dvdData.physicalFormatInformation.linearDensity = LinearDensity0_293umPerBit;
-        L2B24(dvdData.physicalFormatInformation.dataStartingSector, kStartingSectorNumberDVDROM);
-        L2B24(dvdData.physicalFormatInformation.dataEndingSector, m_driver->GetMediumCapacitySectors());
-        L2B24(dvdData.physicalFormatInformation.layer0EndingSector, 0);
-        dvdData.physicalFormatInformation.burstCuttingArea = 0;
+            // TODO: Compute fields based on the data reported by the driver
+            // Or perhaps let the driver fill it in?
+            dvdData.physicalFormatInformation.partVersion = 1;
+            dvdData.physicalFormatInformation.bookType = BookTypeDVDROM;
+            dvdData.physicalFormatInformation.maxRate = MaxRate10_08Mbps;
+            dvdData.physicalFormatInformation.discSize = DiscSize120mm;
+            dvdData.physicalFormatInformation.layerType = LayerTypeEmbossed;
+            dvdData.physicalFormatInformation.trackPath = TrackPathOTP;
+            dvdData.physicalFormatInformation.numLayers = NumLayers2;
+            dvdData.physicalFormatInformation.trackDensity = TrackDensity0_74umPerTrack;
+            dvdData.physicalFormatInformation.linearDensity = LinearDensity0_293umPerBit;
+            L2B24(dvdData.physicalFormatInformation.dataStartingSector, kStartingSectorNumberDVDROM);
+            L2B24(dvdData.physicalFormatInformation.dataEndingSector, m_driver->GetMediumCapacitySectors());
+            L2B24(dvdData.physicalFormatInformation.layer0EndingSector, m_driver->GetMediumCapacitySectors());
+            dvdData.physicalFormatInformation.burstCuttingArea = 0;
+        }
+        else {
+            L2B16(dvdData.dataLength, 0);
+            m_packetCmdState.result.status = StCheckCondition;
+            m_packetCmdState.result.senseKey = SKIllegalRequest;
+            m_packetCmdState.result.additionalSenseCode = ASCMediumNotPresent;
+        }
         
         m_packetCmdState.dataBuffer.Write(&dvdData, sizeof(dvdData));
         EndTransfer();
