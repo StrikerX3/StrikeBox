@@ -44,11 +44,11 @@ const uint32_t kMaxSectorsDVDDualLayer = 4171712;     // 8.5 GiB
 
 // [p 4.3.4.1] Operation Code
 union OperationCode {
+    uint8_t u8;
     struct {
         uint8_t commandCode : 5;
         uint8_t groupCode : 3;
     } fields;
-    uint8_t u8;
 };
 
 // [p 4.3.4.1 table 11] Values for the Group Code field of the Operation Code
@@ -161,7 +161,7 @@ union CommandDescriptorBlock {
     struct ReadDVDStructure {
         OperationCode opCode;                  // byte 0          Operation Code (0xAD)
         uint8_t _reserved1;                    // byte 1          Reserved
-        uint8_t address;                       // byte 2-5        Address
+        uint8_t address[4];                    // byte 2-5        Address
         uint8_t layerNumber;                   // byte 6          Layer number
         uint8_t format;                        // byte 7          Format
         uint8_t allocLength[2];                // byte 8-9        Allocation Length
