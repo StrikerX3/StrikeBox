@@ -145,7 +145,14 @@ typedef struct {
 } NV2APRMCIO;
 
 typedef struct {
+    // Interrupt status. Bits 0-30 are hardware interrupts, bit 31 is software interrupt.
+    // 1 if the relevant input interrupt line is active.
+    // Bits 0-30 are read-only, bit 31 can be written to set/clear the software interrupt.
+    // Bit 31 can only be set to 1 if software interrupts are enabled in INTR_MASK_*.
     uint32_t pendingInterrupts = 0;
+
+    // bit 0: hardware interrupt enable - if 1, and any of bits 0-30 of INTR_* are active, the corresponding output interrupt line will be asserted.
+    // bit 1: software interrupt enable - if 1, bit 31 of INTR_* is active, the corresponding output interrupt line will be asserted.
     uint32_t enabledInterrupts = 0;
 } NV2APMC;
 

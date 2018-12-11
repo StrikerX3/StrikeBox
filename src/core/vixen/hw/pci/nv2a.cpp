@@ -1,6 +1,8 @@
 /*
  * Portions of the code are based on XQEMU's Geforce NV2A implementation.
  * The original copyright header is included below.
+ *
+ * Additional work by Ivan "StrikerX3" Oliveira.
  */
 /*
  * QEMU Geforce NV2A implementation
@@ -236,7 +238,7 @@ void NV2ADevice::PMCRead(NV2ADevice *nv2a, uint32_t addr, uint32_t *value, uint8
         return;
     }
 
-    log_warning("NV2ADevice::PMCRead:  Unknown NV2A read!   addr = 0x%x,  size = %u\n", addr, size);
+    log_warning("NV2ADevice::PMCRead:  Unknown NV2A PMC read!   addr = 0x%x,  size = %u\n", addr, size);
     *value = 0;
 }
 
@@ -245,7 +247,9 @@ void NV2ADevice::PMCWrite(NV2ADevice *nv2a, uint32_t addr, uint32_t value, uint8
 
     switch (addr) {
     case NV_PMC_INTR_0:
-        nv2a->m_PMC.pendingInterrupts &= ~value;
+        // Only bit 31 is writable
+        nv2a->m_PMC.pendingInterrupts &= ~NV_PMC_INTR_0_SOFTWARE;
+        nv2a->m_PMC.pendingInterrupts |= (value & NV_PMC_INTR_0_SOFTWARE);
         nv2a->UpdateIRQ();
         break;
     case NV_PMC_INTR_EN_0:
@@ -2413,6 +2417,7 @@ void NV2ADevice::PFIFO_Puller_Thread(NV2ADevice *nv2a) {
 }
 
 void NV2ADevice::UpdateIRQ() {
+    // Update pending hardware interrupts
     if (m_PFIFO.pending_interrupts & m_PFIFO.enabled_interrupts) {
         m_PMC.pendingInterrupts |= NV_PMC_INTR_0_PFIFO;
     }
@@ -2435,11 +2440,16 @@ void NV2ADevice::UpdateIRQ() {
     }
 
     uint8_t irq = Read8(m_configSpace, PCI_INTERRUPT_PIN);
-    if (m_PMC.pendingInterrupts && m_PMC.enabledInterrupts) {
-        m_irqHandler.HandleIRQ(irq, 1);
+    
+    // Raise IRQ if one of the following is true:
+    // - Hardware interrupts are enabled and there is any pending interrupt bit set other than software
+    // - Software interrupts are enabled and the pending software interrupt bit is set
+    if ((m_PMC.enabledInterrupts & NV_PMC_INTR_EN_0_HARDWARE) && (m_PMC.pendingInterrupts & ~NV_PMC_INTR_0_SOFTWARE) ||
+        (m_PMC.enabledInterrupts & NV_PMC_INTR_EN_0_SOFTWARE) && (m_PMC.pendingInterrupts & NV_PMC_INTR_0_SOFTWARE)) {
+        m_irqHandler.HandleIRQ(irq, true);
     }
     else {
-        m_irqHandler.HandleIRQ(irq, 0);
+        m_irqHandler.HandleIRQ(irq, false);
     }
 }
 
