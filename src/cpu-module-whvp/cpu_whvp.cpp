@@ -58,11 +58,6 @@ CPUInitStatus WhvpCpu::InitializeImpl() {
 
         m_vcpu->SetIoPortCallback(IoPortCallback);
         m_vcpu->SetMemoryCallback(MemoryCallback);
-
-        // Windows Hypervisor Platform VCPUs are initialized to EIP = 0xFFFF0
-        // which comes from the 16-bit initialization address FFFF:FFF0,
-        // but we expect it to be 0xFFFFFFF0 instead, so let's set this here
-        RegWrite(REG_EIP, 0xFFFFFFF0);
     }
 
     return CPUS_INIT_OK;
@@ -215,9 +210,14 @@ CPUOperationStatus WhvpCpu::RegWrite(enum CpuReg reg, uint32_t value) {
     }
 
     switch (reg) {
-    case REG_EIP: case REG_EFLAGS: case REG_EAX: case REG_ECX: case REG_EDX: case REG_EBX:
-    case REG_ESI: case REG_EDI: case REG_ESP: case REG_EBP: case REG_CR0: case REG_CR2: case REG_CR3: case REG_CR4:
+    case REG_EAX: case REG_ECX: case REG_EDX: case REG_EBX:
+    case REG_ESI: case REG_EDI: case REG_ESP: case REG_EBP:
+    case REG_CR0: case REG_CR2: case REG_CR3: case REG_CR4:
+    case REG_EIP:
         vals[0].Reg32 = value;
+        break;
+    case REG_EFLAGS:
+        vals[0].Reg32 = (value | 0x2) & ~0x8028;
         break;
     case REG_CS: case REG_SS: case REG_DS: case REG_ES: case REG_FS: case REG_GS: case REG_TR:
     {
@@ -339,9 +339,14 @@ CPUOperationStatus WhvpCpu::RegWrite(CpuReg regs[], uint32_t values[], uint8_t n
         }
 
         switch (regs[i]) {
-        case REG_EIP: case REG_EFLAGS: case REG_EAX: case REG_ECX: case REG_EDX: case REG_EBX:
-        case REG_ESI: case REG_EDI: case REG_ESP: case REG_EBP: case REG_CR0: case REG_CR2: case REG_CR3: case REG_CR4:
+        case REG_EAX: case REG_ECX: case REG_EDX: case REG_EBX:
+        case REG_ESI: case REG_EDI: case REG_ESP: case REG_EBP:
+        case REG_CR0: case REG_CR2: case REG_CR3: case REG_CR4:
+        case REG_EIP:
             whvpVals[i].Reg32 = values[i];
+            break;
+        case REG_EFLAGS:
+            whvpVals[i].Reg32 = (values[i] | 0x2) & ~0x8028;
             break;
         case REG_CS: case REG_SS: case REG_DS: case REG_ES: case REG_FS: case REG_GS: case REG_TR:
         {
