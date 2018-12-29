@@ -759,6 +759,7 @@ int Xbox::RunCpu()
         switch (exit_info->reason) {
         case CPU_EXIT_HLT:      log_info("CPU halted\n");          Stop(); break;
         case CPU_EXIT_SHUTDOWN: log_info("VM is shutting down\n"); Stop(); break;
+        case CPU_EXIT_ERROR:    log_fatal("CPU encountered an error\n"); Stop(); break;
         case CPU_EXIT_HW_BREAKPOINT:
         case CPU_EXIT_SW_BREAKPOINT:
         {
