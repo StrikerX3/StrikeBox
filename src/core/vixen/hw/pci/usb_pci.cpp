@@ -58,7 +58,7 @@ using namespace vixen::cpu;
 #define SETUP_STATE_PARAM   4
 
 USBPCIDevice::USBPCIDevice(uint8_t irqn, Cpu& cpu)
-    : PCIDevice(PCI_HEADER_TYPE_NORMAL, PCI_VENDOR_ID_NVIDIA, 0x02A5, 0xA1,
+    : PCIDevice(PCI_HEADER_TYPE_NORMAL, PCI_VENDOR_ID_NVIDIA, 0x01C2, 0xB1,
         0x0c, 0x03, 0x10) // USB OHCI
     , m_irqn(irqn)
     , m_cpu(cpu)
@@ -72,6 +72,20 @@ USBPCIDevice::~USBPCIDevice() {
 
 void USBPCIDevice::Init() {
     RegisterBAR(0, 0x1000, PCI_BAR_TYPE_MEMORY); // 0xFED00000 - 0xFED00FFF  and  0xFED08000 - 0xFED08FFF
+
+    // Initialize configuration space
+    Write16(m_configSpace, PCI_STATUS, PCI_STATUS_FAST_BACK | PCI_STATUS_66MHZ | PCI_STATUS_CAP_LIST);
+    Write8(m_configSpace, PCI_CAPABILITY_LIST, 0x44);
+    Write8(m_configSpace, PCI_MIN_GNT, 0x03);
+    Write8(m_configSpace, PCI_MAX_LAT, 0x01);
+
+    // Capability list
+    Write8(m_configSpace, 0x44, PCI_CAP_ID_PM);
+    Write8(m_configSpace, 0x45, 0x00);
+
+    // Unknown registers
+    Write16(m_configSpace, 0x46, 0xda02);
+    Write32(m_configSpace, 0x4c, 0x2);
 
     if (m_irqn == 1) {
         m_PciPath = "pci.0:02.0";

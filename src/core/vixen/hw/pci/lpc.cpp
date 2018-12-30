@@ -29,7 +29,7 @@
 namespace vixen {
 
 LPCDevice::LPCDevice(IRQ *irqs, uint8_t *rom, uint8_t *bios, uint32_t biosSize, uint8_t *mcpxROM, bool initMcpxROM)
-    : PCIDevice(PCI_HEADER_TYPE_BRIDGE, PCI_VENDOR_ID_NVIDIA, 0x01B2, 0xD4,
+    : PCIDevice(PCI_HEADER_TYPE_MULTIFUNCTION, PCI_VENDOR_ID_NVIDIA, 0x01B2, 0xB2,
         0x06, 0x01, 0x00, // ISA bridge
         /*TODO: subsystemVendorID*/0x00, /*TODO: subsystemID*/0x00)
     , m_irqs(irqs)
@@ -61,6 +61,38 @@ void LPCDevice::HandleIRQ(uint8_t irqNum, bool level) {
 
 void LPCDevice::Init() {
     RegisterBAR(0, 0x100, PCI_BAR_TYPE_IO); // 0x8000 - 0x80FF
+
+    // Initialize configuration space
+    Write16(m_configSpace, PCI_STATUS, PCI_STATUS_FAST_BACK | PCI_STATUS_66MHZ | PCI_STATUS_CAP_LIST);
+    Write8(m_configSpace, PCI_CAPABILITY_LIST, 0x50);
+    Write8(m_configSpace, PCI_MIN_GNT, 0x03);
+    Write8(m_configSpace, PCI_MAX_LAT, 0x01);
+
+    // Capability list
+    Write8(m_configSpace, 0x50, PCI_CAP_ID_HT);
+    Write8(m_configSpace, 0x51, 0x00);
+
+    // Unknown registers
+    Write32(m_configSpace, 0x44, 0x20000000);
+    Write32(m_configSpace, 0x48, 0x440);
+    Write16(m_configSpace, 0x52, 0x141);
+    Write32(m_configSpace, 0x54, 0x88880070);
+    Write32(m_configSpace, 0x58, 0xa0);
+    Write16(m_configSpace, 0x68, 0x1000);
+    Write32(m_configSpace, 0x80, 0x4001000);
+    Write32(m_configSpace, 0x88, 0xf);
+    Write32(m_configSpace, 0x90, 0x80);
+    Write32(m_configSpace, 0x98, 0x811ced04);
+    Write32(m_configSpace, 0xa4, 0x1500044);
+    Write32(m_configSpace, 0xa8, 0x150004);
+    Write32(m_configSpace, 0xac, 0x70001);
+    Write32(m_configSpace, 0xb0, 0x2010000);
+    Write32(m_configSpace, 0xb4, 0x10012);
+    Write32(m_configSpace, 0xbc, 0x1008001);
+    Write32(m_configSpace, 0xd0, 0x607f7e7c);
+    Write32(m_configSpace, 0xd4, 0x7c7e7c78);
+    Write32(m_configSpace, 0xd8, 0x7e7f);
+    Write32(m_configSpace, 0xf0, 0xf00);
 
     Reset();
 }

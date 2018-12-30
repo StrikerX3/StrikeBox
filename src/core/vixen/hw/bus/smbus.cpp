@@ -31,7 +31,7 @@
 namespace vixen {
 
 SMBus::SMBus(IRQ *irq)
-	: PCIDevice(PCI_HEADER_TYPE_NORMAL, PCI_VENDOR_ID_NVIDIA, 0x01B4, 0xD1,
+	: PCIDevice(PCI_HEADER_TYPE_MULTIFUNCTION, PCI_VENDOR_ID_NVIDIA, 0x01B4, 0xB1,
 		0x0c, 0x05, 0x00) // SMBus
     , m_irq(irq)
 {
@@ -42,8 +42,22 @@ SMBus::~SMBus() {
 }
 
 void SMBus::Init() {
+    RegisterBAR(0, 0x10, PCI_BAR_TYPE_IO); // 0x0 - 0xF  (never used)
     RegisterBAR(1, 0x10, PCI_BAR_TYPE_IO); // 0xC000 - 0xC00F
     RegisterBAR(2, 0x20, PCI_BAR_TYPE_IO); // 0xC200 - 0xC21F
+
+    // Initialize configuration space
+    Write16(m_configSpace, PCI_STATUS, PCI_STATUS_FAST_BACK | PCI_STATUS_66MHZ | PCI_STATUS_CAP_LIST);
+    Write8(m_configSpace, PCI_CAPABILITY_LIST, 0x44);
+    Write8(m_configSpace, PCI_MIN_GNT, 0x03);
+    Write8(m_configSpace, PCI_MAX_LAT, 0x01);
+
+    // Capability list
+    Write8(m_configSpace, 0x44, PCI_CAP_ID_PM);
+    Write8(m_configSpace, 0x45, 0x00);
+
+    // Unknown registers
+    Write16(m_configSpace, 0x46, 0x2);
 }
 
 void SMBus::Reset() {

@@ -478,7 +478,7 @@ void EmuNVNet_Write(uint32_t addr, uint32_t value, int size) {
 /* NVNetDevice */
 
 NVNetDevice::NVNetDevice()
-    : PCIDevice(PCI_HEADER_TYPE_NORMAL, PCI_VENDOR_ID_NVIDIA, 0x01C3, 0xD2,
+    : PCIDevice(PCI_HEADER_TYPE_NORMAL, PCI_VENDOR_ID_NVIDIA, 0x01C3, 0xB1,
         0x02, 0x00, 0x00) // Ethernet controller
 {
 }
@@ -490,7 +490,21 @@ NVNetDevice::~NVNetDevice() {
 
 void NVNetDevice::Init() {
     RegisterBAR(0, NVNET_SIZE, PCI_BAR_TYPE_MEMORY);  // 0xFEF00000 - 0xFEF003FF
-    RegisterBAR(1, 8, PCI_BAR_TYPE_IO); // 0xE000 - 0xE007
+    RegisterBAR(1, 16, PCI_BAR_TYPE_IO); // 0xE000 - 0xE00F
+
+    // Initialize configuration space
+    Write16(m_configSpace, PCI_STATUS, PCI_STATUS_FAST_BACK | PCI_STATUS_66MHZ | PCI_STATUS_CAP_LIST);
+    Write8(m_configSpace, PCI_CAPABILITY_LIST, 0x44);
+    Write8(m_configSpace, PCI_MIN_GNT, 0x01);
+    Write8(m_configSpace, PCI_MAX_LAT, 0x14);
+
+    // Capability list
+    Write8(m_configSpace, 0x44, PCI_CAP_ID_PM);
+    Write8(m_configSpace, 0x45, 0x00);
+
+    // Unknown registers
+    Write16(m_configSpace, 0x46, 0xfe02);
+    Write32(m_configSpace, 0x4c, 0x4);
 }
 
 void NVNetDevice::Reset() {

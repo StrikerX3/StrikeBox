@@ -39,7 +39,7 @@
 namespace vixen {
 
 PCIBridgeDevice::PCIBridgeDevice()
-    : PCIBridgeDevice(PCI_VENDOR_ID_NVIDIA, 0x01B8, 0xD2)
+    : PCIBridgeDevice(PCI_VENDOR_ID_NVIDIA, 0x01B8, 0xB1)
 {
 }
 
@@ -58,8 +58,20 @@ PCIBridgeDevice::~PCIBridgeDevice() {
 // PCI Device functions
 
 void PCIBridgeDevice::Init() {
+    // Initialize configuration space
     TestAndSet16(m_configSpace, PCI_STATUS, PCI_STATUS_66MHZ | PCI_STATUS_FAST_BACK);
-    Write16(m_configSpace, PCI_SEC_STATUS, PCI_STATUS_66MHZ | PCI_STATUS_FAST_BACK);
+    Write16(m_configSpace, PCI_SEC_STATUS, PCI_STATUS_FAST_BACK | PCI_STATUS_DEVSEL_MEDIUM);
+    Write8(m_configSpace, PCI_CAPABILITY_LIST, 0x44);
+    
+    // Capabilities list
+    Write8(m_configSpace, 0x44, PCI_CAP_ID_PM);
+    Write8(m_configSpace, 0x45, 0x0);
+
+    // Unknown registers
+    Write16(m_configSpace, 0x46, 0x2);
+    Write16(m_configSpace, 0x4c, 0xb08);
+    Write16(m_configSpace, 0x50, 0xd0c);
+    Write16(m_configSpace, 0x54, 0xf0e);
 
     m_secBus->m_owner = this;
     m_secBus->m_irqMapper = GetIRQMapper();

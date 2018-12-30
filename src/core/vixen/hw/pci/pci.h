@@ -13,6 +13,8 @@ namespace vixen {
 #define    PCI_BAR_TYPE_IO          1
 #define PCI_BAR_TYPE_MEMORY      0
 
+#define PCI_BAR_MEMORY_PREFETCHABLE (1 << 3)
+
 #define PCI_NUM_BARS_DEVICE      6
 #define PCI_NUM_BARS_PCI_BRIDGE  2
 

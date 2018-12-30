@@ -53,8 +53,8 @@ uint32_t GetAPUTime() {
 // TODO: Audio Processing/Thread
 
 NVAPUDevice::NVAPUDevice()
-    : PCIDevice(PCI_HEADER_TYPE_NORMAL, PCI_VENDOR_ID_NVIDIA, 0x01B0, 0xD2,
-        0x0f, 0x02, 0x00) // Audio controller
+    : PCIDevice(PCI_HEADER_TYPE_NORMAL, PCI_VENDOR_ID_NVIDIA, 0x01B0, 0xB1,
+        0x04, 0x01, 0x00) // Multimedia Audio Controller
 {
 }
 
@@ -65,6 +65,23 @@ NVAPUDevice::~NVAPUDevice() {
 
 void NVAPUDevice::Init() {
     RegisterBAR(0, 0x80000, PCI_BAR_TYPE_MEMORY); // 0xFE800000 - 0xFE87FFFF
+
+    // Initialize configuration space
+    Write16(m_configSpace, PCI_STATUS, PCI_STATUS_FAST_BACK | PCI_STATUS_66MHZ | PCI_STATUS_CAP_LIST);
+    Write8(m_configSpace, PCI_CAPABILITY_LIST, 0x44);
+    Write8(m_configSpace, PCI_MIN_GNT, 0x01);
+    Write8(m_configSpace, PCI_MAX_LAT, 0x0c);
+
+    // Capability list
+    Write8(m_configSpace, 0x44, PCI_CAP_ID_PM);
+    Write8(m_configSpace, 0x45, 0x00);
+
+    // Unknown registers
+    Write16(m_configSpace, 0x46, 0x2);
+    Write32(m_configSpace, 0x4c, 0x50a);
+    for (uint8_t i = 0; i < 0x100 - 0x50; i += 4) {
+        Write32(m_configSpace, 0x50 + i, 0x20001);
+    }
 }
 
 void NVAPUDevice::Reset() {

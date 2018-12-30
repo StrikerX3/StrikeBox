@@ -134,7 +134,8 @@ bool PCIDevice::GetIOBar(uint32_t port, uint8_t* barIndex, uint32_t *baseAddress
     uint8_t numBARs;
 
     switch (headerType) {
-    case PCI_HEADER_TYPE_NORMAL: {
+    case PCI_HEADER_TYPE_NORMAL:
+    case PCI_HEADER_TYPE_MULTIFUNCTION: {
         numBARs = PCI_NUM_BARS_DEVICE;
         break;
     }
@@ -176,7 +177,8 @@ bool PCIDevice::GetMMIOBar(uint32_t addr, uint8_t* barIndex, uint32_t *baseAddre
     uint8_t numBARs;
 
     switch (headerType) {
-    case PCI_HEADER_TYPE_NORMAL: {
+    case PCI_HEADER_TYPE_NORMAL:
+    case PCI_HEADER_TYPE_MULTIFUNCTION: {
         numBARs = PCI_NUM_BARS_DEVICE;
         break;
     }
@@ -218,7 +220,8 @@ bool PCIDevice::RegisterBAR(int index, uint32_t size, uint32_t type) {
     uint8_t numBARs;
 
     switch (headerType) {
-    case PCI_HEADER_TYPE_NORMAL: {
+    case PCI_HEADER_TYPE_NORMAL:
+    case PCI_HEADER_TYPE_MULTIFUNCTION: {
         numBARs = PCI_NUM_BARS_DEVICE;
         break;
     }
