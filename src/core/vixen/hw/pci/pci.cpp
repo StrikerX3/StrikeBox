@@ -51,7 +51,7 @@ PCIDevice::PCIDevice(uint8_t type, uint16_t vendorID, uint16_t deviceID,
     Write16(m_configSpace, PCI_DEVICE_ID, deviceID);
 
     Write8(m_configSpace, PCI_REVISION_ID, revisionID);
-    Write16(m_configSpace, PCI_CLASS_DEVICE, classID | (subclass << 8));
+    Write16(m_configSpace, PCI_CLASS_DEVICE, subclass | (classID << 8));
     Write8(m_configSpace, PCI_CLASS_PROG, progIF);
 
     if (type == PCI_HEADER_TYPE_BRIDGE) {
