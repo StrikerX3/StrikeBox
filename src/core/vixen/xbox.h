@@ -75,7 +75,7 @@ public:
     Xbox(vixen::modules::cpu::ICPUModule *cpuModule);
     virtual ~Xbox();
 
-    viXenSettings *GetSettings() { return &m_settings; }
+    viXenSettings& GetSettings() { return m_settings; }
     void CopySettings(viXenSettings *settings);
 
     EmulatorStatus Run();

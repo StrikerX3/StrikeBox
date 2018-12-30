@@ -99,32 +99,32 @@ int main(int argc, const char *argv[]) {
 
     Xbox *xbox = new Xbox(cpuModuleInstance.cpuModule);
 
-    viXenSettings *settings = xbox->GetSettings();
-    settings->cpu_singleStep = false;
-    settings->ram_expanded = true;
-    settings->emu_stopOnSMCFatalErrors = true;
-    settings->emu_stopOnBugChecks = true;
-    settings->debug_dumpPageTables = false;
-    settings->debug_dumpDisassemblyOnExit = false;
-    settings->debug_dumpDisassembly_length = 10;
-    settings->debug_dumpStackOnExit = false;
-    settings->debug_dumpStack_upperBound = 0x10;
-    settings->debug_dumpStack_lowerBound = 0x20;
-    settings->gdb_enable = false;
-    settings->hw_sysclock_tickRate = 1000.0f;
-    settings->hw_enableSuperIO = true;
-    settings->hw_charDrivers[0].type = CHD_HostSerialPort;
-    settings->hw_charDrivers[0].params.hostSerialPort.portNum = 5;
-    //settings->hw_charDrivers[0].type = CHD_Null;
-    settings->hw_charDrivers[1].type = CHD_Null;
-    settings->rom_mcpx = mcpx_path;
-    settings->rom_bios = bios_path;
+    auto& settings = xbox->GetSettings();
+    settings.cpu_singleStep = false;
+    settings.ram_expanded = true;
+    settings.emu_stopOnSMCFatalErrors = true;
+    settings.emu_stopOnBugChecks = true;
+    settings.debug_dumpPageTables = false;
+    settings.debug_dumpDisassemblyOnExit = false;
+    settings.debug_dumpDisassembly_length = 10;
+    settings.debug_dumpStackOnExit = false;
+    settings.debug_dumpStack_upperBound = 0x10;
+    settings.debug_dumpStack_lowerBound = 0x20;
+    settings.gdb_enable = false;
+    settings.hw_sysclock_tickRate = 1000.0f;
+    settings.hw_enableSuperIO = true;
+    settings.hw_charDrivers[0].type = CHD_HostSerialPort;
+    settings.hw_charDrivers[0].params.hostSerialPort.portNum = 5;
+    //settings.hw_charDrivers[0].type = CHD_Null;
+    settings.hw_charDrivers[1].type = CHD_Null;
+    settings.rom_mcpx = mcpx_path;
+    settings.rom_bios = bios_path;
 
     if (strcmp(revision, "debug") == 0) {
-        settings->hw_revision = DebugKit;
+        settings.hw_revision = DebugKit;
     }
     else if (strcmp(revision, "retail") == 0) {
-        settings->hw_revision = Revision1_0;
+        settings.hw_revision = Revision1_0;
     }
     else {
         printf("Invalid revision specified.\n");
@@ -133,21 +133,21 @@ int main(int argc, const char *argv[]) {
     }
 
     if (strlen(vhd_path) == 0) {
-        settings->vhd_type = VHD_Dummy;
+        settings.vhd_type = VHD_Dummy;
     }
     else {
-        settings->vhd_type = VHD_Image;
-        settings->vhd_parameters.image.path = vhd_path;
-        settings->vhd_parameters.image.preserveImage = true;
+        settings.vhd_type = VHD_Image;
+        settings.vhd_parameters.image.path = vhd_path;
+        settings.vhd_parameters.image.preserveImage = true;
     }
 
     if (strlen(vdvd_path) == 0) {
-        settings->vdvd_type = VDVD_Dummy;
+        settings.vdvd_type = VDVD_Dummy;
     }
     else {
-        settings->vdvd_type = VDVD_Image;
-        settings->vdvd_parameters.image.path = vdvd_path;
-        settings->vdvd_parameters.image.preserveImage = true;
+        settings.vdvd_type = VDVD_Image;
+        settings.vdvd_parameters.image.path = vdvd_path;
+        settings.vdvd_parameters.image.preserveImage = true;
     }
 
     EmulatorStatus status = xbox->Run();
