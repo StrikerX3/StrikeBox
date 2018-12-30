@@ -16,7 +16,7 @@ void Win32SerialDriver::ReaderFunc(void *userData, uint8_t *buf, uint32_t len) {
     while (len > 0) {
         int lenRecv = min(driver->CanReceive(), len);
         if (lenRecv == 0) {
-            break;
+            continue;
         }
         driver->Receive(buf, lenRecv);
         len -= lenRecv;
