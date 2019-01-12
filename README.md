@@ -12,8 +12,9 @@ various virtualization platforms supported by the emulator) and runs whatever
 is in ROM, which is provided by the user.
 
 If provided with a particular BIOS ROM and a raw hard disk image containing the
-Microsoft Xbox Dashboard, it will load the Dashboard software succesfully.
-There's no networking, no audio, no graphics, no games... yet ;)
+Microsoft Xbox Dashboard, it will load the Dashboard software succesfully. It
+can also load games from an XISO, although without graphics, input, audio or
+networking nothing is really playable... yet ;)
 
 The initial goal is to emulate the original Xbox at a low level. The user will
 have to provide their own dump of the MCPX and BIOS ROMs from an Xbox machine,
@@ -46,7 +47,8 @@ Requires Windows 10 Pro with the [April 2018 Update](https://support.microsoft.c
 or later. You'll also need to go to the Windows Features panel and enable the
 Windows Hypervisor Platform feature. Note that in doing so, you'll be unable to
 use any other virtualization platform (such as VirtualBox, VMware Player or
-HAXM). Disable the feature if you wish to continue using those platforms.
+HAXM). Disable the feature if you wish to continue using those platforms. Note
+that WHPX still doesn't work correctly, see issue [#2](https://github.com/StrikerX3/viXen/issues/2).
 
 ```
 > mkdir build
@@ -69,7 +71,9 @@ $ ./vixen-cli -m <path-to-MCPX-ROM> -b <path-to-BIOS-ROM> -d <path-to-XBE> -r [d
 
 ### macOS
 macOS is currently unsupported. Feel free to submit a pull request to add
-support for this platform! (See issue [#3](https://github.com/StrikerX3/viXen/issues/3))
+support for this platform! (See issue [#3](https://github.com/StrikerX3/viXen/issues/3)
+for the Hypervisor.Framework or issue [#17](https://github.com/StrikerX3/viXen/issues/17)
+for HAXM)
 
 Project Structure
 -----------------
