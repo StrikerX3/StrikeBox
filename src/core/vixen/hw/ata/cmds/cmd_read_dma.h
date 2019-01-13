@@ -28,7 +28,7 @@ public:
     ReadDMA(ATADevice& device);
     virtual ~ReadDMA() override;
 
-    static IATACommand *Factory(ATADevice& device) { return new ReadDMA(device); }
+    static IATACommand *Factory(SharedMemory& sharedMemory, ATADevice& device) { return sharedMemory.Allocate<ReadDMA, ATADevice&>(device); }
 };
 
 }

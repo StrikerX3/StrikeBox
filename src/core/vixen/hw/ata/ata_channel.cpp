@@ -137,7 +137,7 @@ bool ATAChannel::WriteControlPort(uint32_t value, uint8_t size) {
         log_debug("ATAChannel::WriteControlPort: Software reset triggered on channel %d\n", m_channel);
         // TODO: implement [9.3.1] for device 0 and [9.3.2] for device 1
         if (m_currentCommand != nullptr) {
-            delete m_currentCommand;
+            m_currentCommandMem.Free();
             m_currentCommand = nullptr;
         }
     }
@@ -159,7 +159,7 @@ void ATAChannel::ReadData(uint32_t *value, uint8_t size) {
     m_currentCommand->ReadData((uint8_t*)value, size);
     if (m_currentCommand->IsFinished()) {
         //log_spew("ATAChannel::ReadData:  Finished processing command for channel %d\n", m_channel);
-        delete m_currentCommand;
+        m_currentCommandMem.Free();
         m_currentCommand = nullptr;
     }
 }
@@ -183,7 +183,7 @@ void ATAChannel::WriteData(uint32_t value, uint8_t size) {
     m_currentCommand->WriteData((uint8_t*)&value, size);
     if (m_currentCommand->IsFinished()) {
         //log_spew("ATAChannel::WriteData:  Finished processing command for channel %d\n", m_channel);
-        delete m_currentCommand;
+        m_currentCommandMem.Free();
         m_currentCommand = nullptr;
     }
 }
@@ -217,7 +217,7 @@ void ATAChannel::WriteCommand(uint8_t value) {
 
     // Instantiate the command
     auto factory = kCmdFactories.at(cmd);
-    m_currentCommand = factory(*dev);
+    m_currentCommand = factory(m_currentCommandMem, *dev);
 
     // Every protocol starts by setting BSY=1
     m_regs.status |= StBusy;
@@ -227,7 +227,7 @@ void ATAChannel::WriteCommand(uint8_t value) {
         m_currentCommand->Execute();
         if (m_currentCommand->IsFinished()) {
             //log_spew("ATAChannel::WriteCommand:  Finished processing command 0x%x for channel %d, device %d\n", cmd, m_channel, devIndex);
-            delete m_currentCommand;
+            m_currentCommandMem.Free();
             m_currentCommand = nullptr;
         }
     }
@@ -246,7 +246,7 @@ DMATransferResult ATAChannel::ReadDMA(uint8_t *dstBuffer, uint32_t readLen) {
     m_currentCommand->ReadData(dstBuffer, readLen);
     if (m_currentCommand->IsFinished()) {
         //log_spew("ATAChannel::ReadDMA:  Finished processing command for channel %d\n", m_channel);
-        delete m_currentCommand;
+        m_currentCommandMem.Free();
         m_currentCommand = nullptr;
         return DMATransferEnd;
     }
@@ -267,7 +267,7 @@ DMATransferResult ATAChannel::WriteDMA(uint8_t *srcBuffer, uint32_t writeLen) {
     m_currentCommand->WriteData(srcBuffer, writeLen);
     if (m_currentCommand->IsFinished()) {
         //log_spew("ATAChannel::WriteDMA:  Finished processing command for channel %d\n", m_channel);
-        delete m_currentCommand;
+        m_currentCommandMem.Free();
         m_currentCommand = nullptr;
         return DMATransferEnd;
     }

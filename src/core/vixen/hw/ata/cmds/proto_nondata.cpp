@@ -28,12 +28,11 @@ NonDataProtocolCommand::~NonDataProtocolCommand() {
 void NonDataProtocolCommand::Execute() {
     bool successful = ExecuteImpl();
     
-    auto& regs = m_device.GetRegisters();
     if (!successful) {
-        regs.status |= StError;
+        m_regs.status |= StError;
     }
 
-    regs.status &= ~StBusy;
+    m_regs.status &= ~StBusy;
     m_interrupt.Assert();
 
     Finish();

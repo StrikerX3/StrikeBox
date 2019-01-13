@@ -28,7 +28,7 @@ public:
     SetFeatures(ATADevice& device);
     virtual ~SetFeatures() override;
 
-    static IATACommand *Factory(ATADevice& device) { return new SetFeatures(device); }
+    static IATACommand *Factory(SharedMemory& sharedMemory, ATADevice& device) { return sharedMemory.Allocate<SetFeatures, ATADevice&>(device); }
 
 protected:
     bool ExecuteImpl() override;

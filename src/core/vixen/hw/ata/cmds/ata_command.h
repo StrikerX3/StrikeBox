@@ -13,6 +13,7 @@
 
 #include <cstdint>
 
+#include "vixen/shared_memory.h"
 #include "../ata_device.h"
 
 namespace vixen {
@@ -62,7 +63,7 @@ public:
     /*!
      * Defines the factory function type used to build a factory table.
      */
-    typedef IATACommand* (*Factory)(ATADevice& device);
+    typedef IATACommand* (*Factory)(SharedMemory& sharedMemory, ATADevice& device);
 
 protected:
     ATADevice& m_device;

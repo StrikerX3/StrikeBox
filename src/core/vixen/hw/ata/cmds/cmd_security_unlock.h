@@ -28,7 +28,7 @@ public:
     SecurityUnlock(ATADevice& device);
     virtual ~SecurityUnlock() override;
 
-    static IATACommand *Factory(ATADevice& device) { return new SecurityUnlock(device); }
+    static IATACommand *Factory(SharedMemory& sharedMemory, ATADevice& device) { return sharedMemory.Allocate<SecurityUnlock, ATADevice&>(device); }
 
 protected:
     bool Initialize() override;
