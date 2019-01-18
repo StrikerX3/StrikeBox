@@ -104,48 +104,48 @@ protected:
     vixen::modules::cpu::ICPUModule *m_cpuModule;
 
     // ----- Hardware ---------------------------------------------------------
-    Cpu              *m_cpu;
-    uint32_t          m_ramSize;
-    uint8_t          *m_ram;
-    uint8_t          *m_rom;
-    uint8_t          *m_bios;
-    uint32_t          m_biosSize;
-    uint8_t          *m_mcpxROM;
-    MemoryRegion     *m_memRegion;
+    Cpu              *m_cpu = nullptr;
+    uint32_t          m_ramSize = 0;
+    uint8_t          *m_ram = nullptr;
+    uint8_t          *m_rom = nullptr;
+    uint8_t          *m_bios = nullptr;
+    uint32_t          m_biosSize = 0;
+    uint8_t          *m_mcpxROM = nullptr;
+    MemoryRegion     *m_memRegion = nullptr;
     IOMapper          m_ioMapper;
-    
-    GSI              *m_GSI;
-    IRQ              *m_IRQs;
-    IRQ              *m_acpiIRQs;
-    IRQ              *m_i8259IRQs;
 
-    i8254            *m_i8254;
-    i8259            *m_i8259;
-    CMOS             *m_CMOS;
-    hw::ata::ATA     *m_ATA;
-    hw::ata::IATADeviceDriver *m_ataDrivers[2][2];
-    CharDriver       *m_CharDrivers[SUPERIO_SERIAL_PORT_COUNT];
-    SuperIO          *m_SuperIO;
+    GSI              *m_GSI = nullptr;
+    IRQ              *m_IRQs = nullptr;
+    IRQ              *m_acpiIRQs = nullptr;
+    IRQ              *m_i8259IRQs = nullptr;
 
-    SMBus            *m_SMBus;
-    SMCDevice        *m_SMC;
-    EEPROMDevice     *m_EEPROM;
-    TVEncoderDevice  *m_TVEncoder;
-    ADM1032Device    *m_ADM1032;
+    i8254            *m_i8254 = nullptr;
+    i8259            *m_i8259 = nullptr;
+    CMOS             *m_CMOS = nullptr;
+    hw::ata::ATA     *m_ATA = nullptr;
+    hw::ata::IATADeviceDriver *m_ataDrivers[2][2] = { { nullptr } };
+    CharDriver       *m_CharDrivers[SUPERIO_SERIAL_PORT_COUNT] = { nullptr };
+    SuperIO          *m_SuperIO = nullptr;
 
-    PCIBus           *m_PCIBus;
-    HostBridgeDevice *m_HostBridge;
-    MCPXRAMDevice    *m_MCPXRAM;
-    LPCDevice        *m_LPC;
-    USBPCIDevice     *m_USB1;
-    USBPCIDevice     *m_USB2;
-    NVNetDevice      *m_NVNet;
-    NVAPUDevice      *m_NVAPU;
-    AC97Device       *m_AC97;
-    PCIBridgeDevice  *m_PCIBridge;
-    hw::bmide::BMIDEDevice *m_BMIDE;
-    AGPBridgeDevice  *m_AGPBridge;
-    NV2ADevice       *m_NV2A;
+    SMBus            *m_SMBus = nullptr;
+    SMCDevice        *m_SMC = nullptr;
+    EEPROMDevice     *m_EEPROM = nullptr;
+    TVEncoderDevice  *m_TVEncoder = nullptr;
+    ADM1032Device    *m_ADM1032 = nullptr;
+
+    PCIBus           *m_PCIBus = nullptr;
+    HostBridgeDevice *m_HostBridge = nullptr;
+    MCPXRAMDevice    *m_MCPXRAM = nullptr;
+    LPCDevice        *m_LPC = nullptr;
+    USBPCIDevice     *m_USB1 = nullptr;
+    USBPCIDevice     *m_USB2 = nullptr;
+    NVNetDevice      *m_NVNet = nullptr;
+    NVAPUDevice      *m_NVAPU = nullptr;
+    AC97Device       *m_AC97 = nullptr;
+    PCIBridgeDevice  *m_PCIBridge = nullptr;
+    hw::bmide::BMIDEDevice *m_BMIDE = nullptr;
+    AGPBridgeDevice  *m_AGPBridge = nullptr;
+    NV2ADevice       *m_NV2A = nullptr;
 
     // ----- Configuration ----------------------------------------------------
     viXenSettings     m_settings;
