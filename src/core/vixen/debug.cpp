@@ -93,20 +93,22 @@ void DumpCPURegisters(Cpu *cpu) {
 }
 
 void DumpCPUStack(Cpu *cpu, int32_t offsetStart, int32_t offsetEnd) {
-	uint32_t esp;
-	cpu->RegRead(REG_ESP, &esp);
-	log_debug("Stack:\n");
-	for (int i = offsetStart; i <= offsetEnd; i += 0x4) {
-		uint32_t val;
-		int result = cpu->VMemRead(esp + i, 4, &val);
-        if (result == 0) {
-            log_debug("%s %08x  [esp%c%02x]  =  %08x\n", ((i == 0) ? "=>" : "  "), esp + i, ((i < 0) ? '-' : '+'), ((i < 0) ? -i : i), val);
+    uint32_t esp;
+    uint32_t ebp;
+    cpu->RegRead(REG_ESP, &esp);
+    cpu->RegRead(REG_EBP, &ebp);
+    log_debug("Stack:\n");
+    for (int i = offsetStart; i <= offsetEnd; i += 0x4) {
+        uint32_t val;
+        CPUOperationStatus result = cpu->VMemRead(esp + i, 4, &val);
+        if (result == CPUS_OP_OK) {
+            log_debug("%s %08x  [esp%c%02x]  =  %08x%s\n", ((i == 0) ? "=>" : "  "), esp + i, ((i < 0) ? '-' : '+'), ((i < 0) ? -i : i), val, ((esp + i) == ebp) ? " <= EBP" : "");
         }
         else {
-            log_debug("%s %08x  [esp%c%02x]  =  ........\n", ((i == 0) ? "=>" : "  "), esp + i, ((i < 0) ? '-' : '+'), ((i < 0) ? -i : i));
+            log_debug("%s %08x  [esp%c%02x]  =  ........%s\n", ((i == 0) ? "=>" : "  "), esp + i, ((i < 0) ? '-' : '+'), ((i < 0) ? -i : i), ((esp + i) == ebp) ? " <= EBP" : "");
         }
-	}
-	log_debug("\n");
+    }
+    log_debug("\n");
 }
 
 void DumpCPUMemory(Cpu *cpu, uint32_t address, uint32_t size, bool physical) {
