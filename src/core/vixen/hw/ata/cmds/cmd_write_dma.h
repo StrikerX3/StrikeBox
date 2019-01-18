@@ -28,7 +28,7 @@ public:
     WriteDMA(ATADevice& device);
     virtual ~WriteDMA() override;
 
-    static IATACommand *Factory(SharedMemory& sharedMemory, ATADevice& device) { return sharedMemory.Allocate<WriteDMA>(device); }
+    static IATACommand *Factory(DynamicVariant& sharedMemory, ATADevice& device) { return sharedMemory.Allocate<WriteDMA>(device); }
 };
 
 }

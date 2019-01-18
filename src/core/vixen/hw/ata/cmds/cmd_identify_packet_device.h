@@ -28,7 +28,7 @@ public:
     IdentifyPacketDevice(ATADevice& device);
     virtual ~IdentifyPacketDevice() override;
 
-    static IATACommand *Factory(SharedMemory& sharedMemory, ATADevice& device) { return sharedMemory.Allocate<IdentifyPacketDevice>(device); }
+    static IATACommand *Factory(DynamicVariant& sharedMemory, ATADevice& device) { return sharedMemory.Allocate<IdentifyPacketDevice>(device); }
 
 protected:
     bool HasMoreData() override;

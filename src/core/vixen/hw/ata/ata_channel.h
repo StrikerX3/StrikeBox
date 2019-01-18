@@ -16,7 +16,7 @@
 #include <mutex>
 
 #include "vixen/cpu.h"
-#include "vixen/shared_memory.h"
+#include "vixen/dynamic_variant.h"
 #include "../basic/irq.h"
 #include "../basic/interrupt.h"
 #include "ata_device.h"
@@ -107,7 +107,7 @@ private:
 
     bool m_interrupt = false;  // [5.2.9] INTRQ (Device Interrupt)
     
-    SharedMemory m_currentCommandMem;
+    DynamicVariant m_currentCommandMem;
     cmd::IATACommand *m_currentCommand;
     std::mutex m_commandMutex;
 

@@ -28,7 +28,7 @@ public:
     InitializeDeviceParameters(ATADevice& device);
     virtual ~InitializeDeviceParameters() override;
 
-    static IATACommand *Factory(SharedMemory& sharedMemory, ATADevice& device) { return sharedMemory.Allocate<InitializeDeviceParameters>(device); }
+    static IATACommand *Factory(DynamicVariant& sharedMemory, ATADevice& device) { return sharedMemory.Allocate<InitializeDeviceParameters>(device); }
 
 protected:
     bool ExecuteImpl() override;

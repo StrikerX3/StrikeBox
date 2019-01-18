@@ -5,15 +5,15 @@
 namespace vixen {
 
 /*!
- * A reusable block of memory that dynamically resizes to accomodate the
- * largest data structure written to it.
+ * Stores any type of object.
  *
- * Constructors and destructors are automatically invoked.
+ * Constructors and destructors are automatically invoked. A block of memory is
+ * automatically managed by this object and resized if needed by the new type.
  */
-class SharedMemory {
+class DynamicVariant {
 public:
-    SharedMemory() {}
-    ~SharedMemory() {
+    DynamicVariant() {}
+    ~DynamicVariant() {
         if (m_dtor != nullptr) {
             m_dtor(*this);
         }
@@ -51,7 +51,7 @@ public:
         }
 
         // Update destructor to new data structure and call constructor
-        m_dtor = [](SharedMemory& u) { ((T*)u.m_memory)->~T(); };
+        m_dtor = [](DynamicVariant& u) { ((T*)u.m_memory)->~T(); };
         return new(m_memory) T(std::forward<Args>(args)...);
     }
 
@@ -68,7 +68,7 @@ public:
 private:
     void *m_memory = nullptr;
     size_t m_size = 0;
-    void (*m_dtor)(SharedMemory&) = nullptr;
+    void (*m_dtor)(DynamicVariant&) = nullptr;
 };
 
 }
