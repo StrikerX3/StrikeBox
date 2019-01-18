@@ -35,7 +35,7 @@ public:
      * otherwise the existing memory block is reused.
      */
     template<class T, typename... Args>
-    T* Allocate(Args... args) {
+    T* Allocate(Args&&... args) {
         // Invoke destructor from previous data structure
         if (m_dtor != nullptr) {
             m_dtor(*this);
@@ -52,7 +52,7 @@ public:
 
         // Update destructor to new data structure and call constructor
         m_dtor = [](SharedMemory& u) { ((T*)u.m_memory)->~T(); };
-        return new(m_memory) T(args...);
+        return new(m_memory) T(std::forward<Args>(args)...);
     }
 
     /*!

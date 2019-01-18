@@ -28,7 +28,7 @@ public:
     Packet(ATADevice& device);
     virtual ~Packet() override;
 
-    static IATACommand *Factory(SharedMemory& sharedMemory, ATADevice& device) { return sharedMemory.Allocate<Packet, ATADevice&>(device); }
+    static IATACommand *Factory(SharedMemory& sharedMemory, ATADevice& device) { return sharedMemory.Allocate<Packet>(device); }
 };
 
 }
