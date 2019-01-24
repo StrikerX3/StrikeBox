@@ -6,14 +6,6 @@
 namespace vixen {
 namespace cpu {
 
-static bool parity8(uint8_t x) {
-    uint8_t y = x ^ (x >> 1);
-    y = y ^ (y >> 2);
-    y = y ^ (y >> 4);
-
-    return (y & 1) == 0;
-}
-
 HaxmCpu::HaxmCpu() {
     m_haxm = nullptr;
     m_vm = nullptr;
