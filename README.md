@@ -6,6 +6,10 @@ or [Cxbx-Reloaded](https://github.com/Cxbx-Reloaded/Cxbx-Reloaded).**
 # viXen
 6th Generation (Original) Xbox Emulator
 
+A fork of [OpenXBOX](https://github.com/mborgerson/OpenXBOX) by mborgerson,
+with a focus on LLE emulation. HLE kernel was an original goal of OpenXBOX; it
+will come later in viXen.
+
 The current state of this thing is just a tad bit more tangible than vaporware.
 Essentially right now it just initializes an x86 system (courtesy of one of the
 various virtualization platforms supported by the emulator) and runs whatever
