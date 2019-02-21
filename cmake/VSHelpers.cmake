@@ -1,16 +1,8 @@
 # Add Visual Studio filters to better organize the code
-function(vs_set_filters SOURCES)
+function(vs_set_filters)
+	cmake_parse_arguments(VS_SET_FILTERS "" "FILTER_ROOT;BASE_DIR" "SOURCES" ${ARGN})
 	if(MSVC)
-		set(extra_macro_args ${ARGN})
-		list(LENGTH extra_macro_args num_extra_args)
-	    if(${num_extra_args} GREATER 0)
-	        list(GET extra_macro_args 0 optional_arg)
-	        set(BASE_DIR "${optional_arg}")
-	    else()
-	    	set(BASE_DIR "")
-	    endif()
-
-		foreach(FILE ${SOURCES}) 
+		foreach(FILE IN ITEMS ${VS_SET_FILTERS_SOURCES}) 
 		    # Get the directory of the source file
 		    get_filename_component(PARENT_DIR "${FILE}" DIRECTORY)
 
@@ -18,20 +10,14 @@ function(vs_set_filters SOURCES)
 		    if(BASE_DIR STREQUAL "")
 		    	string(REPLACE "${CMAKE_CURRENT_SOURCE_DIR}" "" GROUP "${PARENT_DIR}")
 		    else()
-		    	string(REPLACE "${CMAKE_CURRENT_SOURCE_DIR}/${BASE_DIR}" "" GROUP "${PARENT_DIR}")
+		    	string(REPLACE "${CMAKE_CURRENT_SOURCE_DIR}/${VS_SET_FILTERS_BASE_DIR}" "" GROUP "${PARENT_DIR}")
 		    endif()
 
-		    # Make sure we are using windows slashes
+		    # Use Windows path separators
 		    string(REPLACE "/" "\\" GROUP "${GROUP}")
 
-		    # Group into "Source Files" and "Header Files"
-		    if("${FILE}" MATCHES ".*\\.c(pp)?")
-		       set(GROUP "Source Files${GROUP}")
-		    elseif("${FILE}" MATCHES ".*\\.h")
-		       set(GROUP "Header Files${GROUP}")
-		    endif()
-
-		    source_group("${GROUP}" FILES "${FILE}")
+		    # Add to filter
+		    source_group("${VS_SET_FILTERS_FILTER_ROOT}${GROUP}" FILES "${FILE}")
 		endforeach()
 	endif()
 endfunction()
