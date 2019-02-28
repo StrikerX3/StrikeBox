@@ -24,7 +24,7 @@
 
 cmake_minimum_required(VERSION 3.8)
 
-project(vixen VERSION 1.0.0)
+project(strikebox VERSION 1.0.0)
 
 # Differentiate between Linux and macOS
 if(UNIX AND NOT APPLE)
@@ -38,7 +38,7 @@ if(MSVC)
     set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
     # Configure startup project
-    set_property(DIRECTORY "${CMAKE_CURRENT_LIST_DIR}" PROPERTY VS_STARTUP_PROJECT vixen-cli)
+    set_property(DIRECTORY "${CMAKE_CURRENT_LIST_DIR}" PROPERTY VS_STARTUP_PROJECT strikebox-cli)
 endif()
 
 include(cmake/PrecompiledHeader.cmake)

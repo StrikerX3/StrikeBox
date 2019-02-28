@@ -1,5 +1,5 @@
 /*
-Precompiled header for the Platform Checker application.
+Precompiled header for StrikeBox CLI.
 -------------------------------------------------------------------------------
 MIT License
 

@@ -1,10 +1,8 @@
-#ifdef _WIN32
-
-#include "vixen/thread.h"
+#include "strikebox/thread.h"
 
 #include <Windows.h>
 
-namespace vixen {
+namespace strikebox {
 
 const DWORD MS_VC_EXCEPTION = 0x406D1388;
 
@@ -32,5 +30,3 @@ void Thread_SetName(const char *threadName) {
 }
 
 }
-
-#endif // _WIN32

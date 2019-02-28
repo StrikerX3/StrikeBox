@@ -3,12 +3,12 @@ or [Cxbx-Reloaded](https://github.com/Cxbx-Reloaded/Cxbx-Reloaded).**
 
 ---
 
-# viXen
-6th Generation (Original) Xbox Emulator
+# StrikeBox
+Original Xbox Emulator
 
 A fork of [OpenXBOX](https://github.com/mborgerson/OpenXBOX) by mborgerson,
 with a focus on LLE emulation. HLE kernel was an original goal of OpenXBOX; it
-will come later in viXen.
+will come later in StrikeBox.
 
 The current state of this thing is just a tad bit more tangible than vaporware.
 Essentially right now it just initializes an x86 system (courtesy of one of the
@@ -23,18 +23,20 @@ networking nothing is really playable... yet ;)
 
 The initial goal is to emulate the original Xbox at a low level. The user will
 have to provide their own dump of the MCPX and BIOS ROMs from an Xbox machine,
-as well as the appropriate game media dump in XISO format or from an extracted
-directory and a hard disk image containing the system software.
+as well as the appropriate game media dump in XISO format and a hard disk image
+containing the system software.
 
-In the future, viXen will attempt to provide high level emulation of the kernel
-in order to sidestep the ROM and dashboard requirements. It is a long way off,
-as research on the kernel is still incipient and existing implementations are
-incomplete, incorrect or straight up copies of illegally obtained code.
+In the future, StrikeBox will attempt to provide high level emulation of the
+kernel in order to sidestep the ROM and dashboard requirements. It is a long
+way off, as research on the kernel is still incipient and existing
+implementations are incomplete, incorrect or straight up copies of illegally
+obtained code.
 
 How to Build
 ------------
-viXen uses [CMake](https://cmake.org/) build files to generate projects for
-your preferred development platform. You'll need CMake 3.8 or later.
+StrikeBox uses [CMake](https://cmake.org/) build files to generate projects for
+your preferred development platform. You'll need CMake 3.8 or later and the
+[virt86](https://github.com/StrikerX3/virt86) library.
 
 ### Windows
 To make a [Visual Studio 2017](https://www.visualstudio.com/downloads/)
@@ -55,7 +57,7 @@ $ sudo apt-get install cmake
 $ mkdir build; cd build
 $ cmake .. && make
 $ cd src/cli
-$ ./vixen-cli -m <path-to-MCPX-ROM> -b <path-to-BIOS-ROM> -d <path-to-XBE> -r [debug|retail]
+$ ./strikebox-cli -m <path-to-MCPX-ROM> -b <path-to-BIOS-ROM> -d <path-to-XBE> -r [debug|retail]
 ```
 
 ### macOS

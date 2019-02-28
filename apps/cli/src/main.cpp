@@ -5,9 +5,9 @@
 
 #include "lib/cxxopts.hpp"
 
-#include "vixen/core.h"
-#include "vixen/settings.h"
-#include "vixen/thread.h"
+#include "strikebox/core.h"
+#include "strikebox/settings.h"
+#include "strikebox/thread.h"
 
 using namespace virt86;
 
@@ -31,15 +31,15 @@ char *basename(char *path)
  * Program entry point
  */
 int main(int argc, const char *argv[]) {
-    using namespace vixen;
+    using namespace strikebox;
 
     Thread_SetName("[Core] Main Thread");
 
-    auto info = GetViXenInfo();
-    printf("viXen v%s\n", info->version);
+    auto info = GetStrikeBoxInfo();
+    printf("StrikeBox v%s\n", info->version);
     printf("------------------\n");
 
-    cxxopts::Options options(basename((char*)argv[0]), "viXen - 6th generation (Original) XBOX Emulator\n");
+    cxxopts::Options options(basename((char*)argv[0]), "StrikeBox - Original XBOX Emulator\n");
     options.custom_help("-m mcpx_path -b bios_path -r xbox_rev [-d image_path] [-g image_path]");
     options.add_options()
         ("m, mcpx", "Path to MCPX ROM", cxxopts::value<std::string>(), "mcpx_path")

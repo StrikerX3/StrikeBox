@@ -4,9 +4,9 @@
 
 #include "virt86/virt86.hpp"
 
-#include "vixen/settings.h"
-#include "vixen/log.h"
-#include "vixen/util.h"
+#include "strikebox/settings.h"
+#include "strikebox/log.h"
+#include "strikebox/util.h"
 
 #include <string.h>
 #include <vector>

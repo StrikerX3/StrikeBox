@@ -1,4 +1,4 @@
-# The core of the viXen emulator.
+# The core of the StrikeBox emulator.
 # -------------------------------------------------------------------------------
 # MIT License
 # 
@@ -21,7 +21,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-project(vixen-core VERSION 1.0.0 LANGUAGES CXX)
+project(strikebox-core VERSION 1.0.0 LANGUAGES CXX)
 
 include(ExternalProject)
 
@@ -61,11 +61,11 @@ file(GLOB_RECURSE public_headers
 # Project structure
 #
 
-add_library(vixen-core OBJECT ${sources} ${private_headers} ${public_headers})
+add_library(strikebox-core OBJECT ${sources} ${private_headers} ${public_headers})
 
-set_target_properties(vixen-core PROPERTIES DEBUG_POSTFIX "-debug")
+set_target_properties(strikebox-core PROPERTIES DEBUG_POSTFIX "-debug")
 
-target_include_directories(vixen-core
+target_include_directories(strikebox-core
     PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
         $<INSTALL_INTERFACE:include>
@@ -76,7 +76,7 @@ target_include_directories(vixen-core
 
 # Include virt86
 find_package(virt86 CONFIG REQUIRED)
-target_link_libraries(vixen-core PUBLIC virt86::virt86)
+target_link_libraries(strikebox-core PUBLIC virt86::virt86)
 
 # TODO: Include Zydis
 # add_definitions(-DZYDIS_STATIC_DEFINE)
@@ -87,19 +87,19 @@ target_link_libraries(vixen-core PUBLIC virt86::virt86)
 #     UPDATE_COMMAND ""
 #     INSTALL_COMMAND "")
 # ExternalProject_Get_Property(Zydis install_dir)
-# target_include_directories(vixen-core PUBLIC ${install_dir}/src/Zydis/include ${install_dir}/src/Zydis-build)
-# add_dependencies(vixen-core Zydis)
+# target_include_directories(strikebox-core PUBLIC ${install_dir}/src/Zydis/include ${install_dir}/src/Zydis-build)
+# add_dependencies(strikebox-core Zydis)
 # 
 # if(WIN32)
-#     target_link_libraries(vixen-core PUBLIC ${install_dir}/src/Zydis-build/${CMAKE_CFG_INTDIR}/Zydis.lib)
+#     target_link_libraries(strikebox-core PUBLIC ${install_dir}/src/Zydis-build/${CMAKE_CFG_INTDIR}/Zydis.lib)
 # else()
-#     target_link_libraries(vixen-core PUBLIC ${install_dir}/src/Zydis-build/libZydis.a)
+#     target_link_libraries(strikebox-core PUBLIC ${install_dir}/src/Zydis-build/libZydis.a)
 # endif()
 # 
-# target_include_directories(vixen-core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${install_dir}/src/Zydis/include)
+# target_include_directories(strikebox-core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${install_dir}/src/Zydis/include)
 
 if(MSVC)
-    add_precompiled_header(vixen-core pch.hpp SOURCE_CXX "${CMAKE_CURRENT_SOURCE_DIR}/src/common/pch.cpp" FORCEINCLUDE)
+    add_precompiled_header(strikebox-core pch.hpp SOURCE_CXX "${CMAKE_CURRENT_SOURCE_DIR}/src/common/pch.cpp" FORCEINCLUDE)
 
     vs_set_filters(BASE_DIR src FILTER_ROOT "Sources" SOURCES ${sources})
     vs_set_filters(BASE_DIR src FILTER_ROOT "Private Headers" SOURCES ${private_headers})
@@ -107,9 +107,9 @@ if(MSVC)
 
     vs_use_edit_and_continue()
 
-    set_target_properties(vixen-core PROPERTIES FOLDER Libraries)
+    set_target_properties(strikebox-core PROPERTIES FOLDER Libraries)
 else()
-    add_precompiled_header(vixen-core src/common/pch.hpp PCH_PATH pch.hpp SOURCE_CXX "${CMAKE_CURRENT_SOURCE_DIR}/src/common/pch.cpp" FORCEINCLUDE)
+    add_precompiled_header(strikebox-core src/common/pch.hpp PCH_PATH pch.hpp SOURCE_CXX "${CMAKE_CURRENT_SOURCE_DIR}/src/common/pch.cpp" FORCEINCLUDE)
 endif()
 
 ##############################
@@ -122,7 +122,7 @@ set(generated_dir "${CMAKE_CURRENT_BINARY_DIR}/generated")
 set(version_config "${generated_dir}/${PROJECT_NAME}ConfigVersion.cmake")
 set(project_config "${generated_dir}/${PROJECT_NAME}Config.cmake")
 set(TARGETS_EXPORT_NAME "${PROJECT_NAME}Targets")
-set(namespace "vixen::")
+set(namespace "strikebox::")
 
 # Include module with function 'write_basic_package_version_file'
 include(CMakePackageConfigHelpers)
@@ -145,7 +145,7 @@ configure_package_config_file(
 )
 
 # Install target library
-install(TARGETS vixen-core
+install(TARGETS strikebox-core
     EXPORT "${TARGETS_EXPORT_NAME}"
     LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
     ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
