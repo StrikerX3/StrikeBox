@@ -32,13 +32,14 @@ way off, as research on the kernel is still incipient and existing
 implementations are incomplete, incorrect or straight up copies of illegally
 obtained code.
 
-How to Build
-------------
+## How to Build
+
 StrikeBox uses [CMake](https://cmake.org/) build files to generate projects for
 your preferred development platform. You'll need CMake 3.8 or later and the
 [virt86](https://github.com/StrikerX3/virt86) library.
 
 ### Windows
+
 To make a [Visual Studio 2017](https://www.visualstudio.com/downloads/)
 project:
 
@@ -61,11 +62,12 @@ $ ./strikebox-cli -m <path-to-MCPX-ROM> -b <path-to-BIOS-ROM> -d <path-to-XBE> -
 ```
 
 ### macOS
+
 macOS is currently unsupported. Feel free to submit a pull request to add
 support for this platform!
 
-Debugging Guest Code
---------------------
+## Debugging Guest Code
+
 The guest can be debugged using the GDB debugger. Once enabled, the emulator
 will open a TCP socket upon startup and wait for the GDB debugger to connect.
 Once connected, you can examine the CPU state, set breakpoints, single-step
@@ -77,3 +79,7 @@ by creating a linked pair of virtual null-modem serial ports with [com0com](http
 Use a Debug BIOS ROM and attach one side of the pair to the first Super I/O
 serial port, then connect [WinDbg or KD](https://docs.microsoft.com/en-us/windows-hardware/drivers/debugger/)
 to the other side to begin kernel debugging.
+
+## Support
+
+You can support [the author](https://github.com/StrikerX3) on [Patreon](https://www.patreon.com/StrikerX3).
