@@ -79,7 +79,3 @@ by creating a linked pair of virtual null-modem serial ports with [com0com](http
 Use a Debug BIOS ROM and attach one side of the pair to the first Super I/O
 serial port, then connect [WinDbg or KD](https://docs.microsoft.com/en-us/windows-hardware/drivers/debugger/)
 to the other side to begin kernel debugging.
-
-## Support
-
-You can support [the author](https://github.com/StrikerX3) on [Patreon](https://www.patreon.com/StrikerX3).
