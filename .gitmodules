@@ -1,0 +1,3 @@
+[submodule "modules/xqemu/xqemu"]
+	path = modules/xqemu/xqemu
+	url = https://github.com/xqemu/xqemu.git
