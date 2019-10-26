@@ -33,7 +33,7 @@ ImageHardDriveATADeviceDriver::ImageHardDriveATADeviceDriver() {
     // TODO: fill in with appropriate data
     strcpy(m_serialNumber, "9876543210");
     strcpy(m_firmwareRevision, "1.0.0");
-    strcpy(m_modelNumber, "vXn VHDD0010000");
+    strcpy(m_modelNumber, "SBx VHDD0010000");
 
     // Initialize an empty (invalid) disk
     m_numCylinders = 0;

@@ -570,28 +570,7 @@ EmulatorStatus Xbox::InitHardware() {
 }
 
 EmulatorStatus Xbox::InitDebugger() {
-    // GDB Server
-    if (m_settings.gdb_enable) {
-        m_gdb = new GdbServer(m_vm->get().GetVirtualProcessor(0)->get(), "127.0.0.1", 9269);
-        // TODO: handle result properly
-        int result = m_gdb->Initialize();
-        if (result) {
-            return EMUS_INIT_DEBUGGER_FAILED;
-        }
-
-        // Allow debugging before running so client can setup breakpoints, etc
-        log_debug("Starting GDB Server\n");
-        m_gdb->WaitForConnection();
-        m_gdb->Debug(1);
-    }
-
-    /*HardwareBreakpoints bps = { 0 };
-    bps.bp[0].globalEnable = true;
-    bps.bp[0].address = 0x80016756;
-    bps.bp[0].length = HWBP_LENGTH_1_BYTE;
-    bps.bp[0].trigger = HWBP_TRIGGER_EXECUTION;
-    vp.SetHardwareBreakpoints(bps);*/
-    
+    // TODO: Start GDB server
     return EMUS_OK;
 }
 
@@ -925,7 +904,7 @@ void Xbox::Cleanup() {
     }
 
     if (m_settings.gdb_enable) {
-        m_gdb->Shutdown();
+        // TODO: Stop GDB server
     }
 }
 

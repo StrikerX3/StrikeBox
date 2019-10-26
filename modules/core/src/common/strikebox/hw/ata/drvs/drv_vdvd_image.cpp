@@ -26,7 +26,7 @@ using namespace atapi;
 ImageDVDDriveATADeviceDriver::ImageDVDDriveATADeviceDriver() {
     strcpy(m_serialNumber, "9876543210");
     strcpy(m_firmwareRevision, "1.0.0");
-    strcpy(m_modelNumber, "vXn VDVDD0010000");
+    strcpy(m_modelNumber, "SBx VDVDD0010000");
 }
 
 ImageDVDDriveATADeviceDriver::~ImageDVDDriveATADeviceDriver() {

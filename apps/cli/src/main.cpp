@@ -14,9 +14,9 @@ using namespace virt86;
 #ifdef _WIN32
 char *basename(char *path)
 {
-	char name[MAX_PATH];
-	char ext[MAX_PATH];
-	if (_splitpath_s(path, NULL, 0, NULL, 0, name, MAX_PATH, ext, MAX_PATH)) {
+	char name[260];
+	char ext[260];
+	if (_splitpath_s(path, NULL, 0, NULL, 0, name, std::size(name), ext, std::size(ext))) {
 		return NULL;
 	}
 	size_t len = strlen(name) + strlen(ext) + 1;
@@ -81,7 +81,7 @@ int main(int argc, const char *argv[]) {
 
     bool foundPlatform = false;
     size_t platformIndex = 0;
-    for (size_t i = 0; i < ARRAYSIZE(PlatformFactories); i++) {
+    for (size_t i = 0; i < std::size(PlatformFactories); i++) {
         Platform& platform = PlatformFactories[i]();
         if (platform.GetInitStatus() == PlatformInitStatus::OK) {
             printf("%s loaded successfully\n", platform.GetName().c_str());

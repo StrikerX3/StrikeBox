@@ -12,7 +12,6 @@
 
 #include "virt86/virt86.hpp"
 
-#include "strikebox/gdbserver.h"
 #include "strikebox/log.h"
 #include "strikebox/mem.h"
 #include "strikebox/util.h"
@@ -167,9 +166,6 @@ protected:
     uint32_t m_kExp_XboxKrnlVersion = 0x00000000;
 
     bool LocateKernelData();
-
-    // ----- Debugger ---------------------------------------------------------
-    GdbServer *m_gdb;
 };
 
 }

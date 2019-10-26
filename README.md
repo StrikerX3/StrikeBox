@@ -1,6 +1,9 @@
 **If you're looking for a functional Xbox emulator, check out [XQEMU](http://xqemu.com/)
 or [Cxbx-Reloaded](https://github.com/Cxbx-Reloaded/Cxbx-Reloaded).**
 
+**This project is on an indefinite hold as the two above projects are much more
+complete and functional.**
+
 ---
 
 # StrikeBox
@@ -66,16 +69,10 @@ $ ./strikebox-cli -m <path-to-MCPX-ROM> -b <path-to-BIOS-ROM> -d <path-to-XBE> -
 macOS is currently unsupported. Feel free to submit a pull request to add
 support for this platform!
 
-## Debugging Guest Code
+## Kernel Debugging
 
-The guest can be debugged using the GDB debugger. Once enabled, the emulator
-will open a TCP socket upon startup and wait for the GDB debugger to connect.
-Once connected, you can examine the CPU state, set breakpoints, single-step
-instructions, etc. A sample .gdbinit file is provided with useful GDB default
-settings to be loaded when you start GDB in this directory.
-
-Alternatively, on Windows, you can perform kernel debugging of the virtual Xbox
-by creating a linked pair of virtual null-modem serial ports with [com0com](http://com0com.sourceforge.net/).
+On Windows, you can perform kernel debugging of the virtual Xbox by creating a
+linked pair of virtual null-modem serial ports with [com0com](http://com0com.sourceforge.net/).
 Use a Debug BIOS ROM and attach one side of the pair to the first Super I/O
 serial port, then connect [WinDbg or KD](https://docs.microsoft.com/en-us/windows-hardware/drivers/debugger/)
 to the other side to begin kernel debugging.
