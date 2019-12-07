@@ -606,7 +606,7 @@ void Xbox::IOWrite(uint16_t port, size_t size, uint32_t value) {
 
 uint64_t Xbox::MMIORead(uint64_t address, size_t size) {
     uint32_t value = 0;
-    m_ioMapper.IORead(address, &value, size);
+    m_ioMapper.MMIORead(address, &value, size);
     return value;
 }
 
