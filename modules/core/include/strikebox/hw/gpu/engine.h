@@ -26,6 +26,7 @@ public:
         , m_nv2a(nv2a)
     {}
 
+    virtual void Reset() = 0;
     virtual uint32_t Read(const uint32_t addr, const uint8_t size) = 0;
     virtual void Write(const uint32_t addr, const uint32_t value, const uint8_t size) = 0;
 

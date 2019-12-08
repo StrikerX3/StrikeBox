@@ -12,6 +12,9 @@
 
 namespace strikebox::nv2a {
 
+void PSTRAPS::Reset() {
+}
+
 uint32_t PSTRAPS::Read(const uint32_t addr, const uint8_t size) {
     log_spew("[NV2A] PSTRAPS::Read:   Unimplemented read!   address = 0x%x,  size = %u\n", addr, size);
     return 0;

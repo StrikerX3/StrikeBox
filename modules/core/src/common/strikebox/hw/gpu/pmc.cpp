@@ -12,6 +12,9 @@
 
 namespace strikebox::nv2a {
 
+void PMC::Reset() {
+}
+
 uint32_t PMC::Read(const uint32_t addr, const uint8_t size) {
     log_spew("[NV2A] PMC::Read:   Unimplemented read!   address = 0x%x,  size = %u\n", addr, size);
     return 0;

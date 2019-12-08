@@ -12,6 +12,9 @@
 
 namespace strikebox::nv2a {
 
+void PROM::Reset() {
+}
+
 uint32_t PROM::Read(const uint32_t addr, const uint8_t size) {
     log_spew("[NV2A] PROM::Read:   Unimplemented read!   address = 0x%x,  size = %u\n", addr, size);
     return 0;

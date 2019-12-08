@@ -21,6 +21,7 @@ class PGRAPH : public NV2AEngine {
 public:
     PGRAPH(const NV2A& nv2a) : NV2AEngine("PGRAPH", 0x400000, 0x2000, nv2a) {}
 
+    void Reset() override;
     uint32_t Read(const uint32_t addr, const uint8_t size) override;
     void Write(const uint32_t addr, const uint32_t value, const uint8_t size) override;
 };

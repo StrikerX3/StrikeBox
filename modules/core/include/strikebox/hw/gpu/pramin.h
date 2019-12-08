@@ -21,6 +21,7 @@ class PRAMIN : public NV2AEngine {
 public:
     PRAMIN(const NV2A& nv2a) : NV2AEngine("PRAMIN", 0x700000, 0x100000, nv2a) {}
 
+    void Reset() override;
     uint32_t Read(const uint32_t addr, const uint8_t size) override;
     void Write(const uint32_t addr, const uint32_t value, const uint8_t size) override;
 };

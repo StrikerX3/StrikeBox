@@ -12,6 +12,9 @@
 
 namespace strikebox::nv2a {
 
+void PTIMER::Reset() {
+}
+
 uint32_t PTIMER::Read(const uint32_t addr, const uint8_t size) {
     log_spew("[NV2A] PTIMER::Read:   Unimplemented read!   address = 0x%x,  size = %u\n", addr, size);
     return 0;

@@ -23,6 +23,7 @@ class PMC : public NV2AEngine {
 public:
     PMC(const NV2A& nv2a) : NV2AEngine("PMC", 0x000000, 0x1000, nv2a) {}
 
+    void Reset() override;
     uint32_t Read(const uint32_t addr, const uint8_t size) override;
     void Write(const uint32_t addr, const uint32_t value, const uint8_t size) override;
 };

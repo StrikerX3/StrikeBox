@@ -22,6 +22,7 @@ class USER : public NV2AEngine {
 public:
     USER(const NV2A& nv2a) : NV2AEngine("USER", 0x800000, 0x200000, nv2a) {}
 
+    void Reset() override;
     uint32_t Read(const uint32_t addr, const uint8_t size) override;
     void Write(const uint32_t addr, const uint32_t value, const uint8_t size) override;
 };

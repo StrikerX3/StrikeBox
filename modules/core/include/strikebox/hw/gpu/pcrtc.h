@@ -19,6 +19,7 @@ class PCRTC : public NV2AEngine {
 public:
     PCRTC(const NV2A& nv2a) : NV2AEngine("PCRTC", 0x600000, 0x1000, nv2a) {}
 
+    void Reset() override;
     uint32_t Read(const uint32_t addr, const uint8_t size) override;
     void Write(const uint32_t addr, const uint32_t value, const uint8_t size) override;
 };
