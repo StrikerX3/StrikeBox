@@ -4,6 +4,30 @@
 
 namespace strikebox {
 
+// TODO: implement engines
+// Refer to envytools: https://envytools.readthedocs.io/en/latest/index.html
+//
+//  Engine       Offset      Length    Description
+// ----------------------------------------------------------------------------
+//  PMC        0x000000      0x1000    Master control
+//  PBUS       0x001000      0x1000    Bus control
+//  PFIFO      0x002000      0x2000    MMIO and DMA FIFO submission to PGRAPH  (there's no VPE in NV2A)
+//  PRMA       0x007000      0x1000    Real mode BAR access
+//  PVIDEO     0x008000      0x1000    Video overlay
+//  PTIMER     0x009000      0x1000    Time measurement and time-based alarms
+//  PCOUNTER   0x00A000      0x1000    Performance monitoring counters
+//  PMVIO      0x0C0000      0x1000    VGA sequencer and graph controller registers
+//  PFB        0x100000      0x1000    Memory interface
+//  PSTRAPS    0x101000      0x1000    Straps readout
+//  PROM       0x300000     0x20000    ROM access window
+//  PGRAPH     0x400000      0x2000    2D/3D graphics engine
+//  PCRTC      0x600000      0x1000    CRTC controls
+//  PRMCIO     0x601000      0x1000    VGA CRTC and attribute controller registers
+//  PRAMDAC    0x680000      0x1000    RAMDAC, video overlay, cursor, and PLL control
+//  PRMDIO     0x681000      0x1000    VGA DAC registers
+//  PRAMIN     0x700000    0x100000    RAMIN access
+//  USER       0x800000    0x200000    PFIFO MMIO/DMA submission area
+//
 
 NV2ADevice::NV2ADevice(uint8_t *pSystemRAM, uint32_t systemRAMSize, IRQHandler& irqHandler)
     : PCIDevice(PCI_HEADER_TYPE_NORMAL, PCI_VENDOR_ID_NVIDIA, 0x02A0, 0xA1,
