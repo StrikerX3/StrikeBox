@@ -4,31 +4,6 @@
 
 namespace strikebox {
 
-// TODO: implement engines
-// Refer to envytools: https://envytools.readthedocs.io/en/latest/index.html
-//
-//  Engine       Offset      Length    Description
-// ----------------------------------------------------------------------------
-//  PMC        0x000000      0x1000    Master control
-//  PBUS       0x001000      0x1000    Bus control
-//  PFIFO      0x002000      0x2000    MMIO and DMA FIFO submission to PGRAPH  (there's no VPE in NV2A)
-//  PRMA       0x007000      0x1000    Real mode BAR access
-//  PVIDEO     0x008000      0x1000    Video overlay
-//  PTIMER     0x009000      0x1000    Time measurement and time-based alarms
-//  PCOUNTER   0x00A000      0x1000    Performance monitoring counters
-//  PMVIO      0x0C0000      0x1000    VGA sequencer and graph controller registers
-//  PFB        0x100000      0x1000    Memory interface
-//  PSTRAPS    0x101000      0x1000    Straps readout
-//  PROM       0x300000     0x20000    ROM access window
-//  PGRAPH     0x400000      0x2000    2D/3D graphics engine
-//  PCRTC      0x600000      0x1000    CRTC controls
-//  PRMCIO     0x601000      0x1000    VGA CRTC and attribute controller registers
-//  PRAMDAC    0x680000      0x1000    RAMDAC, video overlay, cursor, and PLL control
-//  PRMDIO     0x681000      0x1000    VGA DAC registers
-//  PRAMIN     0x700000    0x100000    RAMIN access
-//  USER       0x800000    0x200000    PFIFO MMIO/DMA submission area
-//
-
 NV2ADevice::NV2ADevice(uint8_t *pSystemRAM, uint32_t systemRAMSize, IRQHandler& irqHandler)
     : PCIDevice(PCI_HEADER_TYPE_NORMAL, PCI_VENDOR_ID_NVIDIA, 0x02A0, 0xA1,
         0x03, 0x00, 0x00) // VGA-compatible controller
@@ -36,6 +11,24 @@ NV2ADevice::NV2ADevice(uint8_t *pSystemRAM, uint32_t systemRAMSize, IRQHandler& 
     , m_systemRAMSize(systemRAMSize)
     , m_irqHandler(irqHandler)
 {
+    RegisterEngine(m_pmc);
+    RegisterEngine(m_pbus);
+    RegisterEngine(m_pfifo);
+    RegisterEngine(m_prma);
+    RegisterEngine(m_pvideo);
+    RegisterEngine(m_ptimer);
+    RegisterEngine(m_pcounter);
+    RegisterEngine(m_pnvio);
+    RegisterEngine(m_pfb);
+    RegisterEngine(m_pstraps);
+    RegisterEngine(m_prom);
+    RegisterEngine(m_pgraph);
+    RegisterEngine(m_pcrtc);
+    RegisterEngine(m_prmcio);
+    RegisterEngine(m_pramdac);
+    RegisterEngine(m_prmdio);
+    RegisterEngine(m_pramin);
+    RegisterEngine(m_user);
 }
 
 NV2ADevice::~NV2ADevice() {
@@ -80,21 +73,60 @@ void NV2ADevice::Reset() {
 }
 
 void NV2ADevice::PCIIORead(int barIndex, uint32_t port, uint32_t *value, uint8_t size) {
-    log_warning("NV2ADevice::IORead:  Unexpected I/O read!   bar = %d,  port = 0x%x,  size = %u\n", barIndex, port, size);
+    log_warning("NV2ADevice::PCIIORead:  Unexpected I/O read!   bar = %d,  port = 0x%x,  size = %u\n", barIndex, port, size);
     *value = 0;
 }
 
 void NV2ADevice::PCIIOWrite(int barIndex, uint32_t port, uint32_t value, uint8_t size) {
-    log_warning("NV2ADevice::IOWrite: Unexpected I/O write!  bar = %d,  port = 0x%x,  size = %u,  value = 0x%x\n", barIndex, port, size, value);
+    log_warning("NV2ADevice::PCIIOWrite: Unexpected I/O write!  bar = %d,  port = 0x%x,  size = %u,  value = 0x%x\n", barIndex, port, size, value);
 }
 
 void NV2ADevice::PCIMMIORead(int barIndex, uint32_t addr, uint32_t *value, uint8_t size) {
-    *value = 0;
-    log_spew("NV2ADevice::PCIMMIORead:   Unimplemented read!   bar = %d,  address = 0x%x,  size = %u\n", barIndex, addr, size);
+    if (barIndex == 0) {
+        auto opt_eng = FindEngine(addr);
+        if (opt_eng) {
+            auto& eng = opt_eng->get();
+            *value = eng.Read(addr - eng.GetOffset(), size);
+        }
+        else {
+            log_spew("NV2ADevice::PCIMMIORead:   Unmapped read!   bar = %d,  address = 0x%x,  size = %u\n", barIndex, addr, size);
+        }
+    }
+    else {
+        log_spew("NV2ADevice::PCIMMIORead:   Unimplemented read!   bar = %d,  address = 0x%x,  size = %u\n", barIndex, addr, size);
+        *value = 0;
+    }
 }
 
 void NV2ADevice::PCIMMIOWrite(int barIndex, uint32_t addr, uint32_t value, uint8_t size) {
-    log_spew("NV2ADevice::PCIMMIOWrite:  Unimplemented write!  bar = %d,  address = 0x%x,  value = 0x%x,  size = %u\n", barIndex, addr, value, size);
+    if (barIndex == 0) {
+        auto opt_eng = FindEngine(addr);
+        if (opt_eng) {
+            auto& eng = opt_eng->get();
+            eng.Write(addr - eng.GetOffset(), value, size);
+        }
+        else {
+            log_spew("NV2ADevice::PCIMMIOWrite:  Unmapped write!  bar = %d,  address = 0x%x,  value = 0x%x,  size = %u\n", barIndex, addr, value, size);
+        }
+    }
+    else {
+        log_spew("NV2ADevice::PCIMMIOWrite:  Unimplemented write!  bar = %d,  address = 0x%x,  value = 0x%x,  size = %u\n", barIndex, addr, value, size);
+    }
+}
+
+void NV2ADevice::RegisterEngine(nv2a::NV2AEngine& engine) {
+    engines.insert({ engine.GetOffset() + engine.GetLength() - 1, engine });
+}
+
+std::optional<std::reference_wrapper<nv2a::NV2AEngine>> NV2ADevice::FindEngine(const uint32_t address) {
+    auto entry = engines.lower_bound(address);
+    if (entry != engines.end()) {
+        auto& engine = entry->second;
+        if (engine.Contains(address)) {
+            return engine;
+        }
+    }
+    return std::nullopt;
 }
 
 }

@@ -1,0 +1,30 @@
+// StrikeBox NV2A PMC (Master control) engine emulation
+// (C) Ivan "StrikerX3" Oliveira
+//
+// Based on envytools:
+// https://envytools.readthedocs.io/en/latest/index.html
+//
+// References to particular items in the documentation are denoted between
+// brackets optionally followed by a quote from the documentation.
+//
+// [https://envytools.readthedocs.io/en/latest/hw/bus/pmc.html]
+// "PMC is the "master control" engine of the card. Its purpose is to provide card identication,
+//  manage enable/disable bits of other engines, and handle top-level interrupt routing."
+//
+// PMC engine registers occupy the range 0x000000..0x000FFF.
+#pragma once
+
+#include "engine.h"
+
+namespace strikebox::nv2a {
+
+// NV2A master control engine (PMC)
+class PMC : public NV2AEngine {
+public:
+    PMC(const NV2A& nv2a) : NV2AEngine("PMC", 0x000000, 0x1000, nv2a) {}
+
+    uint32_t Read(const uint32_t addr, const uint8_t size) override;
+    void Write(const uint32_t addr, const uint32_t value, const uint8_t size) override;
+};
+
+}
