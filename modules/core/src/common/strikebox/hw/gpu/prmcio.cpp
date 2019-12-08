@@ -15,13 +15,13 @@ namespace strikebox::nv2a {
 void PRMCIO::Reset() {
 }
 
-uint32_t PRMCIO::Read(const uint32_t addr, const uint8_t size) {
-    log_spew("[NV2A] PRMCIO::Read:   Unimplemented read!   address = 0x%x,  size = %u\n", addr, size);
+uint32_t PRMCIO::Read(const uint32_t addr) {
+    log_spew("[NV2A] PRMCIO::Read:   Unimplemented read!   address = 0x%x\n", addr);
     return 0;
 }
 
-void PRMCIO::Write(const uint32_t addr, const uint32_t value, const uint8_t size) {
-    log_spew("[NV2A] PRMCIO::Write:  Unimplemented write!   address = 0x%x,  value = 0x%x,  size = %u\n", addr, value, size);
+void PRMCIO::Write(const uint32_t addr, const uint32_t value) {
+    log_spew("[NV2A] PRMCIO::Write:  Unimplemented write!   address = 0x%x,  value = 0x%x\n", addr, value);
 }
 
 }

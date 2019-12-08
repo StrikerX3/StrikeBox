@@ -17,11 +17,13 @@ namespace strikebox::nv2a {
 // NV2A VGA DAC registers engine (PRMDIO)
 class PRMDIO : public NV2AEngine {
 public:
-    PRMDIO(const NV2A& nv2a) : NV2AEngine("PRMDIO", 0x681000, 0x1000, nv2a) {}
+    PRMDIO(NV2A& nv2a) : NV2AEngine("PRMDIO", 0x681000, 0x1000, nv2a) {
+        Reset();
+    }
 
     void Reset() override;
-    uint32_t Read(const uint32_t addr, const uint8_t size) override;
-    void Write(const uint32_t addr, const uint32_t value, const uint8_t size) override;
+    uint32_t Read(const uint32_t addr) override;
+    void Write(const uint32_t addr, const uint32_t value) override;
 };
 
 }

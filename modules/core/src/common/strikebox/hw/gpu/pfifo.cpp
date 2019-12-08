@@ -15,13 +15,13 @@ namespace strikebox::nv2a {
 void PFIFO::Reset() {
 }
 
-uint32_t PFIFO::Read(const uint32_t addr, const uint8_t size) {
-    log_spew("[NV2A] PFIFO::Read:   Unimplemented read!   address = 0x%x,  size = %u\n", addr, size);
+uint32_t PFIFO::Read(const uint32_t addr) {
+    log_spew("[NV2A] PFIFO::Read:   Unimplemented read!   address = 0x%x\n", addr);
     return 0;
 }
 
-void PFIFO::Write(const uint32_t addr, const uint32_t value, const uint8_t size) {
-    log_spew("[NV2A] PFIFO::Write:  Unimplemented write!   address = 0x%x,  value = 0x%x,  size = %u\n", addr, value, size);
+void PFIFO::Write(const uint32_t addr, const uint32_t value) {
+    log_spew("[NV2A] PFIFO::Write:  Unimplemented write!   address = 0x%x,  value = 0x%x\n", addr, value);
 }
 
 }

@@ -8,11 +8,77 @@
 // brackets optionally followed by a quote from the documentation.
 #pragma once
 
+#include <string>
+#include <map>
+#include <optional>
+#include <functional>
+
+#include "engine.h"
+
+#include "pmc.h"
+#include "pbus.h"
+#include "pfifo.h"
+#include "prma.h"
+#include "pvideo.h"
+#include "ptimer.h"
+#include "pcounter.h"
+#include "pnvio.h"
+#include "pfb.h"
+#include "pstraps.h"
+#include "prom.h"
+#include "pgraph.h"
+#include "pcrtc.h"
+#include "prmcio.h"
+#include "pramdac.h"
+#include "prmdio.h"
+#include "pramin.h"
+#include "user.h"
+
 namespace strikebox::nv2a {
+
+using PCIConfigReader = std::function<uint32_t(uint8_t address)>;
+using PCIConfigWriter = std::function<void(uint8_t address, uint32_t value)>;
 
 // Represents the state of the NV2A GPU.
 class NV2A {
+public:
+    NV2A(uint8_t* systemRAM, uint32_t systemRAMSize, PCIConfigReader pciCfgReader, PCIConfigWriter pciCfgWriter);
 
+    std::unique_ptr<PMC>       pmc      = std::make_unique<PMC>(*this);
+    std::unique_ptr<PBUS>      pbus     = std::make_unique<PBUS>(*this);
+    std::unique_ptr<PFIFO>     pfifo    = std::make_unique<PFIFO>(*this);
+    std::unique_ptr<PRMA>      prma     = std::make_unique<PRMA>(*this);
+    std::unique_ptr<PVIDEO>    pvideo   = std::make_unique<PVIDEO>(*this);
+    std::unique_ptr<PTIMER>    ptimer   = std::make_unique<PTIMER>(*this);
+    std::unique_ptr<PCOUNTER>  pcounter = std::make_unique<PCOUNTER>(*this);
+    std::unique_ptr<PNVIO>     pnvio    = std::make_unique<PNVIO>(*this);
+    std::unique_ptr<PFB>       pfb      = std::make_unique<PFB>(*this);
+    std::unique_ptr<PSTRAPS>   pstraps  = std::make_unique<PSTRAPS>(*this);
+    std::unique_ptr<PROM>      prom     = std::make_unique<PROM>(*this);
+    std::unique_ptr<PGRAPH>    pgraph   = std::make_unique<PGRAPH>(*this);
+    std::unique_ptr<PCRTC>     pcrtc    = std::make_unique<PCRTC>(*this);
+    std::unique_ptr<PRMCIO>    prmcio   = std::make_unique<PRMCIO>(*this);
+    std::unique_ptr<PRAMDAC>   pramdac  = std::make_unique<PRAMDAC>(*this);
+    std::unique_ptr<PRMDIO>    prmdio   = std::make_unique<PRMDIO>(*this);
+    std::unique_ptr<PRAMIN>    pramin   = std::make_unique<PRAMIN>(*this);
+    std::unique_ptr<USER>      user     = std::make_unique<USER>(*this);
+
+    uint8_t* systemRAM;
+    const uint32_t systemRAMSize;
+
+    void Reset();
+    uint32_t Read(const uint32_t addr, const uint8_t size);
+    void Write(const uint32_t addr, const uint32_t value, const uint8_t size);
+    
+    // PCI config space read/write access
+    const PCIConfigReader pciCfgReader;
+    const PCIConfigWriter pciCfgWriter;
+
+private:
+    // Fast engine lookup
+    std::map<uint32_t, nv2a::NV2AEngine&> engines;
+    void RegisterEngine(nv2a::NV2AEngine& engine);
+    std::optional<std::reference_wrapper<nv2a::NV2AEngine>> FindEngine(const uint32_t address);
 };
 
 }

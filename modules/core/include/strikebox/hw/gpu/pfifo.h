@@ -23,11 +23,13 @@ namespace strikebox::nv2a {
 // NV2A MMIO and DMA FIFO submission to PGRAPH engine (PFIFO)
 class PFIFO : public NV2AEngine {
 public:
-    PFIFO(const NV2A& nv2a) : NV2AEngine("PFIFO", 0x002000, 0x2000, nv2a) {}
+    PFIFO(NV2A& nv2a) : NV2AEngine("PFIFO", 0x002000, 0x2000, nv2a) {
+        Reset();
+    }
 
     void Reset() override;
-    uint32_t Read(const uint32_t addr, const uint8_t size) override;
-    void Write(const uint32_t addr, const uint32_t value, const uint8_t size) override;
+    uint32_t Read(const uint32_t addr) override;
+    void Write(const uint32_t addr, const uint32_t value) override;
 };
 
 }

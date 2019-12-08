@@ -19,11 +19,13 @@ namespace strikebox::nv2a {
 // NV2A RAMIN access engine (PRAMIN)
 class PRAMIN : public NV2AEngine {
 public:
-    PRAMIN(const NV2A& nv2a) : NV2AEngine("PRAMIN", 0x700000, 0x100000, nv2a) {}
+    PRAMIN(NV2A& nv2a) : NV2AEngine("PRAMIN", 0x700000, 0x100000, nv2a) {
+        Reset();
+    }
 
     void Reset() override;
-    uint32_t Read(const uint32_t addr, const uint8_t size) override;
-    void Write(const uint32_t addr, const uint32_t value, const uint8_t size) override;
+    uint32_t Read(const uint32_t addr) override;
+    void Write(const uint32_t addr, const uint32_t value) override;
 };
 
 }

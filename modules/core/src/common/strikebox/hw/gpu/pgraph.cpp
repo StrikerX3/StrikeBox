@@ -15,13 +15,13 @@ namespace strikebox::nv2a {
 void PGRAPH::Reset() {
 }
 
-uint32_t PGRAPH::Read(const uint32_t addr, const uint8_t size) {
-    log_spew("[NV2A] PGRAPH::Read:   Unimplemented read!   address = 0x%x,  size = %u\n", addr, size);
+uint32_t PGRAPH::Read(const uint32_t addr) {
+    log_spew("[NV2A] PGRAPH::Read:   Unimplemented read!   address = 0x%x\n", addr);
     return 0;
 }
 
-void PGRAPH::Write(const uint32_t addr, const uint32_t value, const uint8_t size) {
-    log_spew("[NV2A] PGRAPH::Write:  Unimplemented write!   address = 0x%x,  value = 0x%x,  size = %u\n", addr, value, size);
+void PGRAPH::Write(const uint32_t addr, const uint32_t value) {
+    log_spew("[NV2A] PGRAPH::Write:  Unimplemented write!   address = 0x%x,  value = 0x%x\n", addr, value);
 }
 
 }

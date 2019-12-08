@@ -17,11 +17,13 @@ namespace strikebox::nv2a {
 // NV2A ROM access window engine (PROM)
 class PROM : public NV2AEngine {
 public:
-    PROM(const NV2A& nv2a) : NV2AEngine("PROM", 0x300000, 0x20000, nv2a) {}
+    PROM(NV2A& nv2a) : NV2AEngine("PROM", 0x300000, 0x20000, nv2a) {
+        Reset();
+    }
 
     void Reset() override;
-    uint32_t Read(const uint32_t addr, const uint8_t size) override;
-    void Write(const uint32_t addr, const uint32_t value, const uint8_t size) override;
+    uint32_t Read(const uint32_t addr) override;
+    void Write(const uint32_t addr, const uint32_t value) override;
 };
 
 }

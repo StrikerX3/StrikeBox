@@ -24,11 +24,13 @@ namespace strikebox::nv2a {
 // NV2A time measurement and time-based alarms (PTIMER)
 class PTIMER : public NV2AEngine {
 public:
-    PTIMER(const NV2A& nv2a) : NV2AEngine("PTIMER", 0x009000, 0x1000, nv2a) {}
+    PTIMER(NV2A& nv2a) : NV2AEngine("PTIMER", 0x009000, 0x1000, nv2a) {
+        Reset();
+    }
 
     void Reset() override;
-    uint32_t Read(const uint32_t addr, const uint8_t size) override;
-    void Write(const uint32_t addr, const uint32_t value, const uint8_t size) override;
+    uint32_t Read(const uint32_t addr) override;
+    void Write(const uint32_t addr, const uint32_t value) override;
 };
 
 }

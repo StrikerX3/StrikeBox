@@ -15,13 +15,13 @@ namespace strikebox::nv2a {
 void PCOUNTER::Reset() {
 }
 
-uint32_t PCOUNTER::Read(const uint32_t addr, const uint8_t size) {
-    log_spew("[NV2A] PCOUNTER::Read:   Unimplemented read!   address = 0x%x,  size = %u\n", addr, size);
+uint32_t PCOUNTER::Read(const uint32_t addr) {
+    log_spew("[NV2A] PCOUNTER::Read:   Unimplemented read!   address = 0x%x\n", addr);
     return 0;
 }
 
-void PCOUNTER::Write(const uint32_t addr, const uint32_t value, const uint8_t size) {
-    log_spew("[NV2A] PCOUNTER::Write:  Unimplemented write!   address = 0x%x,  value = 0x%x,  size = %u\n", addr, value, size);
+void PCOUNTER::Write(const uint32_t addr, const uint32_t value) {
+    log_spew("[NV2A] PCOUNTER::Write:  Unimplemented write!   address = 0x%x,  value = 0x%x\n", addr, value);
 }
 
 }
