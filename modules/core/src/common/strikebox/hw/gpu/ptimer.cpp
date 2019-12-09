@@ -58,10 +58,6 @@ uint32_t PTIMER::Read(const uint32_t addr) {
 
 void PTIMER::Write(const uint32_t addr, const uint32_t value) {
     switch (addr) {
-    case Reg_PTIMER_TIME_LOW:
-    case Reg_PTIMER_TIME_HIGH:
-        // Discard writes to read-only registers
-        break;
     case Reg_PTIMER_INTR:
         // Clear specified interrupts
         m_interruptLevels &= ~value;
@@ -78,6 +74,12 @@ void PTIMER::Write(const uint32_t addr, const uint32_t value) {
     case Reg_PTIMER_CLOCK_DIV:
         m_clockDiv = value;
         GetTickCount(); // ensure the tick count rate is updated immediately
+        break;
+    case Reg_PTIMER_TIME_LOW:
+        m_tickCount = (m_tickCount & 0xFFFFFFF8000000ull) | (value & 0xEFFFFFFull);
+        break;
+    case Reg_PTIMER_TIME_HIGH:
+        m_tickCount = (m_tickCount & 0xEFFFFFFull) | ((value & 0x1FFFFFFFull) << 27ull);
         break;
     case Reg_PTIMER_ALARM:
         m_alarm = value;
