@@ -16,12 +16,11 @@ void PRAMIN::Reset() {
 }
 
 uint32_t PRAMIN::Read(const uint32_t addr) {
-    log_spew("[NV2A] PRAMIN::Read:   Unimplemented read!   address = 0x%x\n", addr);
-    return 0;
+    return m_mem[addr];
 }
 
 void PRAMIN::Write(const uint32_t addr, const uint32_t value) {
-    log_spew("[NV2A] PRAMIN::Write:  Unimplemented write!   address = 0x%x,  value = 0x%x\n", addr, value);
+    m_mem[addr] = value;
 }
 
 }

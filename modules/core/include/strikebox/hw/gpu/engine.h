@@ -42,7 +42,6 @@ public:
 protected:
     NV2A& m_nv2a;
 
-private:
     const std::string m_name;
     const uint32_t m_offset;
     const uint32_t m_length;
