@@ -76,10 +76,10 @@ void PTIMER::Write(const uint32_t addr, const uint32_t value) {
         m_clockDiv = value;
         break;
     case Reg_PTIMER_TIME_LOW:
-        m_tickCount = (m_tickCount & 0xFFFFFFF8000000ull) | (value & 0xEFFFFFFull);
+        m_tickCount = (m_tickCount & 0xFFFFFFF8000000ull) | (value & 0x7FFFFFFull);
         break;
     case Reg_PTIMER_TIME_HIGH:
-        m_tickCount = (m_tickCount & 0xEFFFFFFull) | ((value & 0x1FFFFFFFull) << 27ull);
+        m_tickCount = (m_tickCount & 0x7FFFFFFull) | ((value & 0x1FFFFFFFull) << 27ull);
         break;
     case Reg_PTIMER_ALARM:
         m_alarm = value;
