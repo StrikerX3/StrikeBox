@@ -26,4 +26,9 @@ public:
     void Write(const uint32_t addr, const uint32_t value) override;
 };
 
+// PFB registers
+const uint32_t Reg_PFB_CFG0 = 0x200;
+const uint32_t Reg_PFB_CSTATUS = 0x20C;  // Framebuffer size
+const uint32_t Reg_PFB_WBC = 0x410;      // Write-back cache?
+
 }

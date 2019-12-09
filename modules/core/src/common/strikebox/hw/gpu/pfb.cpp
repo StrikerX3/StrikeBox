@@ -13,18 +13,14 @@
 
 namespace strikebox::nv2a {
 
-static const uint32_t Reg_CFG0 = 0x200;
-static const uint32_t Reg_CSTATUS = 0x20C;  // Framebuffer size
-static const uint32_t Reg_WBC = 0x410;      // Write-back cache?
-
 void PFB::Reset() {
 }
 
 uint32_t PFB::Read(const uint32_t addr) {
     switch (addr) {
-    case Reg_CFG0: return 3;   // The kernel asserts this value to be 3 early during initialization
-    case Reg_CSTATUS: return m_nv2a.systemRAMSize;
-    case Reg_WBC: return 0;
+    case Reg_PFB_CFG0: return 3;   // The kernel asserts this value to be 3 early during initialization
+    case Reg_PFB_CSTATUS: return m_nv2a.systemRAMSize;
+    case Reg_PFB_WBC: return 0;
     default:
         log_spew("[NV2A] PFB::Read:   Unimplemented read!   address = 0x%x\n", addr);
         return 0;

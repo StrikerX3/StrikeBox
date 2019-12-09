@@ -42,7 +42,7 @@ using PCIConfigWriter = std::function<void(uint8_t address, uint32_t value)>;
 // Represents the state of the NV2A GPU.
 class NV2A {
 public:
-    NV2A(uint8_t* systemRAM, uint32_t systemRAMSize, PCIConfigReader pciCfgReader, PCIConfigWriter pciCfgWriter);
+    NV2A(uint8_t* systemRAM, uint32_t systemRAMSize, PCIConfigReader readPCIConfig, PCIConfigWriter writePCIConfig);
 
     std::unique_ptr<PMC>       pmc      = std::make_unique<PMC>(*this);
     std::unique_ptr<PBUS>      pbus     = std::make_unique<PBUS>(*this);
@@ -71,8 +71,8 @@ public:
     void Write(const uint32_t addr, const uint32_t value, const uint8_t size);
     
     // PCI config space read/write access
-    const PCIConfigReader pciCfgReader;
-    const PCIConfigWriter pciCfgWriter;
+    const PCIConfigReader readPCIConfig;
+    const PCIConfigWriter writePCIConfig;
 
 private:
     // Fast engine lookup

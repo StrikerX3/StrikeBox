@@ -4,11 +4,11 @@
 
 namespace strikebox::nv2a {
 
-NV2A::NV2A(uint8_t* systemRAM, uint32_t systemRAMSize, PCIConfigReader pciCfgReader, PCIConfigWriter pciCfgWriter)
+NV2A::NV2A(uint8_t* systemRAM, uint32_t systemRAMSize, PCIConfigReader readPCIConfig, PCIConfigWriter writePCIConfig)
     : systemRAM(systemRAM)
     , systemRAMSize(systemRAMSize)
-    , pciCfgReader(pciCfgReader)
-    , pciCfgWriter(pciCfgWriter)
+    , readPCIConfig(readPCIConfig)
+    , writePCIConfig(writePCIConfig)
 {
     RegisterEngine(*pmc);
     RegisterEngine(*pbus);
@@ -46,7 +46,6 @@ uint32_t NV2A::Read(const uint32_t addr, const uint8_t size) {
         }
 
         // Unaligned or non 32-bit read
-        log_warning("NV2A::Read:   Unaligned read!   address = 0x%x,  size = %u\n", addr, size);
         return eng.ReadUnaligned(addr - eng.GetOffset(), size);
     }
 

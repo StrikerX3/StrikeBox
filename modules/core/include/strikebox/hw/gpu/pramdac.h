@@ -33,4 +33,10 @@ private:
     uint32_t m_mem[0x1000 / 4]; // for all other reads/writes
 };
 
+// RAMDAC registers
+// [https://envytools.readthedocs.io/en/latest/hw/display/nv3/pramdac.html#id3]
+const uint32_t Reg_RAMDAC_NVPLL = 0x500;  // Core PLL clock
+const uint32_t Reg_RAMDAC_MPLL  = 0x504;  // Memory PLL clock
+const uint32_t Reg_RAMDAC_VPLL  = 0x508;  // Video PLL clocks
+
 }

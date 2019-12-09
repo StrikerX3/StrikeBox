@@ -30,4 +30,10 @@ public:
     void Write(const uint32_t addr, const uint32_t value) override;
 };
 
+// PMC registers
+// [https://envytools.readthedocs.io/en/latest/hw/bus/pmc.html#id3]
+const uint32_t Reg_PMC_ID               = 0x000;  // Card identification
+const uint32_t Reg_PMC_INTR_HOST        = 0x100;  // Interrupt status - host
+const uint32_t Reg_PMC_INTR_ENABLE_HOST = 0x140;  // Interrupt enable - host
+
 }

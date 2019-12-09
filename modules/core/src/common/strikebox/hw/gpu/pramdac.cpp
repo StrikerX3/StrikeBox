@@ -12,10 +12,6 @@
 
 namespace strikebox::nv2a {
 
-static const uint32_t Reg_NVPLL = 0x500;  // Core PLL clock
-static const uint32_t Reg_MPLL = 0x504;   // Memory PLL clock
-static const uint32_t Reg_VPLL = 0x508;   // Video PLL clocks
-
 // [https://envytools.readthedocs.io/en/latest/hw/display/nv3/pramdac.html]
 // "The bit layout for all NV4 PLLs is that bits 18-16 are P, bits 15-8 are N, and bits 7-0 are M."
 union ClockCoefficients {
@@ -44,22 +40,22 @@ void PRAMDAC::Reset() {
 
 uint32_t PRAMDAC::Read(const uint32_t addr) {
     switch (addr) {
-    case Reg_NVPLL: return m_coreClockCoeff;
-    case Reg_MPLL: return m_memoryClockCoeff;
-    case Reg_VPLL: return m_videoClockCoeff;
+    case Reg_RAMDAC_NVPLL: return m_coreClockCoeff;
+    case Reg_RAMDAC_MPLL: return m_memoryClockCoeff;
+    case Reg_RAMDAC_VPLL: return m_videoClockCoeff;
     default:
-        //log_spew("[NV2A] PRAMDAC::Read:   Unimplemented read!   address = 0x%x\n", addr);
+        log_spew("[NV2A] PRAMDAC::Read:   Unimplemented read!   address = 0x%x\n", addr);
         return m_mem[addr >> 2];
     }
 }
 
 void PRAMDAC::Write(const uint32_t addr, const uint32_t value) {
     switch (addr) {
-    case Reg_NVPLL: m_coreClockCoeff = value; break;
-    case Reg_MPLL: m_memoryClockCoeff = value; break;
-    case Reg_VPLL: m_videoClockCoeff = value; break;
+    case Reg_RAMDAC_NVPLL: m_coreClockCoeff = value; break;
+    case Reg_RAMDAC_MPLL: m_memoryClockCoeff = value; break;
+    case Reg_RAMDAC_VPLL: m_videoClockCoeff = value; break;
     default:
-        //log_spew("[NV2A] PRAMDAC::Write:  Unimplemented write!   address = 0x%x,  value = 0x%x\n", addr, value);
+        log_spew("[NV2A] PRAMDAC::Write:  Unimplemented write!   address = 0x%x,  value = 0x%x\n", addr, value);
         m_mem[addr >> 2] = value;
         break;
     }

@@ -9,9 +9,9 @@ NV2ADevice::NV2ADevice(uint8_t *pSystemRAM, uint32_t systemRAMSize, IRQHandler& 
         0x03, 0x00, 0x00) // VGA-compatible controller
     , m_irqHandler(irqHandler)
 {
-    nv2a::PCIConfigReader pciCfgReader = [&](uint8_t addr) -> uint32_t { return Read32(m_configSpace, addr); };
-    nv2a::PCIConfigWriter pciCfgWriter = [&](uint8_t addr, uint32_t value) { Write32(m_configSpace, addr, value); };
-    m_nv2a = std::make_unique<nv2a::NV2A>(pSystemRAM, systemRAMSize, pciCfgReader, pciCfgWriter);
+    nv2a::PCIConfigReader readPCIConfig = [&](uint8_t addr) -> uint32_t { return Read32(m_configSpace, addr); };
+    nv2a::PCIConfigWriter writePCIConfig = [&](uint8_t addr, uint32_t value) { Write32(m_configSpace, addr, value); };
+    m_nv2a = std::make_unique<nv2a::NV2A>(pSystemRAM, systemRAMSize, readPCIConfig, writePCIConfig);
 }
 
 NV2ADevice::~NV2ADevice() {
