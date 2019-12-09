@@ -13,25 +13,23 @@
 namespace strikebox::nv2a {
 
 void PRAMDAC::Reset() {
-    // NV2A clocks:
+    // Default NV2A clocks:
     // crystal = 16.6 MHz
     //    core = 233 MHz
     //  memory = 200 MHz
     //   video = 25.160 MHz
-    //
-    // The clocks are calculated as such: (Crystal frequency * N) / (1 << P) / M.
-    m_coreClockCoeff = ClockCoefficients{ 1, 28, 1 }.u32;
-    m_memoryClockCoeff = ClockCoefficients{ 1, 24, 1 }.u32;
-    m_videoClockCoeff = ClockCoefficients{ 3, 157, 13 }.u32;
+    m_coreClockCoeff = ClockCoefficients{ 1, 28, 1 };
+    m_memoryClockCoeff = ClockCoefficients{ 1, 24, 1 };
+    m_videoClockCoeff = ClockCoefficients{ 3, 157, 13 };
 
     std::fill(std::begin(m_mem), std::end(m_mem), 0);
 }
 
 uint32_t PRAMDAC::Read(const uint32_t addr) {
     switch (addr) {
-    case Reg_RAMDAC_NVPLL: return m_coreClockCoeff;
-    case Reg_RAMDAC_MPLL: return m_memoryClockCoeff;
-    case Reg_RAMDAC_VPLL: return m_videoClockCoeff;
+    case Reg_RAMDAC_NVPLL: return m_coreClockCoeff.u32;
+    case Reg_RAMDAC_MPLL: return m_memoryClockCoeff.u32;
+    case Reg_RAMDAC_VPLL: return m_videoClockCoeff.u32;
     default:
         log_spew("[NV2A] PRAMDAC::Read:   Unimplemented read!   address = 0x%x\n", addr);
         return m_mem[addr >> 2];
@@ -40,9 +38,9 @@ uint32_t PRAMDAC::Read(const uint32_t addr) {
 
 void PRAMDAC::Write(const uint32_t addr, const uint32_t value) {
     switch (addr) {
-    case Reg_RAMDAC_NVPLL: m_coreClockCoeff = value; break;
-    case Reg_RAMDAC_MPLL: m_memoryClockCoeff = value; break;
-    case Reg_RAMDAC_VPLL: m_videoClockCoeff = value; break;
+    case Reg_RAMDAC_NVPLL: m_coreClockCoeff.u32 = value; break;
+    case Reg_RAMDAC_MPLL: m_memoryClockCoeff.u32 = value; break;
+    case Reg_RAMDAC_VPLL: m_videoClockCoeff.u32 = value; break;
     default:
         log_spew("[NV2A] PRAMDAC::Write:  Unimplemented write!   address = 0x%x,  value = 0x%x\n", addr, value);
         m_mem[addr >> 2] = value;

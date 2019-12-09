@@ -19,12 +19,20 @@
 
 #include "engine.h"
 
+#include <chrono>
+
 namespace strikebox::nv2a {
 
 // PTIMER registers
 // [https://envytools.readthedocs.io/en/latest/hw/bus/ptimer.html#mmio-register-list-nv3]
-const uint32_t Reg_PTIMER_INTR = 0x100;        // [RW] Interrupt status
-const uint32_t Reg_PTIMER_INTR_ENABLE = 0x140; // [RW] Interrupt enable
+const uint32_t Reg_PTIMER_INTR        = 0x100; // [RW] Interrupt status                    [https://envytools.readthedocs.io/en/latest/hw/bus/ptimer.html#the-alarm-and-interrupts]
+const uint32_t Reg_PTIMER_INTR_ENABLE = 0x140; // [RW] Interrupt enable                    [https://envytools.readthedocs.io/en/latest/hw/bus/ptimer.html#the-alarm-and-interrupts]
+/**/const uint32_t Val_PTIMER_INTR_ALARM = (1 << 0); // bit 0: alarm
+const uint32_t Reg_PTIMER_CLOCK_DIV   = 0x200; // [RW] Clock divider                       [https://envytools.readthedocs.io/en/latest/hw/bus/ptimer.html#the-clock-ratio]
+const uint32_t Reg_PTIMER_CLOCK_MUL   = 0x210; // [RW] Clock multiplier                    [https://envytools.readthedocs.io/en/latest/hw/bus/ptimer.html#the-clock-ratio]
+const uint32_t Reg_PTIMER_TIME_LOW    = 0x400; // [R ] Low part of the time counter        [https://envytools.readthedocs.io/en/latest/hw/bus/ptimer.html#the-time-counter]
+const uint32_t Reg_PTIMER_TIME_HIGH   = 0x410; // [R ] High part of the time counter       [https://envytools.readthedocs.io/en/latest/hw/bus/ptimer.html#the-time-counter]
+const uint32_t Reg_PTIMER_ALARM       = 0x420; // [RW] The TIME_LOW value to interrupt on  [https://envytools.readthedocs.io/en/latest/hw/bus/ptimer.html#the-alarm-and-interrupts]
 
 // ----------------------------------------------------------------------------
 
@@ -46,6 +54,14 @@ private:
 
     uint32_t m_interruptLevels;
     uint32_t m_enabledInterrupts;
+
+    uint32_t m_clockMul;
+    uint32_t m_clockDiv;
+    uint32_t m_alarm;
+
+    uint64_t GetTickCount();
+    uint64_t m_tickCount;
+    std::chrono::high_resolution_clock::time_point m_lastTickCountRead;
 };
 
 }

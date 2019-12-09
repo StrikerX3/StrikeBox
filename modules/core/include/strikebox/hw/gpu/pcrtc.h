@@ -16,10 +16,9 @@ namespace strikebox::nv2a {
 
 // PCRTC registers
 // [https://envytools.readthedocs.io/en/latest/hw/display/nv3/pcrtc.html#mmio-registers]
-const uint32_t Reg_PCRTC_INTR = 0x100;                       // [RW] Interrupt status
-/**/const uint32_t Val_PCRTC_INTR_VBLANK = (1 << 0);         //  bit  0: Vertical blank
-const uint32_t Reg_PCRTC_INTR_ENABLE = 0x140;                // [RW] Interrupt enable
-/**/const uint32_t Val_PCRTC_INTR_ENABLE_VBLANK = (1 << 0);  //  bit  0: Vertical blank
+const uint32_t Reg_PCRTC_INTR = 0x100;                // [RW] Interrupt status
+const uint32_t Reg_PCRTC_INTR_ENABLE = 0x140;         // [RW] Interrupt enable
+/**/const uint32_t Val_PCRTC_INTR_VBLANK = (1 << 0);  //  bit  0: Vertical blank
 
 // ----------------------------------------------------------------------------
 
