@@ -4,11 +4,12 @@
 
 namespace strikebox::nv2a {
 
-NV2A::NV2A(uint8_t* systemRAM, uint32_t systemRAMSize, PCIConfigReader readPCIConfig, PCIConfigWriter writePCIConfig)
+NV2A::NV2A(uint8_t* systemRAM, uint32_t systemRAMSize, PCIConfigReader readPCIConfig, PCIConfigWriter writePCIConfig, IRQHandlerFunc handleIRQ)
     : systemRAM(systemRAM)
     , systemRAMSize(systemRAMSize)
     , readPCIConfig(readPCIConfig)
     , writePCIConfig(writePCIConfig)
+    , handleIRQ(handleIRQ)
 {
     RegisterEngine(*pmc);
     RegisterEngine(*pbus);

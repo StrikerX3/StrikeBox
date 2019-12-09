@@ -38,12 +38,25 @@ namespace strikebox::nv2a {
 
 using PCIConfigReader = std::function<uint32_t(uint8_t address)>;
 using PCIConfigWriter = std::function<void(uint8_t address, uint32_t value)>;
+using IRQHandlerFunc = std::function<void(bool level)>;
 
 // Represents the state of the NV2A GPU.
 class NV2A {
 public:
-    NV2A(uint8_t* systemRAM, uint32_t systemRAMSize, PCIConfigReader readPCIConfig, PCIConfigWriter writePCIConfig);
+    NV2A(uint8_t* systemRAM, uint32_t systemRAMSize, PCIConfigReader readPCIConfig, PCIConfigWriter writePCIConfig, IRQHandlerFunc handleIRQ);
 
+    // PCI config space read/write access
+    const PCIConfigReader readPCIConfig = [](uint8_t) -> uint32_t { return 0; };
+    const PCIConfigWriter writePCIConfig = [](uint8_t, uint32_t) {};
+
+    // IRQ handler
+    const IRQHandlerFunc handleIRQ = [](bool) {};
+
+    // Shared system memory
+    uint8_t* systemRAM = nullptr;
+    const uint32_t systemRAMSize = 0;
+
+    // NV2A engines
     std::unique_ptr<PMC>       pmc      = std::make_unique<PMC>(*this);
     std::unique_ptr<PBUS>      pbus     = std::make_unique<PBUS>(*this);
     std::unique_ptr<PFIFO>     pfifo    = std::make_unique<PFIFO>(*this);
@@ -63,16 +76,11 @@ public:
     std::unique_ptr<PRAMIN>    pramin   = std::make_unique<PRAMIN>(*this);
     std::unique_ptr<USER>      user     = std::make_unique<USER>(*this);
 
-    uint8_t* systemRAM;
-    const uint32_t systemRAMSize;
-
     void Reset();
     uint32_t Read(const uint32_t addr, const uint8_t size);
     void Write(const uint32_t addr, const uint32_t value, const uint8_t size);
-    
-    // PCI config space read/write access
-    const PCIConfigReader readPCIConfig;
-    const PCIConfigWriter writePCIConfig;
+
+    inline void UpdateIRQ() { pmc->UpdateIRQ(); }
 
 private:
     // Fast engine lookup

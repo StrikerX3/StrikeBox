@@ -13,6 +13,18 @@
 
 namespace strikebox::nv2a {
 
+void PFB::SetEnabled(bool enabled) {
+    if (m_enabled != enabled) {
+        m_enabled = enabled;
+        if (enabled) {
+            // TODO: start
+        }
+        else {
+            Reset();
+        }
+    }
+}
+
 void PFB::Reset() {
 }
 

@@ -34,9 +34,21 @@ private:
 };
 
 // RAMDAC registers
-// [https://envytools.readthedocs.io/en/latest/hw/display/nv3/pramdac.html#id3]
-const uint32_t Reg_RAMDAC_NVPLL = 0x500;  // Core PLL clock
-const uint32_t Reg_RAMDAC_MPLL  = 0x504;  // Memory PLL clock
-const uint32_t Reg_RAMDAC_VPLL  = 0x508;  // Video PLL clocks
+// [https://envytools.readthedocs.io/en/latest/hw/display/nv3/pramdac.html#mmio-registers]
+const uint32_t Reg_RAMDAC_NVPLL = 0x500;  // [RW] Core PLL clock
+const uint32_t Reg_RAMDAC_MPLL  = 0x504;  // [RW] Memory PLL clock
+const uint32_t Reg_RAMDAC_VPLL  = 0x508;  // [RW] Video PLL clocks
+
+// Helps build the uint32_t value for clock coefficients.
+// [https://envytools.readthedocs.io/en/latest/hw/display/nv3/pramdac.html]
+// "The bit layout for all NV4 PLLs is that bits 18-16 are P, bits 15-8 are N, and bits 7-0 are M."
+union ClockCoefficients {
+    struct {
+        uint8_t M;
+        uint8_t N;
+        uint8_t P : 3;
+    };
+    uint32_t u32;
+};
 
 }

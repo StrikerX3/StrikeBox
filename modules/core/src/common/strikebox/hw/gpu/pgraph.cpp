@@ -12,7 +12,20 @@
 
 namespace strikebox::nv2a {
 
+void PGRAPH::SetEnabled(bool enabled) {
+    if (m_enabled != enabled) {
+        m_enabled = enabled;
+        if (enabled) {
+            // TODO: start threads
+        }
+        else {
+            Reset();
+        }
+    }
+}
+
 void PGRAPH::Reset() {
+    // TODO: stop threads
 }
 
 uint32_t PGRAPH::Read(const uint32_t addr) {

@@ -28,9 +28,14 @@ public:
         Reset();
     }
 
+    void SetEnabled(bool enabled);
+
     void Reset() override;
     uint32_t Read(const uint32_t addr) override;
     void Write(const uint32_t addr, const uint32_t value) override;
+
+private:
+    bool m_enabled = false;
 };
 
 }

@@ -12,7 +12,20 @@
 
 namespace strikebox::nv2a {
 
+void PFIFO::SetEnabled(bool enabled) {
+    if (m_enabled != enabled) {
+        m_enabled = enabled;
+        if (enabled) {
+            // TODO: start threads
+        }
+        else {
+            Reset();
+        }
+    }
+}
+
 void PFIFO::Reset() {
+    // TODO: stop threads
 }
 
 uint32_t PFIFO::Read(const uint32_t addr) {

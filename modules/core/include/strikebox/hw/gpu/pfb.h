@@ -21,14 +21,19 @@ public:
         Reset();
     }
 
+    void SetEnabled(bool enabled);
+
     void Reset() override;
     uint32_t Read(const uint32_t addr) override;
     void Write(const uint32_t addr, const uint32_t value) override;
+
+private:
+    bool m_enabled = false;
 };
 
 // PFB registers
-const uint32_t Reg_PFB_CFG0 = 0x200;
-const uint32_t Reg_PFB_CSTATUS = 0x20C;  // Framebuffer size
-const uint32_t Reg_PFB_WBC = 0x410;      // Write-back cache?
+const uint32_t Reg_PFB_CFG0 = 0x200;     // [RW] Configuration register 0
+const uint32_t Reg_PFB_CSTATUS = 0x20C;  // [R ] Framebuffer size
+const uint32_t Reg_PFB_WBC = 0x410;      // [RW] Write-back cache?
 
 }

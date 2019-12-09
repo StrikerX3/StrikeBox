@@ -5,13 +5,14 @@
 namespace strikebox {
 
 NV2ADevice::NV2ADevice(uint8_t *pSystemRAM, uint32_t systemRAMSize, IRQHandler& irqHandler)
-    : PCIDevice(PCI_HEADER_TYPE_NORMAL, PCI_VENDOR_ID_NVIDIA, 0x02A0, 0xA1,
+    : PCIDevice(PCI_HEADER_TYPE_NORMAL, PCI_VENDOR_ID_NVIDIA, 0x02A0, 0xA2,
         0x03, 0x00, 0x00) // VGA-compatible controller
     , m_irqHandler(irqHandler)
 {
     nv2a::PCIConfigReader readPCIConfig = [&](uint8_t addr) -> uint32_t { return Read32(m_configSpace, addr); };
     nv2a::PCIConfigWriter writePCIConfig = [&](uint8_t addr, uint32_t value) { Write32(m_configSpace, addr, value); };
-    m_nv2a = std::make_unique<nv2a::NV2A>(pSystemRAM, systemRAMSize, readPCIConfig, writePCIConfig);
+    nv2a::IRQHandlerFunc handleIRQ = [&](bool level) { irqHandler.HandleIRQ(Read8(m_configSpace, PCI_INTERRUPT_LINE), level); };
+    m_nv2a = std::make_unique<nv2a::NV2A>(pSystemRAM, systemRAMSize, readPCIConfig, writePCIConfig, handleIRQ);
 }
 
 NV2ADevice::~NV2ADevice() {

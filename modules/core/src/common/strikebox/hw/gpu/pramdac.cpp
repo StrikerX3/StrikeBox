@@ -12,17 +12,6 @@
 
 namespace strikebox::nv2a {
 
-// [https://envytools.readthedocs.io/en/latest/hw/display/nv3/pramdac.html]
-// "The bit layout for all NV4 PLLs is that bits 18-16 are P, bits 15-8 are N, and bits 7-0 are M."
-union ClockCoefficients {
-    struct {
-        uint8_t M;
-        uint8_t N;
-        uint8_t P : 3;
-    };
-    uint32_t u32;
-};
-
 void PRAMDAC::Reset() {
     // NV2A clocks:
     // crystal = 16.6 MHz
