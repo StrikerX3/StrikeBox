@@ -19,16 +19,27 @@
 
 namespace strikebox::nv2a {
 
+// PBUS registers
+// [https://envytools.readthedocs.io/en/latest/hw/bus/pbus.html#mmio-registers]
+const uint32_t Reg_PBUS_INTR = 0x100;        // [RW] Interrupt status
+const uint32_t Reg_PBUS_INTR_ENABLE = 0x140; // [RW] Interrupt enable
+
+// ----------------------------------------------------------------------------
+
 // NV2A bus control engine (PBUS)
 class PBUS : public NV2AEngine {
 public:
-    PBUS(NV2A& nv2a) : NV2AEngine("PBUS", 0x001000, 0x1000, nv2a) {
-        Reset();
-    }
+    PBUS(NV2A& nv2a) : NV2AEngine("PBUS", 0x001000, 0x1000, nv2a) {}
 
     void Reset() override;
     uint32_t Read(const uint32_t addr) override;
     void Write(const uint32_t addr, const uint32_t value) override;
+
+    bool GetInterruptState() { return m_interruptLevels & m_enabledInterrupts; }
+
+private:
+    uint32_t m_interruptLevels;
+    uint32_t m_enabledInterrupts;
 };
 
 }

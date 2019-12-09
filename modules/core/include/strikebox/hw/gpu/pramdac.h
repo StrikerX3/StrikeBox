@@ -17,9 +17,7 @@ namespace strikebox::nv2a {
 // NV2A RAMDAC, video overlay, cursor, and PLL control engine (PRAMDAC)
 class PRAMDAC : public NV2AEngine {
 public:
-    PRAMDAC(NV2A& nv2a) : NV2AEngine("PRAMDAC", 0x680000, 0x1000, nv2a) {
-        Reset();
-    }
+    PRAMDAC(NV2A& nv2a) : NV2AEngine("PRAMDAC", 0x680000, 0x1000, nv2a) {}
 
     void Reset() override;
     uint32_t Read(const uint32_t addr) override;

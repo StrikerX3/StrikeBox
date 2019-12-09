@@ -74,6 +74,7 @@ void NV2A::Write(const uint32_t addr, const uint32_t value, const uint8_t size) 
 
 void NV2A::RegisterEngine(nv2a::NV2AEngine& engine) {
     engines.insert({ engine.GetOffset() + engine.GetLength() - 1, engine });
+    engine.Reset();
 }
 
 std::optional<std::reference_wrapper<nv2a::NV2AEngine>> NV2A::FindEngine(const uint32_t address) {

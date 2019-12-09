@@ -20,9 +20,7 @@ namespace strikebox::nv2a {
 // NV2A PFIFO MMIO/DMA submission area (USER)
 class USER : public NV2AEngine {
 public:
-    USER(NV2A& nv2a) : NV2AEngine("USER", 0x800000, 0x200000, nv2a) {
-        Reset();
-    }
+    USER(NV2A& nv2a) : NV2AEngine("USER", 0x800000, 0x200000, nv2a) {}
 
     void Reset() override;
     uint32_t Read(const uint32_t addr) override;

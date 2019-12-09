@@ -17,9 +17,7 @@ namespace strikebox::nv2a {
 // NV2A VGA sequencer and graph controller registers (PNVIO)
 class PNVIO : public NV2AEngine {
 public:
-    PNVIO(NV2A& nv2a) : NV2AEngine("PNVIO", 0x0C0000, 0x1000, nv2a) {
-        Reset();
-    }
+    PNVIO(NV2A& nv2a) : NV2AEngine("PNVIO", 0x0C0000, 0x1000, nv2a) {}
 
     void Reset() override;
     uint32_t Read(const uint32_t addr) override;

@@ -17,9 +17,7 @@ namespace strikebox::nv2a {
 // NV2A ROM access window engine (PROM)
 class PROM : public NV2AEngine {
 public:
-    PROM(NV2A& nv2a) : NV2AEngine("PROM", 0x300000, 0x20000, nv2a) {
-        Reset();
-    }
+    PROM(NV2A& nv2a) : NV2AEngine("PROM", 0x300000, 0x20000, nv2a) {}
 
     void Reset() override;
     uint32_t Read(const uint32_t addr) override;

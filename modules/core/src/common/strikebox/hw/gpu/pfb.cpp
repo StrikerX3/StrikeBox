@@ -26,6 +26,7 @@ void PFB::SetEnabled(bool enabled) {
 }
 
 void PFB::Reset() {
+    m_enabled = false;
 }
 
 uint32_t PFB::Read(const uint32_t addr) {

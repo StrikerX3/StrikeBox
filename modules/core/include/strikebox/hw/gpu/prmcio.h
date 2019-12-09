@@ -17,9 +17,7 @@ namespace strikebox::nv2a {
 // NV2A VGA CRTC and attribute controller registers engine (PRMCIO)
 class PRMCIO : public NV2AEngine {
 public:
-    PRMCIO(NV2A& nv2a) : NV2AEngine("PRMCIO", 0x601000, 0x1000, nv2a) {
-        Reset();
-    }
+    PRMCIO(NV2A& nv2a) : NV2AEngine("PRMCIO", 0x601000, 0x1000, nv2a) {}
 
     void Reset() override;
     uint32_t Read(const uint32_t addr) override;

@@ -21,12 +21,17 @@
 
 namespace strikebox::nv2a {
 
+// PTIMER registers
+// [https://envytools.readthedocs.io/en/latest/hw/bus/ptimer.html#mmio-register-list-nv3]
+const uint32_t Reg_PTIMER_INTR = 0x100;        // [RW] Interrupt status
+const uint32_t Reg_PTIMER_INTR_ENABLE = 0x140; // [RW] Interrupt enable
+
+// ----------------------------------------------------------------------------
+
 // NV2A time measurement and time-based alarms (PTIMER)
 class PTIMER : public NV2AEngine {
 public:
-    PTIMER(NV2A& nv2a) : NV2AEngine("PTIMER", 0x009000, 0x1000, nv2a) {
-        Reset();
-    }
+    PTIMER(NV2A& nv2a) : NV2AEngine("PTIMER", 0x009000, 0x1000, nv2a) {}
 
     void SetEnabled(bool enabled);
 
@@ -34,8 +39,13 @@ public:
     uint32_t Read(const uint32_t addr) override;
     void Write(const uint32_t addr, const uint32_t value) override;
 
+    bool GetInterruptState() { return m_interruptLevels & m_enabledInterrupts; }
+
 private:
     bool m_enabled = false;
+
+    uint32_t m_interruptLevels;
+    uint32_t m_enabledInterrupts;
 };
 
 }

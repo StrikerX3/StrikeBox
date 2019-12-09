@@ -58,8 +58,22 @@ void PMC::Write(const uint32_t addr, const uint32_t value) {
     }
 }
 
+static inline void SetOrClearBit(uint32_t& bitset, const uint32_t bit, const bool set) {
+    if (set) {
+        bitset |= bit;
+    }
+    else {
+        bitset &= ~bit;
+    }
+}
+
 void PMC::UpdateIRQ() {
-    // TODO: update m_interruptLevels with signals from other engines
+    SetOrClearBit(m_interruptLevels, Val_PMC_INTR_HOST_PFIFO, m_nv2a.pfifo->GetInterruptState());
+    SetOrClearBit(m_interruptLevels, Val_PMC_INTR_HOST_PGRAPH, m_nv2a.pgraph->GetInterruptState());
+    SetOrClearBit(m_interruptLevels, Val_PMC_INTR_HOST_PVIDEO, m_nv2a.pvideo->GetInterruptState());
+    SetOrClearBit(m_interruptLevels, Val_PMC_INTR_HOST_PTIMER, m_nv2a.ptimer->GetInterruptState());
+    SetOrClearBit(m_interruptLevels, Val_PMC_INTR_HOST_PCRTC, m_nv2a.pcrtc->GetInterruptState());
+    SetOrClearBit(m_interruptLevels, Val_PMC_INTR_HOST_PBUS, m_nv2a.pbus->GetInterruptState());
 
     bool level = ((m_interruptLevels & ~Val_PMC_INTR_HOST_SOFTWARE) && (m_enabledInterrupts & Val_PMC_INTR_ENABLE_HOST_HARDWARE))
         || ((m_interruptLevels & Val_PMC_INTR_HOST_SOFTWARE) && (m_enabledInterrupts & Val_PMC_INTR_ENABLE_HOST_SOFTWARE));
