@@ -68,12 +68,12 @@ void PTIMER::Write(const uint32_t addr, const uint32_t value) {
         m_nv2a.UpdateIRQ();
         break;
     case Reg_PTIMER_CLOCK_MUL:
-        m_clockMul = value;
         GetTickCount(); // ensure the tick count rate is updated immediately
+        m_clockMul = value;
         break;
     case Reg_PTIMER_CLOCK_DIV:
-        m_clockDiv = value;
         GetTickCount(); // ensure the tick count rate is updated immediately
+        m_clockDiv = value;
         break;
     case Reg_PTIMER_TIME_LOW:
         m_tickCount = (m_tickCount & 0xFFFFFFF8000000ull) | (value & 0xEFFFFFFull);
