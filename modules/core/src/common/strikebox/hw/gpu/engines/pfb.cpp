@@ -35,13 +35,14 @@ uint32_t PFB::Read(const uint32_t addr) {
     case Reg_PFB_CSTATUS: return m_nv2a.systemRAMSize;
     case Reg_PFB_WBC: return 0;
     default:
-        log_spew("[NV2A] PFB::Read:   Unimplemented read!   address = 0x%x\n", addr);
-        return 0;
+        //log_spew("[NV2A] PFB::Read:   Unimplemented read!   address = 0x%x\n", addr);
+        return m_mem[addr >> 2];
     }
 }
 
 void PFB::Write(const uint32_t addr, const uint32_t value) {
-    log_spew("[NV2A] PFB::Write:  Unimplemented write!   address = 0x%x,  value = 0x%x\n", addr, value);
+    //log_spew("[NV2A] PFB::Write:  Unimplemented write!   address = 0x%x,  value = 0x%x\n", addr, value);
+    m_mem[addr >> 2] = value;
 }
 
 }
