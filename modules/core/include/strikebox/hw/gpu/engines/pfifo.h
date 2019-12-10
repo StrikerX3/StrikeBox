@@ -58,6 +58,7 @@ static_assert(sizeof(RAMHTParameters) == sizeof(uint32_t));
 
 union RAMFCParameters {
     enum class Size : uint32_t { _1K, _2K };
+
     uint32_t u32;
     struct {
         uint32_t _unused1 : 2;      //  1.. 0 = unused
