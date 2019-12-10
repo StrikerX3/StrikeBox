@@ -22,6 +22,8 @@ public:
     void Reset() override;
     uint32_t Read(const uint32_t addr) override;
     void Write(const uint32_t addr, const uint32_t value) override;
+    uint32_t ReadUnaligned(const uint32_t addr, const uint8_t size) override;
+    void WriteUnaligned(const uint32_t addr, const uint32_t value, const uint8_t size) override;
 };
 
 }

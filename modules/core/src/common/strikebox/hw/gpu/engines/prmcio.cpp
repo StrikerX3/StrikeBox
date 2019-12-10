@@ -24,4 +24,13 @@ void PRMCIO::Write(const uint32_t addr, const uint32_t value) {
     log_spew("[NV2A] PRMCIO::Write:  Unimplemented write!   address = 0x%x,  value = 0x%x\n", addr, value);
 }
 
+uint32_t PRMCIO::ReadUnaligned(const uint32_t addr, const uint8_t size) {
+    log_spew("[NV2A] PRMCIO::ReadUnaligned:   Unimplemented unaligned read!   address = 0x%x,  size = %u\n", addr, size);
+    return 0;
+}
+
+void PRMCIO::WriteUnaligned(const uint32_t addr, const uint32_t value, const uint8_t size) {
+    log_spew("[NV2A] PRMCIO::WriteUnaligned:  Unimplemented unaligned write!   address = 0x%x,  value = 0x%x,  size = %u\n", addr, value, size);
+}
+
 }
