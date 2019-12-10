@@ -69,12 +69,12 @@ static inline void SetOrClearBit(uint32_t& bitset, const uint32_t bit, const boo
 }
 
 void PMC::UpdateIRQ() {
-    SetOrClearBit(m_interruptLevels, Val_PMC_INTR_HOST_PFIFO, m_nv2a.pfifo->GetInterruptState());
-    SetOrClearBit(m_interruptLevels, Val_PMC_INTR_HOST_PGRAPH, m_nv2a.pgraph->GetInterruptState());
-    SetOrClearBit(m_interruptLevels, Val_PMC_INTR_HOST_PVIDEO, m_nv2a.pvideo->GetInterruptState());
-    SetOrClearBit(m_interruptLevels, Val_PMC_INTR_HOST_PTIMER, m_nv2a.ptimer->GetInterruptState());
-    SetOrClearBit(m_interruptLevels, Val_PMC_INTR_HOST_PCRTC, m_nv2a.pcrtc->GetInterruptState());
-    SetOrClearBit(m_interruptLevels, Val_PMC_INTR_HOST_PBUS, m_nv2a.pbus->GetInterruptState());
+    SetOrClearBit(m_interruptLevels, Val_PMC_INTR_HOST_PFIFO, m_nv2a.pfifo.GetInterruptState());
+    SetOrClearBit(m_interruptLevels, Val_PMC_INTR_HOST_PGRAPH, m_nv2a.pgraph.GetInterruptState());
+    SetOrClearBit(m_interruptLevels, Val_PMC_INTR_HOST_PVIDEO, m_nv2a.pvideo.GetInterruptState());
+    SetOrClearBit(m_interruptLevels, Val_PMC_INTR_HOST_PTIMER, m_nv2a.ptimer.GetInterruptState());
+    SetOrClearBit(m_interruptLevels, Val_PMC_INTR_HOST_PCRTC, m_nv2a.pcrtc.GetInterruptState());
+    SetOrClearBit(m_interruptLevels, Val_PMC_INTR_HOST_PBUS, m_nv2a.pbus.GetInterruptState());
 
     bool level = ((m_interruptLevels & ~Val_PMC_INTR_HOST_SOFTWARE) && (m_enabledInterrupts & Val_PMC_INTR_ENABLE_HOST_HARDWARE))
         || ((m_interruptLevels & Val_PMC_INTR_HOST_SOFTWARE) && (m_enabledInterrupts & Val_PMC_INTR_ENABLE_HOST_SOFTWARE));
@@ -84,12 +84,12 @@ void PMC::UpdateIRQ() {
 
 void PMC::SetEngineEnables(uint32_t enables) {
     m_enabledEngines = enables;
-    m_nv2a.pfifo->SetEnabled(enables & Val_PMC_ENABLE_PFIFO);
-    m_nv2a.pgraph->SetEnabled(enables & Val_PMC_ENABLE_PGRAPH);
-    m_nv2a.ptimer->SetEnabled(enables & Val_PMC_ENABLE_PTIMER);
-    m_nv2a.pfb->SetEnabled(enables & Val_PMC_ENABLE_PFB);
-    m_nv2a.pcrtc->SetEnabled(enables & Val_PMC_ENABLE_PCRTC);
-    m_nv2a.pvideo->SetEnabled(enables & Val_PMC_ENABLE_PVIDEO);
+    m_nv2a.pfifo.SetEnabled(enables & Val_PMC_ENABLE_PFIFO);
+    m_nv2a.pgraph.SetEnabled(enables & Val_PMC_ENABLE_PGRAPH);
+    m_nv2a.ptimer.SetEnabled(enables & Val_PMC_ENABLE_PTIMER);
+    m_nv2a.pfb.SetEnabled(enables & Val_PMC_ENABLE_PFB);
+    m_nv2a.pcrtc.SetEnabled(enables & Val_PMC_ENABLE_PCRTC);
+    m_nv2a.pvideo.SetEnabled(enables & Val_PMC_ENABLE_PVIDEO);
 }
 
 }

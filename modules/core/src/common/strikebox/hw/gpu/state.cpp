@@ -11,24 +11,24 @@ NV2A::NV2A(uint8_t* systemRAM, uint32_t systemRAMSize, PCIConfigReader readPCICo
     , writePCIConfig(writePCIConfig)
     , handleIRQ(handleIRQ)
 {
-    RegisterEngine(*pmc);
-    RegisterEngine(*pbus);
-    RegisterEngine(*pfifo);
-    RegisterEngine(*prma);
-    RegisterEngine(*pvideo);
-    RegisterEngine(*ptimer);
-    RegisterEngine(*pcounter);
-    RegisterEngine(*pnvio);
-    RegisterEngine(*pfb);
-    RegisterEngine(*pstraps);
-    RegisterEngine(*prom);
-    RegisterEngine(*pgraph);
-    RegisterEngine(*pcrtc);
-    RegisterEngine(*prmcio);
-    RegisterEngine(*pramdac);
-    RegisterEngine(*prmdio);
-    RegisterEngine(*pramin);
-    RegisterEngine(*user);
+    RegisterEngine(pmc);
+    RegisterEngine(pbus);
+    RegisterEngine(pfifo);
+    RegisterEngine(prma);
+    RegisterEngine(pvideo);
+    RegisterEngine(ptimer);
+    RegisterEngine(pcounter);
+    RegisterEngine(pnvio);
+    RegisterEngine(pfb);
+    RegisterEngine(pstraps);
+    RegisterEngine(prom);
+    RegisterEngine(pgraph);
+    RegisterEngine(pcrtc);
+    RegisterEngine(prmcio);
+    RegisterEngine(pramdac);
+    RegisterEngine(prmdio);
+    RegisterEngine(pramin);
+    RegisterEngine(user);
 }
 
 void NV2A::Reset() {

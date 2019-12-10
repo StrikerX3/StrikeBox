@@ -58,30 +58,30 @@ public:
     const uint32_t systemRAMSize = 0;
 
     // NV2A engines
-    std::unique_ptr<PMC>       pmc      = std::make_unique<PMC>(*this);
-    std::unique_ptr<PBUS>      pbus     = std::make_unique<PBUS>(*this);
-    std::unique_ptr<PFIFO>     pfifo    = std::make_unique<PFIFO>(*this);
-    std::unique_ptr<PRMA>      prma     = std::make_unique<PRMA>(*this);
-    std::unique_ptr<PVIDEO>    pvideo   = std::make_unique<PVIDEO>(*this);
-    std::unique_ptr<PTIMER>    ptimer   = std::make_unique<PTIMER>(*this);
-    std::unique_ptr<PCOUNTER>  pcounter = std::make_unique<PCOUNTER>(*this);
-    std::unique_ptr<PNVIO>     pnvio    = std::make_unique<PNVIO>(*this);
-    std::unique_ptr<PFB>       pfb      = std::make_unique<PFB>(*this);
-    std::unique_ptr<PSTRAPS>   pstraps  = std::make_unique<PSTRAPS>(*this);
-    std::unique_ptr<PROM>      prom     = std::make_unique<PROM>(*this);
-    std::unique_ptr<PGRAPH>    pgraph   = std::make_unique<PGRAPH>(*this);
-    std::unique_ptr<PCRTC>     pcrtc    = std::make_unique<PCRTC>(*this);
-    std::unique_ptr<PRMCIO>    prmcio   = std::make_unique<PRMCIO>(*this);
-    std::unique_ptr<PRAMDAC>   pramdac  = std::make_unique<PRAMDAC>(*this);
-    std::unique_ptr<PRMDIO>    prmdio   = std::make_unique<PRMDIO>(*this);
-    std::unique_ptr<PRAMIN>    pramin   = std::make_unique<PRAMIN>(*this);
-    std::unique_ptr<USER>      user     = std::make_unique<USER>(*this);
+    PMC       pmc      { *this };
+    PBUS      pbus     { *this };
+    PFIFO     pfifo    { *this };
+    PRMA      prma     { *this };
+    PVIDEO    pvideo   { *this };
+    PTIMER    ptimer   { *this };
+    PCOUNTER  pcounter { *this };
+    PNVIO     pnvio    { *this };
+    PFB       pfb      { *this };
+    PSTRAPS   pstraps  { *this };
+    PROM      prom     { *this };
+    PGRAPH    pgraph   { *this };
+    PCRTC     pcrtc    { *this };
+    PRMCIO    prmcio   { *this };
+    PRAMDAC   pramdac  { *this };
+    PRMDIO    prmdio   { *this };
+    PRAMIN    pramin   { *this };
+    USER      user     { *this };
 
     void Reset();
     uint32_t Read(const uint32_t addr, const uint8_t size);
     void Write(const uint32_t addr, const uint32_t value, const uint8_t size);
 
-    inline void UpdateIRQ() { pmc->UpdateIRQ(); }
+    inline void UpdateIRQ() { pmc.UpdateIRQ(); }
 
 private:
     // Fast engine lookup
