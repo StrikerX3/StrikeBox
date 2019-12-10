@@ -30,6 +30,8 @@ void PFIFO::Reset() {
     m_enabled = false;
     m_interruptLevels = 0;
     m_enabledInterrupts = 0;
+    m_ramhtParams = 0;
+    m_ramfcParams = 0;
     // TODO: stop threads
 }
 
