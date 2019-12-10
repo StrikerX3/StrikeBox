@@ -1,8 +1,9 @@
 // StrikeBox NV2A PRAMIN (RAMIN access) engine emulation
 // (C) Ivan "StrikerX3" Oliveira
 //
-// Based on envytools:
+// Based on envytools and nouveau:
 // https://envytools.readthedocs.io/en/latest/index.html
+// https://github.com/torvalds/linux/tree/master/drivers/gpu/drm/nouveau
 //
 // References to particular items in the documentation are denoted between
 // brackets optionally followed by a quote from the documentation.
@@ -13,7 +14,7 @@
 namespace strikebox::nv2a {
 
 void PRAMIN::Reset() {
-    std::fill(m_mem, m_mem + m_length / sizeof(uint32_t), 0);
+    std::fill(m_mem, m_mem + (m_length >> 2), 0);
 }
 
 uint32_t PRAMIN::Read(const uint32_t addr) {

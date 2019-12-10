@@ -1,8 +1,9 @@
 // StrikeBox NV2A PFB (Memory interface) engine emulation
 // (C) Ivan "StrikerX3" Oliveira
 //
-// Based on envytools:
+// Based on envytools and nouveau:
 // https://envytools.readthedocs.io/en/latest/index.html
+// https://github.com/torvalds/linux/tree/master/drivers/gpu/drm/nouveau
 //
 // References to particular items in the documentation are denoted between
 // brackets optionally followed by a quote from the documentation.
@@ -34,7 +35,7 @@ public:
 
 private:
     bool m_enabled = false;
-    uint32_t m_mem[0x1000 / sizeof(uint32_t)]; // for all other reads/writes
+    uint32_t m_mem[0x1000 >> 2]; // for all other reads/writes
 };
 
 }

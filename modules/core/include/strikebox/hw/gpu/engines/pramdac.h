@@ -1,8 +1,9 @@
 // StrikeBox NV2A PRAMDAC (RAMDAC, video overlay, cursor, and PLL control) engine emulation
 // (C) Ivan "StrikerX3" Oliveira
 //
-// Based on envytools:
+// Based on envytools and nouveau:
 // https://envytools.readthedocs.io/en/latest/index.html
+// https://github.com/torvalds/linux/tree/master/drivers/gpu/drm/nouveau
 //
 // References to particular items in the documentation are denoted between
 // brackets optionally followed by a quote from the documentation.
@@ -61,7 +62,7 @@ private:
     ClockCoefficients m_memoryClockCoeff;
     ClockCoefficients m_videoClockCoeff;
 
-    uint32_t m_mem[0x1000 / sizeof(uint32_t)]; // for all other reads/writes
+    uint32_t m_mem[0x1000 >> 2]; // for all other reads/writes
 };
 
 }

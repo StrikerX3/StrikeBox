@@ -1,8 +1,9 @@
 // StrikeBox NV2A PMC (Master control) engine emulation
 // (C) Ivan "StrikerX3" Oliveira
 //
-// Based on envytools:
+// Based on envytools and nouveau:
 // https://envytools.readthedocs.io/en/latest/index.html
+// https://github.com/torvalds/linux/tree/master/drivers/gpu/drm/nouveau
 //
 // References to particular items in the documentation are denoted between
 // brackets optionally followed by a quote from the documentation.
