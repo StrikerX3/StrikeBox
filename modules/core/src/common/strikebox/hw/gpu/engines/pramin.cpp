@@ -17,11 +17,11 @@ void PRAMIN::Reset() {
 }
 
 uint32_t PRAMIN::Read(const uint32_t addr) {
-    return m_mem[addr];
+    return m_mem[addr >> 2];
 }
 
 void PRAMIN::Write(const uint32_t addr, const uint32_t value) {
-    m_mem[addr] = value;
+    m_mem[addr >> 2] = value;
 }
 
 }
