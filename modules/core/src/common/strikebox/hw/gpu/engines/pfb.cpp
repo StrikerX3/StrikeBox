@@ -26,6 +26,7 @@ void PFB::SetEnabled(bool enabled) {
 }
 
 void PFB::Reset() {
+    std::fill(std::begin(m_mem), std::end(m_mem), 0);
     m_enabled = false;
 }
 

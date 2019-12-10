@@ -61,7 +61,7 @@ private:
     ClockCoefficients m_memoryClockCoeff;
     ClockCoefficients m_videoClockCoeff;
 
-    uint32_t m_mem[0x1000 / 4]; // for all other reads/writes
+    uint32_t m_mem[0x1000 / sizeof(uint32_t)]; // for all other reads/writes
 };
 
 }

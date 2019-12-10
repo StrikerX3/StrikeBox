@@ -13,6 +13,7 @@
 namespace strikebox::nv2a {
 
 void PRAMIN::Reset() {
+    std::fill(m_mem, m_mem + m_length / sizeof(uint32_t), 0);
 }
 
 uint32_t PRAMIN::Read(const uint32_t addr) {

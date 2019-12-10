@@ -34,7 +34,7 @@ public:
 
 private:
     bool m_enabled = false;
-    uint32_t m_mem[0x1000 / 4];
+    uint32_t m_mem[0x1000 / sizeof(uint32_t)]; // for all other reads/writes
 };
 
 }
