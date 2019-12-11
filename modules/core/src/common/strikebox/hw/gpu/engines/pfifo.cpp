@@ -60,11 +60,28 @@ void PFIFO::SetEnabled(bool enabled) {
 
 void PFIFO::Reset() {
     m_enabled = false;
+    // TODO: stop threads
+
     m_interruptLevels = 0;
     m_enabledInterrupts = 0;
     m_ramhtParams.u32 = 0;
     m_ramfcParams.u32 = 0;
-    // TODO: stop threads
+
+    m_channelModes = 0;
+    m_channelDMA = 0;
+    m_channelSizes = 0;
+
+    m_cache1_getAddress = 0;
+    m_cache1_putAddress = 0;
+    m_cache1_dmaGetAddress = 0;
+    m_cache1_dmaPutAddress = 0;
+    m_cache1_dmaState.u32 = 0;
+
+    m_cache1_push0Address = 0;
+    m_cache1_pull0Address = 0;
+
+    m_cache1_push1Address = 0;
+    m_cache1_pull1Address = 0;
 }
 
 uint32_t PFIFO::Read(const uint32_t addr) {
@@ -73,6 +90,19 @@ uint32_t PFIFO::Read(const uint32_t addr) {
     case Reg_PFIFO_INTR_ENABLE: return m_enabledInterrupts;
     case Reg_PFIFO_RAMHT: return m_ramhtParams.u32;
     case Reg_PFIFO_RAMFC: return m_ramfcParams.u32;
+    case Reg_PFIFO_MODE: return m_channelModes;
+    case Reg_PFIFO_DMA: return m_channelDMA;
+    case Reg_PFIFO_SIZE: return m_channelSizes;
+    case Reg_PFIFO_CACHE1_PUSH0: return m_cache1_push0Address;
+    case Reg_PFIFO_CACHE1_PUSH1: return m_cache1_push1Address;
+    case Reg_PFIFO_CACHE1_PUT: return m_cache1_putAddress;
+    case Reg_PFIFO_CACHE1_DMA_STATE: return m_cache1_dmaState.u32;
+    case Reg_PFIFO_CACHE1_DMA_PUT: return m_cache1_dmaPutAddress;
+    case Reg_PFIFO_CACHE1_DMA_GET: return m_cache1_dmaGetAddress;
+    case Reg_PFIFO_CACHE1_PULL0: return m_cache1_pull0Address;
+    case Reg_PFIFO_CACHE1_PULL1: return m_cache1_pull1Address;
+    case Reg_PFIFO_CACHE1_GET: return m_cache1_getAddress;
+
     default:
         log_spew("[NV2A] PFIFO::Read:   Unimplemented read!   address = 0x%x\n", addr);
         return 0;
@@ -98,6 +128,18 @@ void PFIFO::Write(const uint32_t addr, const uint32_t value) {
         m_ramfcParams.u32 = value;
         printRAMFCParameters(m_ramfcParams);
         break;
+    case Reg_PFIFO_MODE: m_channelModes = value; break;
+    case Reg_PFIFO_DMA: m_channelDMA = value; break;
+    case Reg_PFIFO_SIZE: m_channelSizes = value; break;
+    case Reg_PFIFO_CACHE1_PUSH0: m_cache1_push0Address = value; break;
+    case Reg_PFIFO_CACHE1_PUSH1: m_cache1_push1Address = value; break;
+    case Reg_PFIFO_CACHE1_PUT: m_cache1_putAddress = value; break;
+    case Reg_PFIFO_CACHE1_DMA_STATE: m_cache1_dmaState.u32 = value; break;
+    case Reg_PFIFO_CACHE1_DMA_PUT: m_cache1_dmaPutAddress = value; break;
+    case Reg_PFIFO_CACHE1_DMA_GET: m_cache1_dmaGetAddress = value; break;
+    case Reg_PFIFO_CACHE1_PULL0: m_cache1_pull0Address = value; break;
+    case Reg_PFIFO_CACHE1_PULL1: m_cache1_pull1Address = value; break;
+    case Reg_PFIFO_CACHE1_GET: m_cache1_dmaGetAddress = value; break;
     default:
         log_spew("[NV2A] PFIFO::Write:  Unimplemented write!   address = 0x%x,  value = 0x%x\n", addr, value);
         break;
