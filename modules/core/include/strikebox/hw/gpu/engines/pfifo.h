@@ -36,40 +36,6 @@ const uint32_t Reg_PFIFO_INTR_ENABLE = 0x140;                  // [RW] Interrupt
 const uint32_t Reg_PFIFO_RAMHT = 0x210;                        // [RW] RAMHT (hash table) parameters
 const uint32_t Reg_PFIFO_RAMFC = 0x214;                        // [RW] RAMFC (FIFO context) parameters
 
-// --- RAMHT parameters ------------
-
-union RAMHTParameters {
-    enum class Size : uint32_t { _4K, _8K, _16K, _32K };
-    enum class Search : uint32_t { _16, _32, _64, _128 };
-
-    uint32_t u32;
-    struct {
-        uint32_t _unused1 : 4;     //  3.. 0 = unused
-        uint32_t baseAddress : 5;  //  8.. 5 = base address of hash table
-        uint32_t _unused2 : 7;     // 15.. 9 = unused
-        Size size : 2;             // 17..16 = size of hash table in bytes
-        uint32_t _unused3 : 6;     // 23..18 = unused
-        Search search : 2;         // 25..24 = entry search stride in bytes
-    };
-};
-static_assert(sizeof(RAMHTParameters) == sizeof(uint32_t));
-
-// --- RAMFC parameters ------------
-
-union RAMFCParameters {
-    enum class Size : uint32_t { _1K, _2K };
-
-    uint32_t u32;
-    struct {
-        uint32_t _unused1 : 2;      //  1.. 0 = unused
-        uint32_t baseAddress1 : 7;  //  8.. 2 = base address of FIFO context 1
-        uint32_t _unused2 : 7;      // 15.. 9 = unused
-        Size size : 1;              // 16..16 = size of FIFO context in bytes
-        uint32_t baseAddress2 : 7;  // 23..17 = base address of FIFO context 2
-    };
-};
-static_assert(sizeof(RAMFCParameters) == sizeof(uint32_t));
-
 // ----------------------------------------------------------------------------
 
 // NV2A MMIO and DMA FIFO submission to PGRAPH engine (PFIFO)
@@ -85,14 +51,16 @@ public:
 
     bool GetInterruptState() { return m_interruptLevels & m_enabledInterrupts; }
 
+    RAMHT::Entry* GetRAMHTEntry(uint32_t handle, uint32_t channelID);
+
 private:
     bool m_enabled = false;
 
     uint32_t m_interruptLevels;
     uint32_t m_enabledInterrupts;
     
-    RAMHTParameters m_ramhtParams;
-    RAMFCParameters m_ramfcParams;
+    RAMHT m_ramhtParams;
+    RAMFC m_ramfcParams;
 };
 
 }

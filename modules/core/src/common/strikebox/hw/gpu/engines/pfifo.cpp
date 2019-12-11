@@ -14,32 +14,32 @@
 
 namespace strikebox::nv2a {
 
-static inline void printRAMHTParameters(RAMHTParameters& params) {
+static inline void printRAMHTParameters(RAMHT& params) {
 #if LOG_LEVEL >= LOG_LEVEL_SPEW
     log_spew("[NV2A] PFIFO RAMHT updated:  base addr = 0x%x,  size = ", params.baseAddress);
     switch (params.size) {
-    case RAMHTParameters::Size::_4K: log_spew("4K"); break;
-    case RAMHTParameters::Size::_8K: log_spew("8K"); break;
-    case RAMHTParameters::Size::_16K: log_spew("16K"); break;
-    case RAMHTParameters::Size::_32K: log_spew("32K"); break;
+    case RAMHT::Size::_4K: log_spew("4K"); break;
+    case RAMHT::Size::_8K: log_spew("8K"); break;
+    case RAMHT::Size::_16K: log_spew("16K"); break;
+    case RAMHT::Size::_32K: log_spew("32K"); break;
     }
     log_spew(",  search = ");
     switch (params.search) {
-    case RAMHTParameters::Search::_16: log_spew("16"); break;
-    case RAMHTParameters::Search::_32: log_spew("32"); break;
-    case RAMHTParameters::Search::_64: log_spew("64"); break;
-    case RAMHTParameters::Search::_128: log_spew("128"); break;
+    case RAMHT::Search::_16: log_spew("16"); break;
+    case RAMHT::Search::_32: log_spew("32"); break;
+    case RAMHT::Search::_64: log_spew("64"); break;
+    case RAMHT::Search::_128: log_spew("128"); break;
     }
     log_spew("\n");
 #endif
 }
 
-static inline void printRAMFCParameters(RAMFCParameters& params) {
+static inline void printRAMFCParameters(RAMFC& params) {
 #if LOG_LEVEL >= LOG_LEVEL_SPEW
     log_spew("[NV2A] PFIFO RAMFC updated:  base addr 1 = 0x%x,  base addr 2 = 0x%x,  size = ", params.baseAddress1, params.baseAddress2);
     switch (params.size) {
-    case RAMFCParameters::Size::_1K: log_spew("1K\n"); break;
-    case RAMFCParameters::Size::_2K: log_spew("2K\n"); break;
+    case RAMFC::Size::_1K: log_spew("1K\n"); break;
+    case RAMFC::Size::_2K: log_spew("2K\n"); break;
     }
 #endif
 }
@@ -102,6 +102,12 @@ void PFIFO::Write(const uint32_t addr, const uint32_t value) {
         log_spew("[NV2A] PFIFO::Write:  Unimplemented write!   address = 0x%x,  value = 0x%x\n", addr, value);
         break;
     }
+}
+
+RAMHT::Entry* PFIFO::GetRAMHTEntry(uint32_t handle, uint32_t channelID) {
+    uint32_t hash = m_ramhtParams.Hash(handle, channelID);
+    uint32_t address = (m_ramhtParams.baseAddress << 12) + (hash << 3);
+    return reinterpret_cast<RAMHT::Entry*>(m_nv2a.pramin.GetMemoryPointer(address));
 }
 
 }

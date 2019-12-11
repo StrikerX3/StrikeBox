@@ -21,7 +21,7 @@ namespace strikebox::nv2a {
 class PRAMIN : public NV2AEngine {
 public:
     PRAMIN(NV2A& nv2a) : NV2AEngine("PRAMIN", 0x700000, 0x100000, nv2a) {
-        m_mem = new uint32_t[m_length / sizeof(uint32_t)];
+        m_mem = new uint8_t[m_length];
     }
 
     ~PRAMIN() {
@@ -32,8 +32,15 @@ public:
     uint32_t Read(const uint32_t addr) override;
     void Write(const uint32_t addr, const uint32_t value) override;
 
+    inline uint8_t* GetMemoryPointer(uint32_t address = 0) {
+        if (address < m_length) {
+            return &m_mem[address];
+        }
+        return nullptr;
+    }
+
 private:
-    uint32_t* m_mem;
+    uint8_t* m_mem;
 };
 
 }

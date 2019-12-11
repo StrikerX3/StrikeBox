@@ -14,15 +14,15 @@
 namespace strikebox::nv2a {
 
 void PRAMIN::Reset() {
-    std::fill(m_mem, m_mem + (m_length >> 2), 0);
+    std::fill(m_mem, m_mem + m_length, 0);
 }
 
 uint32_t PRAMIN::Read(const uint32_t addr) {
-    return m_mem[addr >> 2];
+    return *reinterpret_cast<uint32_t*>(&m_mem[addr]);
 }
 
 void PRAMIN::Write(const uint32_t addr, const uint32_t value) {
-    m_mem[addr >> 2] = value;
+    *reinterpret_cast<uint32_t*>(&m_mem[addr]) = value;
 }
 
 }

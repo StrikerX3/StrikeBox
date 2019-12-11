@@ -12,6 +12,8 @@
 #include <cstdint>
 #include <string>
 
+#include "defs.h"
+
 namespace strikebox::nv2a {
 
 class NV2A;
