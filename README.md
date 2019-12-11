@@ -1,9 +1,6 @@
 **If you're looking for a functional Xbox emulator, check out [XQEMU](http://xqemu.com/)
 or [Cxbx-Reloaded](https://github.com/Cxbx-Reloaded/Cxbx-Reloaded).**
 
-**This project is on an indefinite hold as the two above projects are much more
-complete and functional.**
-
 ---
 
 # StrikeBox
