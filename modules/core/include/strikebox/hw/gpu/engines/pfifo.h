@@ -26,7 +26,7 @@ namespace strikebox::nv2a {
 // [https://github.com/torvalds/linux/blob/master/drivers/gpu/drm/nouveau/nvkm/engine/fifo/regsnv04.h]
 
 // envytools documentation on PFIFO is very sparse.
-// However, the some of the registers seem to be compatible with NV1 which is documented here:
+// However, some of the registers seem to be compatible with NV1 which is documented here:
 // [https://envytools.readthedocs.io/en/latest/hw/fifo/nv1-pfifo.html#the-mmio-registers]
 
 // Operational parameters
