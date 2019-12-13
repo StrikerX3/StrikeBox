@@ -161,8 +161,8 @@ private:
 
     // Cache 1 registers
     // FIXME: some of these are actually part of the PFIFO pusher or puller states and shouldn't be here
-    // [https://envytools.readthedocs.io/en/latest/hw/fifo/dma-pusher.html]
-    // [https://envytools.readthedocs.io/en/latest/hw/fifo/puller.html]
+    // [https://envytools.readthedocs.io/en/latest/hw/fifo/dma-pusher.html#pusher-state]
+    // [https://envytools.readthedocs.io/en/latest/hw/fifo/puller.html#puller-state]
     uint32_t m_cache1_getAddress;
     uint32_t m_cache1_putAddress;
     uint32_t m_cache1_dmaGetAddress;
