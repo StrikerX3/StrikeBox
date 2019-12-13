@@ -19,6 +19,7 @@ namespace strikebox::nv2a {
 
 // PGRAPH registers
 // [https://envytools.readthedocs.io/en/latest/hw/graph/kelvin/pgraph.html#mmio-registers]
+// [https://github.com/torvalds/linux/blob/master/drivers/gpu/drm/nouveau/nvkm/engine/gr/regs.h]
 const uint32_t Reg_PGRAPH_INTR = 0x100;        // [RW] Interrupt status
 const uint32_t Reg_PGRAPH_INTR_ENABLE = 0x140; // [RW] Interrupt enable
 
