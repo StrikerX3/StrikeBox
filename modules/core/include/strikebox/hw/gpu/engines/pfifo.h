@@ -24,6 +24,16 @@ namespace strikebox::nv2a {
 // PFIFO registers
 // [https://envytools.readthedocs.io/en/latest/hw/fifo/nv4-pfifo.html#mmio-registers]
 // [https://github.com/torvalds/linux/blob/master/drivers/gpu/drm/nouveau/nvkm/engine/fifo/regsnv04.h]
+
+// envytools documentation on PFIFO is very sparse.
+// However, the some of the registers seem to be compatible with NV1 which is documented here:
+// [https://envytools.readthedocs.io/en/latest/hw/fifo/nv1-pfifo.html#the-mmio-registers]
+
+// Operational parameters
+const uint32_t Reg_PFIFO_DELAY_0 = 0x40;                       // [RW] Delay (?)
+const uint32_t Reg_PFIFO_DMA_TIMESLICE = 0x44;                 // [RW] DMA timeslice
+
+// Interrupt state
 const uint32_t Reg_PFIFO_INTR = 0x100;                         // [RW] Interrupt status
 const uint32_t Reg_PFIFO_INTR_ENABLE = 0x140;                  // [RW] Interrupt enable
 /**/const uint32_t Val_PFIFO_INTR_CACHE_ERROR = (1 << 0);      //  bit  0: Cache error
@@ -33,25 +43,60 @@ const uint32_t Reg_PFIFO_INTR_ENABLE = 0x140;                  // [RW] Interrupt
 /**/const uint32_t Val_PFIFO_INTR_DMA_PT = (1 << 16);          //  bit 16: DMA PT
 /**/const uint32_t Val_PFIFO_INTR_SEMAPHORE = (1 << 20);       //  bit 20: Semaphore
 /**/const uint32_t Val_PFIFO_INTR_ACQUIRE_TIMEOUT = (1 << 24); //  bit 24: Acquire timeout
+
+// Memory and cache parameters
 const uint32_t Reg_PFIFO_RAMHT = 0x210;                        // [RW] RAMHT (hash table) parameters
 const uint32_t Reg_PFIFO_RAMFC = 0x214;                        // [RW] RAMFC (FIFO context) parameters
+const uint32_t Reg_PFIFO_CACHES = 0x500;                       // [RW] PFIFO caches (?)
 
 // Channel flags
 // Each bit in these registers represents a channel (bit 0 = channel 0, bit 31 = channel 31)
 const uint32_t Reg_PFIFO_MODE = 0x504;                         // [RW] PFIFO channel modes (0 = PIO, 1 = DMA)
-const uint32_t Reg_PFIFO_DMA = 0x508;                          // [RW] PFIFO DMA ??
-const uint32_t Reg_PFIFO_SIZE = 0x50c;                         // [RW] PFIFO size ??
+const uint32_t Reg_PFIFO_DMA = 0x508;                          // [RW] PFIFO DMA (?)
+const uint32_t Reg_PFIFO_SIZE = 0x50c;                         // [RW] PFIFO size (?)
+
+// Cache 0 registers
+// Most of these are assumptions based on the expectation that CACHE0 registers at 0x1000..0x11FF
+// match the corresponding CACHE1 registers at 0x1200..0x13FF
+const uint32_t Reg_PFIFO_CACHE0_PUSH0 = 0x1000;                // [RW] Cache 0 pusher 0 address
+const uint32_t Reg_PFIFO_CACHE0_PULL0 = 0x1050;                // [RW] Cache 0 puller 0 address
+const uint32_t Reg_PFIFO_CACHE0_HASH = 0x1058;                 // [RW] Cache 0 hash (?)
 
 // Cache 1 registers
 const uint32_t Reg_PFIFO_CACHE1_PUSH0 = 0x1200;                // [RW] Cache 1 pusher 0 address
 const uint32_t Reg_PFIFO_CACHE1_PUSH1 = 0x1204;                // [RW] Cache 1 pusher 1 address
 const uint32_t Reg_PFIFO_CACHE1_PUT = 0x1210;                  // [RW] Cache 1 put address
-const uint32_t Reg_PFIFO_CACHE1_DMA_STATE = 0x1228;            // [RW] Cache 1 DMA state
-const uint32_t Reg_PFIFO_CACHE1_DMA_PUT = 0x1240;              // [RW] Cache 1 DMA put address
-const uint32_t Reg_PFIFO_CACHE1_DMA_GET = 0x1244;              // [RW] Cache 1 DMA get address
+const uint32_t Reg_PFIFO_CACHE1_DMA_PUSH = 0x1220;             // [RW] Cache 1 (puller) DMA pushbuffer parameters (TODO: struct?)
+const uint32_t Reg_PFIFO_CACHE1_DMA_FETCH = 0x1224;            // [RW] Cache 1 DMA fetch parameters (PFIFOCacheDMAFetch)
+const uint32_t Reg_PFIFO_CACHE1_DMA_STATE = 0x1228;            // [RW] Cache 1 (pusher) DMA state (PFIFOCacheDMAState)
+const uint32_t Reg_PFIFO_CACHE1_DMA_INSTANCE = 0x122c;         // [RW] Cache 1 DMA instance address
+const uint32_t Reg_PFIFO_CACHE1_DMA_CTL = 0x1230;              // [RW] Cache 1 DMA control
+const uint32_t Reg_PFIFO_CACHE1_DMA_PUT = 0x1240;              // [RW] Cache 1 (pusher) DMA put address
+const uint32_t Reg_PFIFO_CACHE1_DMA_GET = 0x1244;              // [RW] Cache 1 (pusher) DMA get address
+const uint32_t Reg_PFIFO_CACHE1_REF_CNT = 0x1248;              // [RW] Cache 1 (pusher/puller) reference counter
+const uint32_t Reg_PFIFO_CACHE1_DMA_SUBROUTINE = 0x124c;       // [RW] Cache 1 (pusher) DMA subroutine status (TODO: struct?)
 const uint32_t Reg_PFIFO_CACHE1_PULL0 = 0x1250;                // [RW] Cache 1 puller 0 address
 const uint32_t Reg_PFIFO_CACHE1_PULL1 = 0x1254;                // [RW] Cache 1 puller 1 address
+const uint32_t Reg_PFIFO_CACHE1_HASH = 0x1258;                 // [RW] Cache 1 hash (?)
+const uint32_t Reg_PFIFO_CACHE1_ACQUIRE_TIMEOUT = 0x1260;      // [RW] Cache 1 (puller) semaphore acquire timeout
+const uint32_t Reg_PFIFO_CACHE1_ACQUIRE_TIMESTAMP = 0x1264;    // [RW] Cache 1 (puller) semaphore acquire timestamp
+const uint32_t Reg_PFIFO_CACHE1_ACQUIRE_VALUE = 0x1268;        // [RW] Cache 1 (puller) semaphore acquire value
+const uint32_t Reg_PFIFO_CACHE1_SEMAPHORE = 0x126c;            // [RW] Cache 1 (puller) semaphore
 const uint32_t Reg_PFIFO_CACHE1_GET = 0x1270;                  // [RW] Cache 1 get address
+const uint32_t Reg_PFIFO_CACHE1_ENGINE = 0x1280;               // [RW] Cache 1 engine (?)
+
+union PFIFOCacheDMAFetch {
+    uint32_t u32;
+    struct {
+        uint32_t
+            : 3,                 //
+            fetchTrigger : 5,    // Fetch trigger (multiples of 8; 0 = 8, 31 = 256)
+            : 5,                 //
+            fetchSize : 3,       // Fetch size (multiples of 32; 0 = 32, 7 = 256)
+            maxReqs : 4;         // Maximum number of requests (0 to 15)
+    };
+};
+static_assert(sizeof(PFIFOCacheDMAFetch) == sizeof(uint32_t));
 
 union PFIFOCacheDMAState {
     enum class ErrorCode : uint32_t { None, Call, NonCache, Return, ReservedCommand, Protection };
@@ -90,24 +135,52 @@ public:
 private:
     bool m_enabled = false;
 
+    // Operational parameters
+    uint32_t m_delay0;
+    uint32_t m_dmaTimeslice;
+
+    // Interrupt state
     uint32_t m_interruptLevels;
     uint32_t m_enabledInterrupts;
     
+    // Memory and cache parameters
     RAMHT m_ramhtParams;
     RAMFC m_ramfcParams;
+    uint32_t m_caches;
 
     // Channel flags
     uint32_t m_channelModes;
     uint32_t m_channelDMA;
     uint32_t m_channelSizes;
 
+    // Cache 0 registers
+    uint32_t m_cache0_hash;
+
+    uint32_t m_cache0_push0Address;
+    uint32_t m_cache0_pull0Address;
+
     // Cache 1 registers
+    // FIXME: some of these are actually part of the PFIFO pusher or puller states and shouldn't be here
+    // [https://envytools.readthedocs.io/en/latest/hw/fifo/dma-pusher.html]
+    // [https://envytools.readthedocs.io/en/latest/hw/fifo/puller.html]
     uint32_t m_cache1_getAddress;
     uint32_t m_cache1_putAddress;
     uint32_t m_cache1_dmaGetAddress;
     uint32_t m_cache1_dmaPutAddress;
+    uint32_t m_cache1_dmaPush;
+    PFIFOCacheDMAFetch m_cache1_dmaFetch;
     PFIFOCacheDMAState m_cache1_dmaState;
-    
+    uint32_t m_cache1_dmaInstanceAddress;
+    uint32_t m_cache1_dmaControl;
+    uint32_t m_cache1_referenceCounter;
+    uint32_t m_cache1_dmaSubroutine;
+    uint32_t m_cache1_hash;
+    uint32_t m_cache1_acquireTimeout;
+    uint32_t m_cache1_acquireTimestamp;
+    uint32_t m_cache1_acquireValue;
+    uint32_t m_cache1_semaphore;
+    uint32_t m_cache1_engine;
+
     uint32_t m_cache1_push0Address;
     uint32_t m_cache1_pull0Address;
     
