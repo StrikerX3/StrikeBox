@@ -70,14 +70,14 @@ void PCIBus::IOWriteConfigAddress(uint32_t pData) {
 }
 
 uint32_t PCIBus::IOReadConfigData(uint8_t size, uint8_t regOffset) {
-    log_spew("PCIBus::IOReadConfigData:  (%d:%d:%d reg 0x%x offset %d size %d)\n",
+    /*log_spew("PCIBus::IOReadConfigData:  (%d:%d:%d reg 0x%x offset %d size %d)\n",
         m_configAddressRegister.busNumber,
         m_configAddressRegister.deviceNumber,
         m_configAddressRegister.functionNumber,
         m_configAddressRegister.registerNumber,
-		regOffset,
+        regOffset,
         size
-    );
+    );*/
 
     auto it = m_Devices.find(
         PCI_DEVID(m_configAddressRegister.busNumber,
@@ -95,7 +95,7 @@ uint32_t PCIBus::IOReadConfigData(uint8_t size, uint8_t regOffset) {
         m_configAddressRegister.deviceNumber,
         m_configAddressRegister.functionNumber,
         m_configAddressRegister.registerNumber,
-		regOffset,
+        regOffset,
         size
     );
 
@@ -104,15 +104,15 @@ uint32_t PCIBus::IOReadConfigData(uint8_t size, uint8_t regOffset) {
 }
 
 void PCIBus::IOWriteConfigData(uint32_t pData, uint8_t size, uint8_t regOffset) {
-    log_spew("PCIBus::IOWriteConfigData: (%d:%d:%d reg 0x%x offset %d size %d) = 0x%x\n",
+    /*log_spew("PCIBus::IOWriteConfigData: (%d:%d:%d reg 0x%x offset %d size %d) = 0x%x\n",
         m_configAddressRegister.busNumber,
         m_configAddressRegister.deviceNumber,
         m_configAddressRegister.functionNumber,
         m_configAddressRegister.registerNumber,
-		regOffset,
+        regOffset,
         size,
         pData
-    );
+    );*/
 
     auto it = m_Devices.find(
         PCI_DEVID(m_configAddressRegister.busNumber,
@@ -124,15 +124,15 @@ void PCIBus::IOWriteConfigData(uint32_t pData, uint8_t size, uint8_t regOffset) 
         return;
     }
 
-log_warning("PCIBus::IOWriteConfigData: Invalid Device Write (%d:%d:%d reg 0x%x offset %d size %d) = 0x%x\n",
-    m_configAddressRegister.busNumber,
-    m_configAddressRegister.deviceNumber,
-    m_configAddressRegister.functionNumber,
-    m_configAddressRegister.registerNumber,
-    regOffset,
-    size,
-    pData
-);
+    log_warning("PCIBus::IOWriteConfigData: Invalid Device Write (%d:%d:%d reg 0x%x offset %d size %d) = 0x%x\n",
+        m_configAddressRegister.busNumber,
+        m_configAddressRegister.deviceNumber,
+        m_configAddressRegister.functionNumber,
+        m_configAddressRegister.registerNumber,
+        regOffset,
+        size,
+        pData
+    );
 }
 
 bool PCIBus::IORead(uint32_t port, uint32_t *value, uint8_t size) {
@@ -228,7 +228,7 @@ void PCIBus::ConfigureIRQs(IRQMapper *irqMapper, uint8_t numIRQs) {
 
     delete m_irqMapper;
     m_irqMapper = irqMapper;
-    
+
     if (m_irqCount != nullptr) delete[] m_irqCount;
     m_irqCount = new uint32_t[numIRQs];
     memset(m_irqCount, 0, numIRQs * sizeof(uint32_t));

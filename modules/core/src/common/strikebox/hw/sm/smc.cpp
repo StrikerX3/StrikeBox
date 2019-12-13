@@ -85,7 +85,7 @@ uint8_t SMCDevice::ReceiveByte() {
 }
 
 uint8_t SMCDevice::ReadByte(uint8_t command) {
-    log_spew("SMCDevice::ReadByte:  command = 0x%x\n", command);
+    //log_spew("SMCDevice::ReadByte:  command = 0x%x\n", command);
 
     switch (command) {
     case SMCRegister::Version:
@@ -142,7 +142,7 @@ void SMCDevice::SendByte(uint8_t data) {
 }
 
 void SMCDevice::WriteByte(uint8_t command, uint8_t value) {
-    log_spew("SMCDevice::WriteByte:  command = 0x%x,  value = 0x%x\n", command, value);
+    //log_spew("SMCDevice::WriteByte:  command = 0x%x,  value = 0x%x\n", command, value);
 
     switch (command) {
     case SMCRegister::Version:

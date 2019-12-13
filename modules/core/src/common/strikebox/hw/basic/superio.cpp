@@ -87,7 +87,7 @@ void SuperIO::UpdateDevices() {
 }
 
 bool SuperIO::IORead(uint32_t port, uint32_t *value, uint8_t size) {
-    log_spew("SuperIO::IORead:  port = 0x%x,  size = %u\n", port, size);
+    //log_spew("SuperIO::IORead:  port = 0x%x,  size = %u\n", port, size);
 
     switch (port) {
     case PORT_SUPERIO_CONFIG:
@@ -115,7 +115,7 @@ bool SuperIO::IORead(uint32_t port, uint32_t *value, uint8_t size) {
 }
 
 bool SuperIO::IOWrite(uint32_t port, uint32_t value, uint8_t size) {
-    log_spew("SuperIO::IOWrite: port = 0x%x,  size = %u,  value = 0x%x\n", port, size, value);
+    //log_spew("SuperIO::IOWrite: port = 0x%x,  size = %u,  value = 0x%x\n", port, size, value);
 
     switch (port) {
     case PORT_SUPERIO_CONFIG:
