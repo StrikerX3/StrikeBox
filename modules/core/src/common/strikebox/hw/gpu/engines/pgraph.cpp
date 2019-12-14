@@ -118,7 +118,7 @@ void PGRAPH::Write(const uint32_t addr, const uint32_t value) {
 
     default:
         if (addr >= Reg_PGRAPH_TILE_BASE && addr < Reg_PGRAPH_TILE_BASE + kPGRAPH_NumTiles * sizeof(PGRAPHTile)) {
-            uint32_t tileIndex = ((addr - Reg_PGRAPH_TILE_BASE) >> 4) & 7;
+            uint32_t tileIndex = (addr - Reg_PGRAPH_TILE_BASE) / sizeof(PGRAPHTile);
             switch (addr & 0xF) {
             case Reg_PGRAPH_TILE: m_tiles[tileIndex].address = value; break;
             case Reg_PGRAPH_TLIMIT: m_tiles[tileIndex].limit = value; break;
@@ -127,7 +127,7 @@ void PGRAPH::Write(const uint32_t addr, const uint32_t value) {
             }
         }
         else if (addr >= Reg_PGRAPH_ZCOMP_BASE && addr < Reg_PGRAPH_ZCOMP_BASE + kPGRAPH_NumZCOMP * sizeof(uint32_t)) {
-            uint32_t zcompIndex = ((addr - Reg_PGRAPH_ZCOMP_BASE) >> 2) & (kPGRAPH_NumZCOMP - 1);
+            uint32_t zcompIndex = (addr - Reg_PGRAPH_ZCOMP_BASE) / sizeof(uint32_t);
             m_zcomp[zcompIndex] = value;
         }
         else {
