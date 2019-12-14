@@ -115,7 +115,7 @@ int main(int argc, const char *argv[]) {
     settings.hw_sysclock_tickRate = 1000.0f;
     settings.hw_enableSuperIO = true;
     settings.hw_charDrivers[0].type = CHD_HostSerialPort;
-    settings.hw_charDrivers[0].params.hostSerialPort.portNum = 3;
+    settings.hw_charDrivers[0].params.hostSerialPort.portNum = 5;
     //settings.hw_charDrivers[0].type = CHD_Null;
     settings.hw_charDrivers[1].type = CHD_Null;
     settings.rom_mcpx = mcpx_path;
