@@ -11,6 +11,7 @@
 #include "strikebox/hw/gpu/state.h"
 
 #include "strikebox/log.h"
+#include "strikebox/thread.h"
 
 namespace strikebox::nv2a {
 
@@ -50,7 +51,8 @@ void PFIFO::SetEnabled(bool enabled) {
     if (m_enabled != enabled) {
         m_enabled = enabled;
         if (enabled) {
-            // TODO: start threads
+            m_pusherThread = std::thread([&]() { PusherThread(); });
+            m_pullerThread = std::thread([&]() { PullerThread(); });
         }
         else {
             Reset();
@@ -60,7 +62,11 @@ void PFIFO::SetEnabled(bool enabled) {
 
 void PFIFO::Reset() {
     m_enabled = false;
-    // TODO: stop threads
+    
+    // TODO: send signal to stop threads
+
+    if (m_pullerThread.joinable()) m_pullerThread.join();
+    if (m_pusherThread.joinable()) m_pusherThread.join();
 
     m_delay0 = 0;
     m_dmaTimeslice = 0;
@@ -78,7 +84,7 @@ void PFIFO::Reset() {
 
     m_cache0_hash = 0;
 
-    m_cache0_push0Address = 0;
+    m_cache0_push0.u32 = 0;
 
     m_cache1_getAddress = 0;
     m_cache1_putAddress = 0;
@@ -91,6 +97,7 @@ void PFIFO::Reset() {
     m_cache1_acquireValue = 0;
     m_cache1_semaphore = 0;
     m_cache1_status.u32 = 0;
+    m_cache1_status.lowMark = 1;
     std::fill(std::begin(m_cache1_commands), std::end(m_cache1_commands), FIFOCommand{ 0 });
 
     m_dmaPusher.push0.u32 = 0;
@@ -127,14 +134,14 @@ uint32_t PFIFO::Read(const uint32_t addr) {
     case Reg_PFIFO_DMA: return m_channelDMA;
     case Reg_PFIFO_SIZE: return m_channelSizes;
 
-    case Reg_PFIFO_CACHE0_PUSH0: return m_cache0_push0Address;
-    case Reg_PFIFO_CACHE0_PULL0: return m_cache0_pull0Address;
+    case Reg_PFIFO_CACHE0_PUSH0: return m_cache0_push0.u32;
+    case Reg_PFIFO_CACHE0_PULL0: return m_cache0_pull0.u32;
     case Reg_PFIFO_CACHE0_HASH: return m_cache0_hash;
 
     case Reg_PFIFO_CACHE1_PUT: return m_cache1_putAddress;
     case Reg_PFIFO_CACHE1_DMA_FETCH: return m_cache1_dmaFetch.u32;
     case Reg_PFIFO_CACHE1_DMA_CTL: return m_cache1_dmaControl;
-    case Reg_PFIFO_CACHE1_REF_CNT: return m_cache1_referenceCounter;
+    case Reg_PFIFO_CACHE1_REF: return m_cache1_referenceCounter;
     case Reg_PFIFO_CACHE1_HASH: return m_cache1_hash;
     case Reg_PFIFO_CACHE1_ACQUIRE_TIMEOUT: return m_cache1_acquireTimeout;
     case Reg_PFIFO_CACHE1_ACQUIRE_TIMESTAMP: return m_cache1_acquireTimestamp;
@@ -200,14 +207,14 @@ void PFIFO::Write(const uint32_t addr, const uint32_t value) {
     case Reg_PFIFO_DMA: m_channelDMA = value; break;
     case Reg_PFIFO_SIZE: m_channelSizes = value; break;
 
-    case Reg_PFIFO_CACHE0_PUSH0: m_cache0_push0Address = value; break;
-    case Reg_PFIFO_CACHE0_PULL0: m_cache0_pull0Address = value; break;
+    case Reg_PFIFO_CACHE0_PUSH0: m_cache0_push0.u32 = value; break;
+    case Reg_PFIFO_CACHE0_PULL0: m_cache0_pull0.u32 = value; break;
     case Reg_PFIFO_CACHE0_HASH: m_cache0_hash = value; break;
 
     case Reg_PFIFO_CACHE1_PUT: m_cache1_putAddress = value; break;
     case Reg_PFIFO_CACHE1_DMA_FETCH: m_cache1_dmaFetch.u32 = value; break;
     case Reg_PFIFO_CACHE1_DMA_CTL: m_cache1_dmaControl = value; break;
-    case Reg_PFIFO_CACHE1_REF_CNT: m_cache1_referenceCounter = value; break;
+    case Reg_PFIFO_CACHE1_REF: m_cache1_referenceCounter = value; break;
     case Reg_PFIFO_CACHE1_HASH: m_cache1_hash = value; break;
     case Reg_PFIFO_CACHE1_ACQUIRE_TIMEOUT: m_cache1_acquireTimeout = value; break;
     case Reg_PFIFO_CACHE1_ACQUIRE_TIMESTAMP: m_cache1_acquireTimestamp = value; break;
@@ -250,6 +257,139 @@ RAMHT::Entry* PFIFO::GetRAMHTEntry(uint32_t handle, uint32_t channelID) {
     uint32_t hash = m_ramhtParams.Hash(handle, channelID);
     uint32_t address = (m_ramhtParams.baseAddress << 12) + (hash << 3);
     return reinterpret_cast<RAMHT::Entry*>(m_nv2a.pramin.GetMemoryPointer(address));
+}
+
+void PFIFO::PusherThread() {
+    Thread_SetName("[HW] NV2A FIFO pusher");
+
+    // [https://envytools.readthedocs.io/en/latest/hw/fifo/dma-pusher.html#the-pusher-pseudocode-pre-gf100]
+    
+    // TODO: this is very barebones and inefficient
+    while (m_enabled) {
+        // DMA pusher must be enabled and not suspended
+        if (m_dmaPusher.push0.access == PFIFOCachePush0Parameters::Access::Disabled) continue;
+        if (m_dmaPusher.dmaPush.access == PFIFOCacheDMAPush::Access::Disabled) continue;
+        if (m_dmaPusher.dmaPush.status == PFIFOCacheDMAPush::Status::Suspended) continue;
+        
+        // Channel must be in DMA mode
+        uint32_t channelID = m_dmaPusher.push1.channelID;
+        if ((m_channelModes & (1 << channelID)) == 0) continue;
+        if (m_dmaPusher.push1.mode != ChannelMode::DMA) continue;
+
+        // Bail out if we have an error
+        if (m_dmaPusher.dmaState.error != PFIFOPusherDMAState::ErrorCode::None) continue;
+
+        DMAObject* dmaObj = m_nv2a.GetDMAObject(static_cast<uint32_t>(m_dmaPusher.dmaInstanceAddress) << 4);
+        uint8_t* dmaData = &m_nv2a.systemRAM[dmaObj->GetAddress()];
+
+        uint32_t dmaLen = dmaObj->limit;
+
+        uint32_t dmaGet = m_dmaPusher.dmaGetAddress;
+        if (dmaGet != m_dmaPusher.dmaPutAddress) {
+            // Pushbuffer non-empty, read a word
+            if (dmaGet >= dmaLen) {
+                m_dmaPusher.dmaState.error = PFIFOPusherDMAState::ErrorCode::Protection;
+                continue;
+            }
+            uint32_t word = *reinterpret_cast<uint32_t*>(&dmaData[dmaGet]);
+            dmaGet += 4;
+
+            // Now, see if we're in the middle of a command
+            if (m_dmaPusher.dmaState.methodCount) {
+                // Do not proceed if cache is full
+                if (m_cache1_status.highMark) continue;
+
+                // Data word of methods command
+                m_dmaPusher.lastData = word;
+
+                size_t putIndex = m_cache1_putAddress >> 2;
+                m_cache1_commands[putIndex] = { 0 };
+                m_cache1_commands[putIndex].address = m_dmaPusher.dmaState.method >> 2;
+                m_cache1_commands[putIndex].type = m_dmaPusher.dmaState.methodType;
+                m_cache1_commands[putIndex].subchannel = m_dmaPusher.dmaState.subchannel;
+                m_cache1_commands[putIndex].data = word;
+                m_cache1_putAddress = (m_cache1_putAddress + 4) & 0x1fc;
+                
+                if (m_dmaPusher.dmaState.methodType == MethodType::Increasing) {
+                    m_dmaPusher.dmaState.method++;
+                }
+                m_dmaPusher.dmaState.methodCount--;
+                m_dmaPusher.dcount++;
+
+                // Update full/empty cache flags
+                if (m_cache1_putAddress == m_cache1_getAddress) {
+                    m_cache1_status.lowMark = 1;
+                }
+                m_cache1_status.highMark = 0;
+            }
+            else {
+                // No command active - this is the first word of a new one
+                m_dmaPusher.lastCommand = word;
+                
+                // Match all forms
+                if ((word & 0xe0000003) == 0x20000000) {
+                    // Old jump
+                    m_dmaPusher.lastJMPAddress = dmaGet;
+                    dmaGet = word & 0x1fffffff;
+                }
+                else if ((word & 3) == 1) {
+                    // Jump
+                    m_dmaPusher.lastJMPAddress = dmaGet;
+                    dmaGet = word & 0xfffffffc;
+                }
+                else if ((word & 3) == 2) {
+                    // Call
+                    if (m_dmaPusher.dmaSubroutine.state == PFIFODMASubroutine::State::Active) {
+                        m_dmaPusher.dmaState.error = PFIFOPusherDMAState::ErrorCode::Call;
+                        continue;
+                    }
+                    m_dmaPusher.dmaSubroutine.returnOffset = dmaGet;
+                    m_dmaPusher.dmaSubroutine.state = PFIFODMASubroutine::State::Active;
+                    dmaGet = word & 0xfffffffc;
+                }
+                else if (word == 0x00020000) {
+                    // Return
+                    if (m_dmaPusher.dmaSubroutine.state == PFIFODMASubroutine::State::Inactive) {
+                        m_dmaPusher.dmaState.error = PFIFOPusherDMAState::ErrorCode::Return;
+                        continue;
+                    }
+                    dmaGet = m_dmaPusher.dmaSubroutine.returnOffset;
+                    m_dmaPusher.dmaSubroutine.state = PFIFODMASubroutine::State::Inactive;
+                }
+                else if ((word & 0xe0030003) == 0) {
+                    // Increasing methods
+                    m_dmaPusher.dmaState.method = (word >> 2) & 0x7ff;
+                    m_dmaPusher.dmaState.subchannel = (word >> 13) & 7;
+                    m_dmaPusher.dmaState.methodCount = (word >> 18) & 0x7ff;
+                    m_dmaPusher.dmaState.methodType = MethodType::Increasing;
+                    m_dmaPusher.dcount = 0;
+                }
+                else if ((word & 0xe0030003) == 0x40000000) {
+                    // Non-increasing methods
+                    m_dmaPusher.dmaState.method = (word >> 2) & 0x7ff;
+                    m_dmaPusher.dmaState.subchannel = (word >> 13) & 7;
+                    m_dmaPusher.dmaState.methodCount = (word >> 18) & 0x7ff;
+                    m_dmaPusher.dmaState.methodType = MethodType::NonIncreasing;
+                    m_dmaPusher.dcount = 0;
+                }
+                else {
+                    m_dmaPusher.dmaState.error = PFIFOPusherDMAState::ErrorCode::ReservedCommand;
+                    continue;
+                }
+            }
+            m_dmaPusher.dmaGetAddress = dmaGet;
+        }
+    }
+}
+
+void PFIFO::PullerThread() {
+    Thread_SetName("[HW] NV2A FIFO puller");
+
+    // [https://envytools.readthedocs.io/en/latest/hw/fifo/puller.html]
+    
+    while (m_enabled) {
+        // TODO: implement
+    }
 }
 
 }

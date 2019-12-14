@@ -83,6 +83,8 @@ public:
 
     inline void UpdateIRQ() { pmc.UpdateIRQ(); }
 
+    inline DMAObject* GetDMAObject(uint32_t address) { return reinterpret_cast<DMAObject*>(pramin.GetMemoryPointer(address)); }
+
 private:
     // Fast engine lookup
     std::map<uint32_t, nv2a::NV2AEngine&> engines;

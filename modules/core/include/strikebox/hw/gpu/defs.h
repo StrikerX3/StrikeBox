@@ -79,4 +79,40 @@ union RAMFC {
 };
 static_assert(sizeof(RAMFC) == sizeof(uint32_t));
 
+// --- DMA object ------------------
+
+struct DMAObject {
+    // [https://envytools.readthedocs.io/en/latest/hw/fifo/puller.html#nv4-gf100]
+    enum class Class : uint32_t {
+        FromMemory = 0x0002,
+        ToMemory = 0x0003,
+        Null = 0x0030,
+        InMemory = 0x003d,
+    };
+    enum class PageTable : uint32_t { NotPresent, Present };
+    enum class PageEntry : uint32_t { NotLinear, Linear };
+    enum class AccessFlags : uint32_t { ReadWrite, Other };
+    enum class MappingCoherency : uint32_t { Uncached, Cached };
+    enum class TargetNode : uint32_t { NVM, NVMTiled, PCI, AGP };
+
+    Class objClass : 12;                     // 11.. 0 = class
+    PageTable pageTable : 1;                 // 12..12 = page table presence
+    PageEntry pageEntry : 1;                 // 13..13 = page entry linearity
+    AccessFlags accessFlags : 1;             // 14..14 = access flags
+    MappingCoherency mappingCoherency : 1;   // 15..15 = mapping coherency
+    TargetNode targetNode : 2,               // 17..16 = target node
+        : 2;                                 // 19..18 = unused
+    uint32_t adjust : 12;                    // 31..20 = address adjustment
+
+    uint32_t limit;                          // 31.. 0 = limit
+
+    uint32_t
+        : 12,                                // 11.. 0 = unused
+        frameAddress : 20;                   // 31..12 = frame address
+
+    inline uint32_t GetAddress() const {
+        return (frameAddress << 12) | adjust;
+    }
+};
+
 }

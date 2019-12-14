@@ -19,6 +19,8 @@
 
 #include "../engine.h"
 
+#include <thread>
+
 namespace strikebox::nv2a {
 
 // PFIFO registers
@@ -74,7 +76,7 @@ const uint32_t Reg_PFIFO_CACHE1_DMA_INSTANCE = 0x122c;         // [RW] Cache 1 (
 const uint32_t Reg_PFIFO_CACHE1_DMA_CTL = 0x1230;              // [RW] Cache 1 DMA control
 const uint32_t Reg_PFIFO_CACHE1_DMA_PUT = 0x1240;              // [RW] Cache 1 (pusher) DMA put address
 const uint32_t Reg_PFIFO_CACHE1_DMA_GET = 0x1244;              // [RW] Cache 1 (pusher) DMA get address
-const uint32_t Reg_PFIFO_CACHE1_REF_CNT = 0x1248;              // [RW] Cache 1 (pusher/puller) reference counter
+const uint32_t Reg_PFIFO_CACHE1_REF = 0x1248;                  // [RW] Cache 1 (pusher/puller) reference counter
 const uint32_t Reg_PFIFO_CACHE1_DMA_SUBROUTINE = 0x124c;       // [RW] Cache 1 (pusher) DMA subroutine status (PFIFODMASubroutine)
 const uint32_t Reg_PFIFO_CACHE1_PULL0 = 0x1250;                // [RW] Cache 1 puller parameters #0 (PFIFOCachePull0Parameters)
 const uint32_t Reg_PFIFO_CACHE1_PULL1 = 0x1254;                // [RW] Cache 1 puller parameters #1 (PFIFOCachePull1Parameters)
@@ -97,6 +99,11 @@ const size_t kPFIFO_CommandBufferSize = 128;
 
 // ----------------------------------------------------------------------------
 
+enum class MethodType : uint32_t { Increasing, NonIncreasing };
+enum class ChannelMode : uint32_t { PIO, DMA };
+
+// ----------------------------------------------------------------------------
+
 union PFIFOCachePush0Parameters {
     enum class Access : uint32_t { Disabled, Enabled };
 
@@ -110,14 +117,12 @@ static_assert(sizeof(PFIFOCachePush0Parameters) == sizeof(uint32_t));
 // ----------------------------------------------------------------------------
 
 union PFIFOCachePush1Parameters {
-    enum class Mode : uint32_t { PIO, DMA };
-
     uint32_t u32;
     struct {
         uint32_t
-            channelID : 4,   //  3.. 0 = channel ID
-            : 4;             //  7.. 4 = unused
-        Mode mode : 1;       //  8.. 8 = mode
+            channelID : 4,      //  3.. 0 = channel ID
+            : 4;                //  7.. 4 = unused
+        ChannelMode mode : 1;   //  8.. 8 = channel mode
     };
 };
 static_assert(sizeof(PFIFOCachePush1Parameters) == sizeof(uint32_t));
@@ -204,10 +209,10 @@ union PFIFOPusherDMAState {
 
     uint32_t u32;
     struct {
-        uint32_t
+        MethodType
             methodType : 1,      // Method type (0 = increasing, 1 = non-increasing)
-            : 1,                 // 
-            method : 11,         // Method
+            : 1;                 // 
+        uint32_t method : 11,    // Method
             subchannel : 3,      // Subchannel
             : 2,                 // 
             methodCount : 11;    // Method count
@@ -223,7 +228,7 @@ union PFIFODMASubroutine {
 
     uint32_t u32;
     struct {
-        State enabled : 1,           //  0.. 0 = state
+        State state : 1,             //  0.. 0 = state
             : 1;                     //  1.. 1 = unused
         uint32_t returnOffset : 30;  // 31.. 2 = return offset (top 30 bits; all LSBs are zero)
     };
@@ -233,8 +238,6 @@ static_assert(sizeof(PFIFODMASubroutine) == sizeof(uint32_t));
 // ----------------------------------------------------------------------------
 
 union FIFOCommand {
-    enum class MethodType : uint32_t { Incrementing, NonIncrementing };
-
     uint32_t u32[2];
     struct {
         // METHOD
@@ -267,8 +270,11 @@ public:
 
     RAMHT::Entry* GetRAMHTEntry(uint32_t handle, uint32_t channelID);
 
+    inline ChannelMode GetChannelMode(uint8_t channelID) const { return m_channelModes & (1 << channelID) ? ChannelMode::DMA : ChannelMode::PIO; }
+    inline uint32_t GetCurrentChannelID() const { return m_dmaPusher.push1.channelID; }
+
 private:
-    bool m_enabled = false;
+    bool m_enabled;
 
     // Operational parameters
     uint32_t m_delay0;
@@ -291,8 +297,8 @@ private:
     // Cache 0 registers
     uint32_t m_cache0_hash;
 
-    uint32_t m_cache0_push0Address;
-    uint32_t m_cache0_pull0Address;
+    PFIFOCachePush0Parameters m_cache0_push0;
+    PFIFOCachePush1Parameters m_cache0_pull0;
 
     // Cache 1 registers
     // FIXME: some of these are actually part of the PFIFO pusher or puller states and shouldn't be here
@@ -318,7 +324,7 @@ private:
 
         uint32_t dmaGetAddress;
         uint32_t dmaPutAddress;
-        uint32_t dmaInstanceAddress;
+        uint16_t dmaInstanceAddress;
 
         PFIFODMASubroutine dmaSubroutine;
         PFIFOCacheDMAPush dmaPush;
@@ -337,6 +343,13 @@ private:
 
         uint32_t engines;
     } m_puller;
+
+    // Threads
+    std::thread m_pusherThread;
+    std::thread m_pullerThread;
+
+    void PusherThread();
+    void PullerThread();
 };
 
 }
