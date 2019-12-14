@@ -68,6 +68,7 @@ void NV2ADevice::PCIIOWrite(int barIndex, uint32_t port, uint32_t value, uint8_t
 void NV2ADevice::PCIMMIORead(int barIndex, uint32_t addr, uint32_t *value, uint8_t size) {
     if (barIndex == 0) {
         *value = m_nv2a->Read(addr, size);
+        //log_spew("NV2ADevice::PCIMMIORead:   bar = %d,  address = 0x%x,  size = %u  ->  0x%x\n", barIndex, addr, size, *value);
     }
     else {
         log_spew("NV2ADevice::PCIMMIORead:   Unimplemented read!   bar = %d,  address = 0x%x,  size = %u\n", barIndex, addr, size);
@@ -77,6 +78,7 @@ void NV2ADevice::PCIMMIORead(int barIndex, uint32_t addr, uint32_t *value, uint8
 
 void NV2ADevice::PCIMMIOWrite(int barIndex, uint32_t addr, uint32_t value, uint8_t size) {
     if (barIndex == 0) {
+        //log_spew("NV2ADevice::PCIMMIOWrite:  bar = %d,  address = 0x%x,  value = 0x%x,  size = %u\n", barIndex, addr, value, size);
         m_nv2a->Write(addr, value, size);
     }
     else {

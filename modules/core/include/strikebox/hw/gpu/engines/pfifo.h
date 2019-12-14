@@ -51,6 +51,8 @@ const uint32_t Reg_PFIFO_RAMHT = 0x210;                        // [RW] RAMHT (ha
 const uint32_t Reg_PFIFO_RAMFC = 0x214;                        // [RW] RAMFC (FIFO context) parameters
 const uint32_t Reg_PFIFO_CACHES = 0x500;                       // [RW] PFIFO caches (?)
 
+const uint32_t Reg_PFIFO_RUNOUT_STATUS = 0x400;                // [RW] Runout status
+
 // Channel flags
 // Each bit in these registers represents a channel (bit 0 = channel 0, bit 31 = channel 31)
 const uint32_t Reg_PFIFO_MODE = 0x504;                         // [RW] PFIFO channel modes (0 = PIO, 1 = DMA)

@@ -130,6 +130,8 @@ uint32_t PFIFO::Read(const uint32_t addr) {
     case Reg_PFIFO_RAMHT: return m_ramhtParams.u32;
     case Reg_PFIFO_RAMFC: return m_ramfcParams.u32;
 
+    case Reg_PFIFO_RUNOUT_STATUS: return 0x10; // low mark empty
+
     case Reg_PFIFO_MODE: return m_channelModes;
     case Reg_PFIFO_DMA: return m_channelDMA;
     case Reg_PFIFO_SIZE: return m_channelSizes;
@@ -202,6 +204,8 @@ void PFIFO::Write(const uint32_t addr, const uint32_t value) {
         m_ramfcParams.u32 = value;
         printRAMFCParameters(m_ramfcParams);
         break;
+
+    case Reg_PFIFO_RUNOUT_STATUS: break;
 
     case Reg_PFIFO_MODE: m_channelModes = value; break;
     case Reg_PFIFO_DMA: m_channelDMA = value; break;
