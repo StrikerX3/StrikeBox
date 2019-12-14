@@ -82,27 +82,33 @@ void PFIFO::Reset() {
 
     m_cache1_getAddress = 0;
     m_cache1_putAddress = 0;
-    m_cache1_dmaGetAddress = 0;
-    m_cache1_dmaPutAddress = 0;
-    m_cache1_dmaPush = 0;
     m_cache1_dmaFetch.u32 = 0;
-    m_cache1_dmaState.u32 = 0;
-    m_cache1_dmaInstanceAddress = 0;
     m_cache1_dmaControl = 0;
     m_cache1_referenceCounter = 0;
-    m_cache1_dmaSubroutine = 0;
     m_cache1_hash = 0;
     m_cache1_acquireTimeout = 0;
     m_cache1_acquireTimestamp = 0;
     m_cache1_acquireValue = 0;
     m_cache1_semaphore = 0;
-    m_cache1_engine = 0;
+    m_cache1_status.u32 = 0;
+    std::fill(std::begin(m_cache1_commands), std::end(m_cache1_commands), FIFOCommand{ 0 });
 
-    m_cache1_push0Address = 0;
-    m_cache1_pull0Address = 0;
+    m_dmaPusher.push0.u32 = 0;
+    m_dmaPusher.push1.u32 = 0;
+    m_dmaPusher.dmaGetAddress = 0;
+    m_dmaPusher.dmaPutAddress = 0;
+    m_dmaPusher.dmaInstanceAddress = 0;
+    m_dmaPusher.dmaPush.u32 = 0;
+    m_dmaPusher.dmaState.u32 = 0;
+    m_dmaPusher.dmaSubroutine.u32 = 0;
+    m_dmaPusher.dcount = 0;
+    m_dmaPusher.lastJMPAddress = 0;
+    m_dmaPusher.lastCommand = 0;
+    m_dmaPusher.lastData = 0;
 
-    m_cache1_push1Address = 0;
-    m_cache1_pull1Address = 0;
+    m_puller.pull0.u32 = 0;
+    m_puller.pull1.u32 = 0;
+    m_puller.engines = 0;
 }
 
 uint32_t PFIFO::Read(const uint32_t addr) {
@@ -125,29 +131,41 @@ uint32_t PFIFO::Read(const uint32_t addr) {
     case Reg_PFIFO_CACHE0_PULL0: return m_cache0_pull0Address;
     case Reg_PFIFO_CACHE0_HASH: return m_cache0_hash;
 
-    case Reg_PFIFO_CACHE1_PUSH0: return m_cache1_push0Address;
-    case Reg_PFIFO_CACHE1_PUSH1: return m_cache1_push1Address;
     case Reg_PFIFO_CACHE1_PUT: return m_cache1_putAddress;
-    case Reg_PFIFO_CACHE1_DMA_PUSH: return m_cache1_dmaPush;
     case Reg_PFIFO_CACHE1_DMA_FETCH: return m_cache1_dmaFetch.u32;
-    case Reg_PFIFO_CACHE1_DMA_STATE: return m_cache1_dmaState.u32;
-    case Reg_PFIFO_CACHE1_DMA_INSTANCE: return m_cache1_dmaInstanceAddress;
     case Reg_PFIFO_CACHE1_DMA_CTL: return m_cache1_dmaControl;
-    case Reg_PFIFO_CACHE1_DMA_PUT: return m_cache1_dmaPutAddress;
-    case Reg_PFIFO_CACHE1_DMA_GET: return m_cache1_dmaGetAddress;
     case Reg_PFIFO_CACHE1_REF_CNT: return m_cache1_referenceCounter;
-    case Reg_PFIFO_CACHE1_DMA_SUBROUTINE: return m_cache1_dmaSubroutine;
-    case Reg_PFIFO_CACHE1_PULL0: return m_cache1_pull0Address;
-    case Reg_PFIFO_CACHE1_PULL1: return m_cache1_pull1Address;
     case Reg_PFIFO_CACHE1_HASH: return m_cache1_hash;
     case Reg_PFIFO_CACHE1_ACQUIRE_TIMEOUT: return m_cache1_acquireTimeout;
     case Reg_PFIFO_CACHE1_ACQUIRE_TIMESTAMP: return m_cache1_acquireTimestamp;
     case Reg_PFIFO_CACHE1_ACQUIRE_VALUE: return m_cache1_acquireValue;
     case Reg_PFIFO_CACHE1_SEMAPHORE: return m_cache1_semaphore;
     case Reg_PFIFO_CACHE1_GET: return m_cache1_getAddress;
-    case Reg_PFIFO_CACHE1_ENGINE: return m_cache1_engine;
+    case Reg_PFIFO_CACHE1_STATUS: return m_cache1_status.u32;
+
+    case Reg_PFIFO_CACHE1_PUSH0: return m_dmaPusher.push0.u32;
+    case Reg_PFIFO_CACHE1_PUSH1: return m_dmaPusher.push1.u32;
+    case Reg_PFIFO_CACHE1_DMA_PUSH: return m_dmaPusher.dmaPush.u32;
+    case Reg_PFIFO_CACHE1_DMA_STATE: return m_dmaPusher.dmaState.u32;
+    case Reg_PFIFO_CACHE1_DMA_PUT: return m_dmaPusher.dmaPutAddress;
+    case Reg_PFIFO_CACHE1_DMA_GET: return m_dmaPusher.dmaGetAddress;
+    case Reg_PFIFO_CACHE1_DMA_INSTANCE: return m_dmaPusher.dmaInstanceAddress;
+    case Reg_PFIFO_CACHE1_DMA_SUBROUTINE: return m_dmaPusher.dmaSubroutine.u32;
+    case Reg_PFIFO_CACHE1_DMA_DCOUNT: return m_dmaPusher.dcount;
+    case Reg_PFIFO_CACHE1_DMA_GET_JMP_SHADOW: return m_dmaPusher.lastJMPAddress;
+    case Reg_PFIFO_CACHE1_DMA_RSVD_SHADOW: return m_dmaPusher.lastCommand;
+    case Reg_PFIFO_CACHE1_DMA_DATA_SHADOW: return m_dmaPusher.lastData;
+
+    case Reg_PFIFO_CACHE1_PULL0: return m_puller.pull0.u32;
+    case Reg_PFIFO_CACHE1_PULL1: return m_puller.pull1.u32;
+    case Reg_PFIFO_CACHE1_ENGINE: return m_puller.engines;
 
     default:
+        if (addr >= Reg_PFIFO_CACHE1_COMMAND_BASE && addr < Reg_PFIFO_CACHE1_COMMAND_BASE + kPFIFO_CommandBufferSize * sizeof(FIFOCommand)) {
+            size_t cmdIndex = (addr - Reg_PFIFO_CACHE1_COMMAND_BASE) / sizeof(FIFOCommand);
+            size_t offset = ((addr - Reg_PFIFO_CACHE1_COMMAND_BASE) >> 2) & 1;
+            return m_cache1_commands[cmdIndex].u32[offset];
+        }
         log_spew("[NV2A] PFIFO::Read:   Unimplemented read!   address = 0x%x\n", addr);
         return 0;
     }
@@ -186,29 +204,44 @@ void PFIFO::Write(const uint32_t addr, const uint32_t value) {
     case Reg_PFIFO_CACHE0_PULL0: m_cache0_pull0Address = value; break;
     case Reg_PFIFO_CACHE0_HASH: m_cache0_hash = value; break;
 
-    case Reg_PFIFO_CACHE1_PUSH0: m_cache1_push0Address = value; break;
-    case Reg_PFIFO_CACHE1_PUSH1: m_cache1_push1Address = value; break;
     case Reg_PFIFO_CACHE1_PUT: m_cache1_putAddress = value; break;
-    case Reg_PFIFO_CACHE1_DMA_PUSH: m_cache1_dmaPush = value; break;
     case Reg_PFIFO_CACHE1_DMA_FETCH: m_cache1_dmaFetch.u32 = value; break;
-    case Reg_PFIFO_CACHE1_DMA_STATE: m_cache1_dmaState.u32 = value; break;
-    case Reg_PFIFO_CACHE1_DMA_INSTANCE: m_cache1_dmaInstanceAddress = value; break;
     case Reg_PFIFO_CACHE1_DMA_CTL: m_cache1_dmaControl = value; break;
-    case Reg_PFIFO_CACHE1_DMA_PUT: m_cache1_dmaPutAddress = value; break;
-    case Reg_PFIFO_CACHE1_DMA_GET: m_cache1_dmaGetAddress = value; break;
     case Reg_PFIFO_CACHE1_REF_CNT: m_cache1_referenceCounter = value; break;
-    case Reg_PFIFO_CACHE1_DMA_SUBROUTINE: m_cache1_dmaSubroutine = value; break;
-    case Reg_PFIFO_CACHE1_PULL0: m_cache1_pull0Address = value; break;
-    case Reg_PFIFO_CACHE1_PULL1: m_cache1_pull1Address = value; break;
     case Reg_PFIFO_CACHE1_HASH: m_cache1_hash = value; break;
     case Reg_PFIFO_CACHE1_ACQUIRE_TIMEOUT: m_cache1_acquireTimeout = value; break;
     case Reg_PFIFO_CACHE1_ACQUIRE_TIMESTAMP: m_cache1_acquireTimestamp = value; break;
     case Reg_PFIFO_CACHE1_ACQUIRE_VALUE: m_cache1_acquireValue = value; break;
     case Reg_PFIFO_CACHE1_SEMAPHORE: m_cache1_semaphore = value; break;
-    case Reg_PFIFO_CACHE1_GET: m_cache1_dmaGetAddress = value; break;
-    case Reg_PFIFO_CACHE1_ENGINE: m_cache1_engine = value; break;
+    case Reg_PFIFO_CACHE1_GET: m_cache1_getAddress = value; break;
+    case Reg_PFIFO_CACHE1_STATUS: m_cache1_status.u32 = value; break;
+    
+    case Reg_PFIFO_CACHE1_PUSH0: m_dmaPusher.push0.u32 = value; break;
+    case Reg_PFIFO_CACHE1_PUSH1: m_dmaPusher.push1.u32 = value; break;
+    case Reg_PFIFO_CACHE1_DMA_PUSH: m_dmaPusher.dmaPush.u32 = value; break;
+    case Reg_PFIFO_CACHE1_DMA_STATE: m_dmaPusher.dmaState.u32 = value; break;
+    case Reg_PFIFO_CACHE1_DMA_PUT: m_dmaPusher.dmaPutAddress = value; break;
+    case Reg_PFIFO_CACHE1_DMA_GET: m_dmaPusher.dmaGetAddress = value; break;
+    case Reg_PFIFO_CACHE1_DMA_INSTANCE: m_dmaPusher.dmaInstanceAddress = value; break;
+    case Reg_PFIFO_CACHE1_DMA_SUBROUTINE: m_dmaPusher.dmaSubroutine.u32 = value; break;
+    case Reg_PFIFO_CACHE1_DMA_DCOUNT: m_dmaPusher.dcount = value; break;
+    case Reg_PFIFO_CACHE1_DMA_GET_JMP_SHADOW: m_dmaPusher.lastJMPAddress = value; break;
+    case Reg_PFIFO_CACHE1_DMA_RSVD_SHADOW: m_dmaPusher.lastCommand = value; break;
+    case Reg_PFIFO_CACHE1_DMA_DATA_SHADOW: m_dmaPusher.lastData = value; break;
+
+    case Reg_PFIFO_CACHE1_PULL0: m_puller.pull0.u32 = value; break;
+    case Reg_PFIFO_CACHE1_PULL1: m_puller.pull1.u32 = value; break;
+    case Reg_PFIFO_CACHE1_ENGINE: m_puller.engines = value; break;
+
     default:
-        log_spew("[NV2A] PFIFO::Write:  Unimplemented write!   address = 0x%x,  value = 0x%x\n", addr, value);
+        if (addr >= Reg_PFIFO_CACHE1_COMMAND_BASE && addr < Reg_PFIFO_CACHE1_COMMAND_BASE + kPFIFO_CommandBufferSize * sizeof(FIFOCommand)) {
+            size_t cmdIndex = (addr - Reg_PFIFO_CACHE1_COMMAND_BASE) / sizeof(FIFOCommand);
+            size_t offset = ((addr - Reg_PFIFO_CACHE1_COMMAND_BASE) >> 2) & 1;
+            m_cache1_commands[cmdIndex].u32[offset] = value;
+        }
+        else {
+            log_spew("[NV2A] PFIFO::Write:  Unimplemented write!   address = 0x%x,  value = 0x%x\n", addr, value);
+        }
         break;
     }
 }

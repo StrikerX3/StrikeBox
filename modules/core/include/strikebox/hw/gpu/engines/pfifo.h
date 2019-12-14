@@ -58,32 +58,131 @@ const uint32_t Reg_PFIFO_SIZE = 0x50c;                         // [RW] PFIFO siz
 // Cache 0 registers
 // Most of these are assumptions based on the expectation that CACHE0 registers at 0x1000..0x11FF
 // match the corresponding CACHE1 registers at 0x1200..0x13FF
-const uint32_t Reg_PFIFO_CACHE0_PUSH0 = 0x1000;                // [RW] Cache 0 pusher 0 address
-const uint32_t Reg_PFIFO_CACHE0_PULL0 = 0x1050;                // [RW] Cache 0 puller 0 address
+const uint32_t Reg_PFIFO_CACHE0_PUSH0 = 0x1000;                // [RW] Cache 0 pusher parameters #0 (PFIFOCachePush0Parameters)
+const uint32_t Reg_PFIFO_CACHE0_PULL0 = 0x1050;                // [RW] Cache 0 puller parameters #0 (PFIFOCachePull0Parameters)
 const uint32_t Reg_PFIFO_CACHE0_HASH = 0x1058;                 // [RW] Cache 0 hash (?)
 
 // Cache 1 registers
-const uint32_t Reg_PFIFO_CACHE1_PUSH0 = 0x1200;                // [RW] Cache 1 pusher 0 address
-const uint32_t Reg_PFIFO_CACHE1_PUSH1 = 0x1204;                // [RW] Cache 1 pusher 1 address
+const uint32_t Reg_PFIFO_CACHE1_PUSH0 = 0x1200;                // [RW] Cache 1 pusher parameters #0 (PFIFOCachePush0Parameters)
+const uint32_t Reg_PFIFO_CACHE1_PUSH1 = 0x1204;                // [RW] Cache 1 pusher parameters #1 (PFIFOCachePush1Parameters)
 const uint32_t Reg_PFIFO_CACHE1_PUT = 0x1210;                  // [RW] Cache 1 put address
-const uint32_t Reg_PFIFO_CACHE1_DMA_PUSH = 0x1220;             // [RW] Cache 1 (puller) DMA pushbuffer parameters (TODO: struct?)
+const uint32_t Reg_PFIFO_CACHE1_STATUS = 0x1214;               // [RW] Cache 1 (puller/pusher) status (PFIFOCacheStatus)
+const uint32_t Reg_PFIFO_CACHE1_DMA_PUSH = 0x1220;             // [RW] Cache 1 (pusher) DMA push state (PFIFOCacheDMAPush)
 const uint32_t Reg_PFIFO_CACHE1_DMA_FETCH = 0x1224;            // [RW] Cache 1 DMA fetch parameters (PFIFOCacheDMAFetch)
-const uint32_t Reg_PFIFO_CACHE1_DMA_STATE = 0x1228;            // [RW] Cache 1 (pusher) DMA state (PFIFOCacheDMAState)
-const uint32_t Reg_PFIFO_CACHE1_DMA_INSTANCE = 0x122c;         // [RW] Cache 1 DMA instance address
+const uint32_t Reg_PFIFO_CACHE1_DMA_STATE = 0x1228;            // [RW] Cache 1 (pusher) DMA state (PFIFOPusherDMAState)
+const uint32_t Reg_PFIFO_CACHE1_DMA_INSTANCE = 0x122c;         // [RW] Cache 1 (pusher) DMA instance address
 const uint32_t Reg_PFIFO_CACHE1_DMA_CTL = 0x1230;              // [RW] Cache 1 DMA control
 const uint32_t Reg_PFIFO_CACHE1_DMA_PUT = 0x1240;              // [RW] Cache 1 (pusher) DMA put address
 const uint32_t Reg_PFIFO_CACHE1_DMA_GET = 0x1244;              // [RW] Cache 1 (pusher) DMA get address
 const uint32_t Reg_PFIFO_CACHE1_REF_CNT = 0x1248;              // [RW] Cache 1 (pusher/puller) reference counter
-const uint32_t Reg_PFIFO_CACHE1_DMA_SUBROUTINE = 0x124c;       // [RW] Cache 1 (pusher) DMA subroutine status (TODO: struct?)
-const uint32_t Reg_PFIFO_CACHE1_PULL0 = 0x1250;                // [RW] Cache 1 puller 0 address
-const uint32_t Reg_PFIFO_CACHE1_PULL1 = 0x1254;                // [RW] Cache 1 puller 1 address
+const uint32_t Reg_PFIFO_CACHE1_DMA_SUBROUTINE = 0x124c;       // [RW] Cache 1 (pusher) DMA subroutine status (PFIFODMASubroutine)
+const uint32_t Reg_PFIFO_CACHE1_PULL0 = 0x1250;                // [RW] Cache 1 puller parameters #0 (PFIFOCachePull0Parameters)
+const uint32_t Reg_PFIFO_CACHE1_PULL1 = 0x1254;                // [RW] Cache 1 puller parameters #1 (PFIFOCachePull1Parameters)
 const uint32_t Reg_PFIFO_CACHE1_HASH = 0x1258;                 // [RW] Cache 1 hash (?)
 const uint32_t Reg_PFIFO_CACHE1_ACQUIRE_TIMEOUT = 0x1260;      // [RW] Cache 1 (puller) semaphore acquire timeout
 const uint32_t Reg_PFIFO_CACHE1_ACQUIRE_TIMESTAMP = 0x1264;    // [RW] Cache 1 (puller) semaphore acquire timestamp
 const uint32_t Reg_PFIFO_CACHE1_ACQUIRE_VALUE = 0x1268;        // [RW] Cache 1 (puller) semaphore acquire value
 const uint32_t Reg_PFIFO_CACHE1_SEMAPHORE = 0x126c;            // [RW] Cache 1 (puller) semaphore
 const uint32_t Reg_PFIFO_CACHE1_GET = 0x1270;                  // [RW] Cache 1 get address
-const uint32_t Reg_PFIFO_CACHE1_ENGINE = 0x1280;               // [RW] Cache 1 engine (?)
+const uint32_t Reg_PFIFO_CACHE1_ENGINE = 0x1280;               // [RW] Cache 1 (puller) engine modes (FIFOEngine) (one channel every 4 bits)
+const uint32_t Reg_PFIFO_CACHE1_DMA_DCOUNT = 0x12a0;           // [RW] Cache 1 (pusher) DMA error - number of dwords transferred
+const uint32_t Reg_PFIFO_CACHE1_DMA_GET_JMP_SHADOW = 0x12a4;   // [RW] Cache 1 (pusher) DMA error - last JMP address
+const uint32_t Reg_PFIFO_CACHE1_DMA_RSVD_SHADOW = 0x12a8;      // [RW] Cache 1 (pusher) DMA error - last command
+const uint32_t Reg_PFIFO_CACHE1_DMA_DATA_SHADOW = 0x12ac;      // [RW] Cache 1 (pusher) DMA error - last data
+
+const uint32_t Reg_PFIFO_CACHE1_COMMAND_BASE = 0x1800;         //      Base address of FIFO commands (FIFOCommand)
+const uint32_t Reg_PFIFO_CACHE1_METHOD = 0x0;                  // [RW] Offset of FIFO command methods
+const uint32_t Reg_PFIFO_CACHE1_DATA = 0x4;                    // [RW] Offset of FIFO command parameters
+const size_t kPFIFO_CommandBufferSize = 128;
+
+// ----------------------------------------------------------------------------
+
+union PFIFOCachePush0Parameters {
+    enum class Access : uint32_t { Disabled, Enabled };
+
+    uint32_t u32;
+    struct {
+        Access access : 1;   //  0.. 0 = access
+    };
+};
+static_assert(sizeof(PFIFOCachePush0Parameters) == sizeof(uint32_t));
+
+// ----------------------------------------------------------------------------
+
+union PFIFOCachePush1Parameters {
+    enum class Mode : uint32_t { PIO, DMA };
+
+    uint32_t u32;
+    struct {
+        uint32_t
+            channelID : 4,   //  3.. 0 = channel ID
+            : 4;             //  7.. 4 = unused
+        Mode mode : 1;       //  8.. 8 = mode
+    };
+};
+static_assert(sizeof(PFIFOCachePush1Parameters) == sizeof(uint32_t));
+
+// ----------------------------------------------------------------------------
+
+union PFIFOCachePull0Parameters {
+    enum class Access : uint32_t { Disabled, Enabled };
+
+    uint32_t u32;
+    struct {
+        Access access : 1;   //  0.. 0 = access
+    };
+};
+static_assert(sizeof(PFIFOCachePull0Parameters) == sizeof(uint32_t));
+
+// ----------------------------------------------------------------------------
+
+union PFIFOCachePull1Parameters {
+    uint32_t u32;
+    struct {
+        FIFOEngine engine : 2;   //  1.. 0 = engine
+    };
+};
+static_assert(sizeof(PFIFOCachePull1Parameters) == sizeof(uint32_t));
+
+// ----------------------------------------------------------------------------
+
+union PFIFOCacheDMAPush {
+    enum class Access : uint32_t { Disabled, Enabled };
+    enum class State : uint32_t { Idle, Busy };
+    enum class Buffer : uint32_t { NotEmpty, Empty };
+    enum class Status : uint32_t { Running, Suspended };
+    enum class Acquire : uint32_t { NotPending, Pending };
+
+    uint32_t u32;
+    struct {
+        Access access : 1,     //  0.. 0 = access
+            : 3;               //  3.. 1 = unused
+        State state : 1,       //  4.. 4 = push state
+            : 3;               //  7.. 5 = unused
+        Buffer buffer : 1,     //  8.. 8 = buffer state
+            : 3;               // 11.. 9 = unused
+        Status status : 1,     // 12..12 = status
+            : 3;               // 15..13 = unused
+        Acquire acquire : 1;   // 16..16 = acquire state
+    };
+};
+static_assert(sizeof(PFIFOCacheDMAPush) == sizeof(uint32_t));
+
+// ----------------------------------------------------------------------------
+
+union PFIFOCacheStatus {
+    uint32_t u32;
+    struct {
+        uint32_t
+            : 4,           //  3.. 0 = unused
+            lowMark : 1,   //  4.. 4 = low mark  (1 = empty)
+            : 3,           //  7.. 5 = unused
+            highMark : 1;  //  8.. 8 = high mark (1 = full)
+    };
+};
+static_assert(sizeof(PFIFOCacheStatus) == sizeof(uint32_t));
+
+// ----------------------------------------------------------------------------
 
 union PFIFOCacheDMAFetch {
     uint32_t u32;
@@ -98,7 +197,9 @@ union PFIFOCacheDMAFetch {
 };
 static_assert(sizeof(PFIFOCacheDMAFetch) == sizeof(uint32_t));
 
-union PFIFOCacheDMAState {
+// ----------------------------------------------------------------------------
+
+union PFIFOPusherDMAState {
     enum class ErrorCode : uint32_t { None, Call, NonCache, Return, ReservedCommand, Protection };
 
     uint32_t u32;
@@ -113,7 +214,41 @@ union PFIFOCacheDMAState {
         ErrorCode error : 3;     // Error code
     };
 };
-static_assert(sizeof(PFIFOCacheDMAState) == sizeof(uint32_t));
+static_assert(sizeof(PFIFOPusherDMAState) == sizeof(uint32_t));
+
+// ----------------------------------------------------------------------------
+
+union PFIFODMASubroutine {
+    enum class State : uint32_t { Inactive, Active };
+
+    uint32_t u32;
+    struct {
+        State enabled : 1,           //  0.. 0 = state
+            : 1;                     //  1.. 1 = unused
+        uint32_t returnOffset : 30;  // 31.. 2 = return offset (top 30 bits; all LSBs are zero)
+    };
+};
+static_assert(sizeof(PFIFODMASubroutine) == sizeof(uint32_t));
+
+// ----------------------------------------------------------------------------
+
+union FIFOCommand {
+    enum class MethodType : uint32_t { Incrementing, NonIncrementing };
+
+    uint32_t u32[2];
+    struct {
+        // METHOD
+        MethodType type : 1,       //  0.. 0 = method type
+            : 1;                   //  1.. 1 = unused
+        uint32_t address : 11,     // 12.. 2 = address
+            subchannel : 3,        // 15..13 = subchannel
+            : 16;                  // 31..16 = unused
+
+        // DATA
+        uint32_t data;             // 31.. 0 = data
+    };
+};
+static_assert(sizeof(FIFOCommand) == sizeof(uint32_t[2]));
 
 // ----------------------------------------------------------------------------
 
@@ -165,27 +300,43 @@ private:
     // [https://envytools.readthedocs.io/en/latest/hw/fifo/puller.html#puller-state]
     uint32_t m_cache1_getAddress;
     uint32_t m_cache1_putAddress;
-    uint32_t m_cache1_dmaGetAddress;
-    uint32_t m_cache1_dmaPutAddress;
-    uint32_t m_cache1_dmaPush;
     PFIFOCacheDMAFetch m_cache1_dmaFetch;
-    PFIFOCacheDMAState m_cache1_dmaState;
-    uint32_t m_cache1_dmaInstanceAddress;
     uint32_t m_cache1_dmaControl;
     uint32_t m_cache1_referenceCounter;
-    uint32_t m_cache1_dmaSubroutine;
     uint32_t m_cache1_hash;
     uint32_t m_cache1_acquireTimeout;
     uint32_t m_cache1_acquireTimestamp;
     uint32_t m_cache1_acquireValue;
     uint32_t m_cache1_semaphore;
-    uint32_t m_cache1_engine;
+    PFIFOCacheStatus m_cache1_status;
+    FIFOCommand m_cache1_commands[kPFIFO_CommandBufferSize];
 
-    uint32_t m_cache1_push0Address;
-    uint32_t m_cache1_pull0Address;
-    
-    uint32_t m_cache1_push1Address;
-    uint32_t m_cache1_pull1Address;
+    // DMA pusher state
+    struct DMAPusher {
+        PFIFOCachePush0Parameters push0;
+        PFIFOCachePush1Parameters push1;
+
+        uint32_t dmaGetAddress;
+        uint32_t dmaPutAddress;
+        uint32_t dmaInstanceAddress;
+
+        PFIFODMASubroutine dmaSubroutine;
+        PFIFOCacheDMAPush dmaPush;
+        PFIFOPusherDMAState dmaState;
+
+        uint32_t dcount;
+        uint32_t lastJMPAddress;
+        uint32_t lastCommand;
+        uint32_t lastData;
+    } m_dmaPusher;
+
+    // Puller state
+    struct Puller {
+        PFIFOCachePull0Parameters pull0;
+        PFIFOCachePull1Parameters pull1;
+
+        uint32_t engines;
+    } m_puller;
 };
 
 }

@@ -13,6 +13,10 @@
 
 namespace strikebox::nv2a {
 
+// FIFO engines
+// [https://envytools.readthedocs.io/en/latest/hw/fifo/intro.html#introduction]
+enum class FIFOEngine : uint8_t { Software, PGRAPH };
+
 // --- RAMHT -----------------------
 
 union RAMHT {
@@ -29,10 +33,6 @@ union RAMHT {
             : 6;              // 23..18 = unused
         Search search : 2;    // 25..24 = entry search stride in bytes
     };
-
-    // FIFO engines
-    // [https://envytools.readthedocs.io/en/latest/hw/fifo/intro.html#introduction]
-    enum class FIFOEngine : uint8_t { Software, PGRAPH };
 
     // An entry in the hash table
     struct Entry {
