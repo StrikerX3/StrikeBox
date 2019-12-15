@@ -116,6 +116,7 @@ void PFIFO::Reset() {
     m_puller.pull0.u32 = 0;
     m_puller.pull1.u32 = 0;
     m_puller.engines = 0;
+    m_puller.lastEngine = FIFOEngine::Software;
 }
 
 uint32_t PFIFO::Read(const uint32_t addr) {
@@ -263,12 +264,23 @@ RAMHT::Entry* PFIFO::GetRAMHTEntry(uint32_t handle, uint32_t channelID) {
     return reinterpret_cast<RAMHT::Entry*>(m_nv2a.pramin.GetMemoryPointer(address));
 }
 
+void PFIFO::ThrowDMAPusherError(PFIFOPusherDMAState::ErrorCode errorCode) {
+    m_dmaPusher.dmaState.error = errorCode;
+    m_interruptLevels |= Val_PFIFO_INTR_DMA_PUSHER;
+    m_nv2a.UpdateIRQ();
+}
+
+void PFIFO::ThrowCacheError() {
+    m_interruptLevels |= Val_PFIFO_INTR_CACHE_ERROR;
+    m_nv2a.UpdateIRQ();
+}
+
 void PFIFO::PusherThread() {
     Thread_SetName("[HW] NV2A FIFO pusher");
 
     // [https://envytools.readthedocs.io/en/latest/hw/fifo/dma-pusher.html#the-pusher-pseudocode-pre-gf100]
     
-    // TODO: this is very barebones and inefficient
+    // TODO: this is very inefficient; introduce some condvars
     while (m_enabled) {
         // DMA pusher must be enabled and not suspended
         if (m_dmaPusher.push0.access == PFIFOCachePush0Parameters::Access::Disabled) continue;
@@ -292,7 +304,7 @@ void PFIFO::PusherThread() {
         if (dmaGet != m_dmaPusher.dmaPutAddress) {
             // Pushbuffer non-empty, read a word
             if (dmaGet >= dmaLen) {
-                m_dmaPusher.dmaState.error = PFIFOPusherDMAState::ErrorCode::Protection;
+                ThrowDMAPusherError(PFIFOPusherDMAState::ErrorCode::Protection);
                 continue;
             }
             uint32_t word = *reinterpret_cast<uint32_t*>(&dmaData[dmaGet]);
@@ -306,6 +318,7 @@ void PFIFO::PusherThread() {
                 // Data word of methods command
                 m_dmaPusher.lastData = word;
 
+                // Write next command
                 size_t putIndex = m_cache1_putAddress >> 2;
                 m_cache1_commands[putIndex] = { 0 };
                 m_cache1_commands[putIndex].address = m_dmaPusher.dmaState.method >> 2;
@@ -344,7 +357,7 @@ void PFIFO::PusherThread() {
                 else if ((word & 3) == 2) {
                     // Call
                     if (m_dmaPusher.dmaSubroutine.state == PFIFODMASubroutine::State::Active) {
-                        m_dmaPusher.dmaState.error = PFIFOPusherDMAState::ErrorCode::Call;
+                        ThrowDMAPusherError(PFIFOPusherDMAState::ErrorCode::Call);
                         continue;
                     }
                     m_dmaPusher.dmaSubroutine.returnOffset = dmaGet;
@@ -354,7 +367,7 @@ void PFIFO::PusherThread() {
                 else if (word == 0x00020000) {
                     // Return
                     if (m_dmaPusher.dmaSubroutine.state == PFIFODMASubroutine::State::Inactive) {
-                        m_dmaPusher.dmaState.error = PFIFOPusherDMAState::ErrorCode::Return;
+                        ThrowDMAPusherError(PFIFOPusherDMAState::ErrorCode::Return);
                         continue;
                     }
                     dmaGet = m_dmaPusher.dmaSubroutine.returnOffset;
@@ -377,7 +390,7 @@ void PFIFO::PusherThread() {
                     m_dmaPusher.dcount = 0;
                 }
                 else {
-                    m_dmaPusher.dmaState.error = PFIFOPusherDMAState::ErrorCode::ReservedCommand;
+                    ThrowDMAPusherError(PFIFOPusherDMAState::ErrorCode::ReservedCommand);
                     continue;
                 }
             }
@@ -391,8 +404,95 @@ void PFIFO::PullerThread() {
 
     // [https://envytools.readthedocs.io/en/latest/hw/fifo/puller.html]
     
+    // TODO: this is very inefficient; introduce some condvars
     while (m_enabled) {
-        // TODO: implement
+        // Puller must be enabled
+        if (m_puller.pull0.access == PFIFOCachePull0Parameters::Access::Disabled) continue;
+
+        // Can't do anything with an empty cache
+        if (m_cache1_status.lowMark) continue;
+
+        // Read next command
+        size_t getIndex = m_cache1_getAddress >> 2;
+        FIFOCommand& cmd = m_cache1_commands[getIndex];
+        m_cache1_getAddress = (m_cache1_getAddress + 4) & 0x1fc;
+
+        // Update full/empty cache flags
+        if (m_cache1_getAddress == m_cache1_putAddress) {
+            m_cache1_status.lowMark = 1;
+        }
+        m_cache1_status.highMark = 0;
+
+        // Process commands
+        // [https://envytools.readthedocs.io/en/latest/hw/fifo/puller.html#engine-objects]
+        // Methods < 0x100 are processed by the puller itself.
+        // Methods >= 0x100 are forwarded to the corresponding engine. 
+
+        // TODO: implement engines
+
+        uint32_t channelID = m_dmaPusher.push1.channelID;
+
+        log_spew("[NV2A] [PFIFO puller] Processing command\n"
+            "    address = %u\n"
+            "    subchannel = %u\n"
+            "    data = %u\n"
+            "    type = %s\n", cmd.address, cmd.subchannel, cmd.data, cmd.type == MethodType::Increasing ? "increasing" : "non-increasing");
+
+        auto ramhtEntry = GetRAMHTEntry(cmd.data, channelID);
+        auto engine = ramhtEntry->engine;
+
+        if (cmd.address == 0) {
+            uint16_t eparam = ramhtEntry->instance;
+            
+            if (engine != m_puller.lastEngine) {
+                // TODO: if switching engines, we should wait until the current engine is idle
+                //while (ENGINE_CUR_CHANNEL(last_engine) == chan && !ENGINE_IDLE(last_engine));
+            }
+
+            if (engine == FIFOEngine::Software) {
+                ThrowCacheError();
+                continue;
+            }
+
+            // TODO: tell engine to switch channel if necessary and submit method to it
+            //if (ENGINE_CUR_CHANNEL(engine) != chan)
+            //    ENGINE_CHANNEL_SWITCH(engine, chan);
+            //ENGINE_SUBMIT_MTHD(engine, subc, 0, eparam);
+
+            uint32_t shift = (cmd.subchannel << 2);
+            m_puller.engines &= ~(3 << shift);
+            m_puller.engines |= (static_cast<uint8_t>(engine) << shift);
+            m_puller.lastEngine = engine;
+            m_puller.pull1.engine = engine;
+        }
+        else {
+            uint32_t param;
+            if (cmd.address >= 0x180 / 4 && cmd.address < 0x200 / 4) {
+                auto ramhtEntry = GetRAMHTEntry(cmd.data, channelID);
+                param = ramhtEntry->instance;
+            }
+            else {
+                param = cmd.data;
+            }
+
+            if (engine != m_puller.lastEngine) {
+                // TODO: if switching engines, we should wait until the current engine is idle
+                //while (ENGINE_CUR_CHANNEL(last_engine) == chan && !ENGINE_IDLE(last_engine));
+            }
+
+            if (engine == FIFOEngine::Software) {
+                ThrowCacheError();
+                continue;
+            }
+
+            // TODO: tell engine to switch channel if necessary and submit method to it
+            //if (ENGINE_CUR_CHANNEL(engine) != chan)
+            //    ENGINE_CHANNEL_SWITCH(engine, chan);
+            //ENGINE_SUBMIT_MTHD(engine, subc, mthd, eparam);
+
+            uint32_t shift = (cmd.subchannel << 2);
+            m_puller.lastEngine = static_cast<FIFOEngine>((m_puller.engines >> shift) & 3);
+        }
     }
 }
 

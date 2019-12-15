@@ -285,6 +285,9 @@ private:
     // Interrupt state
     uint32_t m_interruptLevels;
     uint32_t m_enabledInterrupts;
+
+    void ThrowDMAPusherError(PFIFOPusherDMAState::ErrorCode errorCode);
+    void ThrowCacheError();
     
     // Memory and cache parameters
     RAMHT m_ramhtParams;
@@ -344,6 +347,7 @@ private:
         PFIFOCachePull1Parameters pull1;
 
         uint32_t engines;
+        FIFOEngine lastEngine;
     } m_puller;
 
     // Threads
