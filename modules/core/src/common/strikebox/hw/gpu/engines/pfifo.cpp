@@ -465,7 +465,7 @@ void PFIFO::PullerThread() {
             m_puller.lastEngine = engine;
             m_puller.pull1.engine = engine;
         }
-        else {
+        else if (cmd.address >= 0x100) {
             uint32_t param;
             if (cmd.address >= 0x180 / 4 && cmd.address < 0x200 / 4) {
                 auto ramhtEntry = GetRAMHTEntry(cmd.data, channelID);
