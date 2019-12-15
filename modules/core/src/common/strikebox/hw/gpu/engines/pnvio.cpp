@@ -25,4 +25,13 @@ void PNVIO::Write(const uint32_t addr, const uint32_t value) {
     log_spew("[NV2A] PNVIO::Write:  Unimplemented write!   address = 0x%x,  value = 0x%x\n", addr, value);
 }
 
+uint32_t PNVIO::ReadUnaligned(const uint32_t addr, const uint8_t size) {
+    log_spew("[NV2A] PNVIO::ReadUnaligned:   Unimplemented unaligned read!   address = 0x%x,  size = %u\n", addr, size);
+    return 0;
+}
+
+void PNVIO::WriteUnaligned(const uint32_t addr, const uint32_t value, const uint8_t size) {
+    log_spew("[NV2A] PNVIO::WriteUnaligned:  Unimplemented unaligned write!   address = 0x%x,  value = 0x%x,  size = %u\n", addr, value, size);
+}
+
 }
